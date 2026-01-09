@@ -1,0 +1,219 @@
+[
+  {
+    "iata": "ALG",
+    "type": "A",
+    "city": "ALGIERS",
+    "name": "HOUARI BOUMEDIENE",
+    "country": "ALGERIA",
+    "region": "ALGER"
+  },
+  {
+    "iata": "ORN",
+    "type": "A",
+    "city": "ORAN",
+    "name": "AHMED BEN BELLA",
+    "country": "ALGERIA",
+    "region": "ORAN"
+  },
+  {
+    "iata": "CZL",
+    "type": "A",
+    "city": "CONSTANTINE",
+    "name": "MOHAMED BOUDIAF",
+    "country": "ALGERIA",
+    "region": "CONSTANTINE"
+  },
+  {
+    "iata": "AAE",
+    "type": "A",
+    "city": "ANNABA",
+    "name": "RABAH BITAT",
+    "country": "ALGERIA",
+    "region": "ANNABA"
+  },
+  {
+    "iata": "BJA",
+    "type": "A",
+    "city": "BEJAIA",
+    "name": "SOUUMMAM",
+    "country": "ALGERIA",
+    "region": "BEJAIA"
+  },
+  {
+    "iata": "TMR",
+    "type": "A",
+    "city": "TAMANRASSET",
+    "name": "AGUENAR",
+    "country": "ALGERIA",
+    "region": "TAMANRASSET"
+  },
+  {
+    "iata": "GHA",
+    "type": "A",
+    "city": "GHARDAIA",
+    "name": "NOUMERAT",
+    "country": "ALGERIA",
+    "region": "GHARDAIA"
+  },
+  {
+    "iata": "HME",
+    "type": "A",
+    "city": "HASSI MESSAOUD",
+    "name": "OUED IRARA",
+    "country": "ALGERIA",
+    "region": "OUARGLA"
+  },
+  {
+    "iata": "TLM",
+    "type": "A",
+    "city": "TLEMCEN",
+    "name": "ZENATA – MESSALI EL HADJ",
+    "country": "ALGERIA",
+    "region": "TLEMCEN"
+  },
+  {
+    "iata": "BLJ",
+    "type": "A",
+    "city": "BATNA",
+    "name": "MOSTEFA BEN BOULAID",
+    "country": "ALGERIA",
+    "region": "BATNA"
+  },
+  {
+    "iata": "QSF",
+    "type": "A",
+    "city": "SETIF",
+    "name": "AIN ARNAT",
+    "country": "ALGERIA",
+    "region": "SETIF"
+  },
+  {
+    "iata": "BSK",
+    "type": "A",
+    "city": "BISKRA",
+    "name": "MOHAMED KHIDER",
+    "country": "ALGERIA",
+    "region": "BISKRA"
+  },
+
+  {
+    "iata": "CDG",
+    "type": "A",
+    "city": "PARIS",
+    "name": "CHARLES DE GAULLE",
+    "country": "FRANCE",
+    "region": "PARIS"
+  },
+  {
+    "iata": "ORY",
+    "type": "A",
+    "city": "PARIS",
+    "name": "ORLY",
+    "country": "FRANCE",
+    "region": "PARIS"
+  },
+  {
+    "iata": "LHR",
+    "type": "A",
+    "city": "LONDON",
+    "name": "HEATHROW",
+    "country": "UNITED KINGDOM",
+    "region": "LONDON"
+  },
+  {
+    "iata": "JFK",
+    "type": "A",
+    "city": "NEW YORK",
+    "name": "JOHN F. KENNEDY",
+    "country": "USA",
+    "region": "NEW YORK"
+  },
+  {
+    "iata": "DXB",
+    "type": "A",
+    "city": "DUBAI",
+    "name": "DUBAI INTERNATIONAL",
+    "country": "UAE",
+    "region": "DUBAI"
+  },
+  {
+    "iata": "IST",
+    "type": "A",
+    "city": "ISTANBUL",
+    "name": "ISTANBUL",
+    "country": "TURKEY",
+    "region": "ISTANBUL"
+  },
+  {
+    "iata": "FRA",
+    "type": "A",
+    "city": "FRANKFURT",
+    "name": "FRANKFURT AM MAIN",
+    "country": "GERMANY",
+    "region": "FRANKFURT"
+  },
+  {
+    "iata": "AMS",
+    "type": "A",
+    "city": "AMSTERDAM",
+    "name": "SCHIPHOL",
+    "country": "NETHERLANDS",
+    "region": "AMSTERDAM"
+  },
+  {
+    "iata": "FCO",
+    "type": "A",
+    "city": "ROME",
+    "name": "FIUMICINO",
+    "country": "ITALY",
+    "region": "ROME"
+  },
+  {
+    "iata": "MAD",
+    "type": "A",
+    "city": "MADRID",
+    "name": "BARAJAS",
+    "country": "SPAIN",
+    "region": "MADRID"
+  },
+  {
+    "iata": "BCN",
+    "type": "A",
+    "city": "BARCELONA",
+    "name": "EL PRAT",
+    "country": "SPAIN",
+    "region": "BARCELONA"
+  },
+  {
+    "iata": "DOH",
+    "type": "A",
+    "city": "DOHA",
+    "name": "HAMAD",
+    "country": "QATAR",
+    "region": "DOHA"
+  },
+  {
+    "iata": "CAI",
+    "type": "A",
+    "city": "CAIRO",
+    "name": "CAIRO INTERNATIONAL",
+    "country": "EGYPT",
+    "region": "CAIRO"
+  },
+  {
+    "iata": "TUN",
+    "type": "A",
+    "city": "TUNIS",
+    "name": "CARTHAGE",
+    "country": "TUNISIA",
+    "region": "TUNIS"
+  },
+  {
+    "iata": "CMN",
+    "type": "A",
+    "city": "CASABLANCA",
+    "name": "MOHAMMED V",
+    "country": "MOROCCO",
+    "region": "CASABLANCA"
+  }
+]
