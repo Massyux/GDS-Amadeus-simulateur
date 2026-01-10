@@ -563,166 +563,21 @@ function handleXE(cmdUpper) {
 }
 
 // -------------------------------
-// CORE (async pour DAC/DAN en séquentiel si collé multi-lignes)
+// EXPOSE API POUR core/engine.js
 // -------------------------------
-async function processCommand(cmd) {
-  const raw = (cmd || "").trim();
-  const c = raw.toUpperCase();
-
-  if (!c) return;
-
-  if (c === "AN") {
-    print("AMADEUS SELLING PLATFORM");
-    print("TRAINING MODE");
-    return;
-  }
-
-  if (c === "JD") {
-    print(new Date().toDateString().toUpperCase());
-    return;
-  }
-
-  if (c === "HELP" || c === "HE") {
-    print("AVAILABLE COMMANDS");
-    print("ANddMMMXXXYYY       AVAILABILITY (ex: AN26DECALGPAR)");
-    print("ANXXXYYY/ddMMM      AVAILABILITY (ex: ANALGPAR/26DEC)");
-    print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
-    print("XE1 / XE1-3 / XEALL CANCEL");
-    print("DAC XXX             DECODE IATA (ex: DAC ALG)");
-    print("DAN <TEXT>          ENCODE SEARCH (ex: DAN PARIS)");
-    print("NM                  NAME (MR/MRS optional, CHD/INF)");
-    print("AP                  CONTACT");
-    print("RF                  SIGNATURE (RFMM)");
-    print("ER                  END PNR");
-    print("RT                  DISPLAY PNR (same as live)");
-    return;
-  }
-
-  // DAC
-  if (c.startsWith("DAC")) {
-    const m = c.match(/^DAC\s*([A-Z]{3})$/);
-    if (!m) return void print("INVALID FORMAT");
-    try {
-      const lines = await cmdDAC(m[1]);
-      lines.forEach(print);
-    } catch (e) {
-      console.error(e);
-      print("INVALID FORMAT");
-    }
-    return;
-  }
-
-  // DAN
-  if (c.startsWith("DAN")) {
-    const text = raw.slice(3).trim();
-    try {
-      const lines = await cmdDAN(text);
-      lines.forEach(print);
-    } catch (e) {
-      console.error(e);
-      print("INVALID FORMAT");
-    }
-    return;
-  }
-
-  // AN
-  if (c.startsWith("AN") && c.length > 2) {
-    handleAN(c);
-    return;
-  }
-
-  // SS / XE
-  if (c.startsWith("SS")) return void handleSS(c);
-  if (c.startsWith("XE")) return void handleXE(c);
-
-  // NM (MR/MRS optionnel)
-  if (c.startsWith("NM")) {
-    ensurePNR();
-
-    const chdMatch = c.match(
-      /^NM\d+([A-Z]+)\/([A-Z]+)\s*\((CHD)(?:\/(\d{1,2}))?\)$/
-    );
-    const infMatch = c.match(/^NM\d+([A-Z]+)\/([A-Z]+)\s*\((INF)\)$/);
-    const adultMatch = c.match(/^NM\d+([A-Z]+)\/([A-Z]+)(?:\s+(MR|MRS))?$/);
-
-    if (chdMatch) {
-      activePNR.passengers.push({
-        lastName: chdMatch[1],
-        firstName: chdMatch[2],
-        type: "CHD",
-        age: chdMatch[4] ? chdMatch[4] : null,
-      });
-      renderPNRLiveView();
-      return;
-    }
-
-    if (infMatch) {
-      activePNR.passengers.push({
-        lastName: infMatch[1],
-        firstName: infMatch[2],
-        type: "INF",
-      });
-      renderPNRLiveView();
-      return;
-    }
-
-    if (adultMatch) {
-      activePNR.passengers.push({
-        lastName: adultMatch[1],
-        firstName: adultMatch[2],
-        type: "ADT",
-        title: adultMatch[3] || "",
-      });
-      renderPNRLiveView();
-      return;
-    }
-
-    print("INVALID FORMAT");
-    return;
-  }
-
-  // AP
-  if (c.startsWith("AP")) {
-    ensurePNR();
-    activePNR.contacts.push(c);
-    renderPNRLiveView();
-    return;
-  }
-
-  // RF
-  if (c.startsWith("RF")) {
-    ensurePNR();
-    if (c.startsWith("RF+")) return void print("INVALID FORMAT");
-    const rfValue = c.substring(2).trim();
-    if (!rfValue) return void print("INVALID FORMAT");
-    activePNR.rf = rfValue;
-    renderPNRLiveView();
-    return;
-  }
-
-  // ER
-  if (c === "ER") {
-    if (!activePNR) return void print("NO ACTIVE PNR");
-    if (!activePNR.passengers.length) return void print("END PNR FIRST");
-    if (!activePNR.contacts.length) return void print("END PNR FIRST");
-    if (!activePNR.rf) return void print("END PNR FIRST");
-
-    activePNR.recordLocator = generateRecordLocator();
-    activePNR.status = "RECORDED";
-    print("PNR RECORDED");
-    print("RECORD LOCATOR " + activePNR.recordLocator);
-    renderPNRLiveView();
-    return;
-  }
-
-  // RT
-  if (c === "RT") {
-    displayPNR();
-    return;
-  }
-
-  print("INVALID FORMAT");
-}
+window.__amadeus = {
+  print,
+  cmdDAC,
+  cmdDAN,
+  ensurePNR,
+  handleAN,
+  handleSS,
+  handleXE,
+  renderPNRLiveView,
+  displayPNR,
+  generateRecordLocator,
+  getActivePNR: () => activePNR,
+};
 
 // -------------------------------
 // QUEUE ENGINE (pour paste multi-lignes et enter)
@@ -775,9 +630,8 @@ async function executeCommandLine(command) {
       screen.appendChild(enteredLine);
       input2?.remove();
     }
-
     try {
-      await processCommand(command);
+      await window.processCommand(command); // <- appelle engine.js (vraie logique)
     } catch (err) {
       console.error(err);
       print("INVALID FORMAT");
