@@ -1,0 +1,18 @@
+[
+  {
+    "iata": "ALG",
+    "type": "A",
+    "city": "ALGIERS",
+    "country": "ALGERIA",
+    "name": "Houari Boumediene",
+    "region": "AFRICA"
+  },
+  {
+    "iata": "CDG",
+    "type": "A",
+    "city": "PARIS",
+    "country": "FRANCE",
+    "name": "Charles De Gaulle",
+    "region": "EUROPE"
+  }
+]
