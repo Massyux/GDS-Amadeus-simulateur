@@ -1,15 +1,12 @@
-// data/db.js
-// VERSION SAFE (sans import JSON assert)
-
 let loaded = false;
 const byIata = new Map();
 
-async function loadLocations() {
+async function loadLocations(fetcher = fetch, url = "/data/locations.json") {
   if (loaded) return;
 
-  const res = await fetch("./data/locations.json");
+  const res = await fetcher(url);
   if (!res.ok) {
-    throw new Error("Cannot load data/locations.json");
+    throw new Error("Cannot load locations");
   }
 
   const locations = await res.json();
@@ -25,18 +22,16 @@ async function loadLocations() {
   loaded = true;
 }
 
-// ---------- PUBLIC API ----------
-
-export async function findByIata(iata) {
-  await loadLocations();
+export async function findByIata(iata, options = {}) {
+  await loadLocations(options.fetcher, options.url);
   const code = String(iata || "")
     .trim()
     .toUpperCase();
   return byIata.get(code) || null;
 }
 
-export async function cmdDAC(code) {
-  await loadLocations();
+export async function cmdDAC(code, options = {}) {
+  await loadLocations(options.fetcher, options.url);
 
   const iata = String(code || "")
     .trim()
@@ -55,8 +50,8 @@ export async function cmdDAC(code) {
   return lines;
 }
 
-export async function cmdDAN(text) {
-  await loadLocations();
+export async function cmdDAN(text, options = {}) {
+  await loadLocations(options.fetcher, options.url);
 
   const q = String(text || "").trim();
   if (!q) return ["INVALID FORMAT"];
@@ -78,17 +73,14 @@ export async function cmdDAN(text) {
     `CODE TYPE CITY - NAME / COUNTRY`,
     ...res.map(
       (loc) =>
-        `${loc.iata}  ${loc.type || "A"}   ${loc.city} - ${loc.name} / ${
-          loc.country
-        }`
+        `${loc.iata}  ${loc.type || "A"}   ${loc.city} - ${loc.name} / ${loc.country}`
     ),
   ];
 }
+
 export const DB = {
-  ready: async () => {
-    // permet juste de forcer le chargement et vérifier que ça marche
-    await loadLocations();
+  ready: async (options = {}) => {
+    await loadLocations(options.fetcher, options.url);
     return { locationsCount: byIata.size };
   },
 };
-// Fin data/db.js

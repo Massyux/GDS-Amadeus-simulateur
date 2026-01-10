@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { createInitialState, processCommand } from "@simulateur/core";
+
+const LOCATIONS_OPTIONS = { url: "/data/locations.json" };
 
 export default function Terminal() {
   const [lines, setLines] = useState([
@@ -7,10 +10,7 @@ export default function Terminal() {
   ]);
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
-
-  function print(t) {
-    setLines((prev) => [...prev, String(t)]);
-  }
+  const coreStateRef = useRef(createInitialState());
 
   async function onEnter() {
     const cmd = value.trim();
@@ -18,22 +18,24 @@ export default function Terminal() {
     setValue("");
     if (!cmd) return;
 
-    const c = cmd.toUpperCase();
-
-    // mini commandes pour tester l'UI
-    if (c === "JD") {
-      print(new Date().toDateString().toUpperCase());
-      return;
+    try {
+      const { events, state } = await processCommand(
+        coreStateRef.current,
+        cmd,
+        {
+          locations: LOCATIONS_OPTIONS,
+        }
+      );
+      coreStateRef.current = state;
+      const outputLines = events
+        .filter((event) => event.type === "print")
+        .map((event) => event.text);
+      if (outputLines.length > 0) {
+        setLines((prev) => [...prev, ...outputLines]);
+      }
+    } catch (error) {
+      setLines((prev) => [...prev, "INVALID FORMAT"]);
     }
-    if (c === "HELP" || c === "HE") {
-      print("AVAILABLE COMMANDS");
-      print("JD  DATE");
-      print("HELP HELP");
-      print("AN/NM/RF/... (à brancher juste après)");
-      return;
-    }
-
-    print("OK");
   }
 
   useEffect(() => {
