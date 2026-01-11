@@ -10,7 +10,10 @@ export default function Terminal() {
   ]);
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
-  const storeRef = useRef(createInMemoryStore());
+  const storeRef = useRef(null);
+  if (!storeRef.current) {
+    storeRef.current = createInMemoryStore();
+  }
   const coreStateRef = useRef(createInitialState());
 
   async function onEnter() {
@@ -20,6 +23,10 @@ export default function Terminal() {
     if (!cmd) return;
 
     try {
+      const cmdUpper = cmd.toUpperCase();
+      if (cmdUpper.startsWith("DAC") || cmdUpper.startsWith("DAN")) {
+        await storeRef.current.loadFromUrl?.().catch(() => {});
+      }
       const { events, state } = await processCommand(
         coreStateRef.current,
         cmd,
