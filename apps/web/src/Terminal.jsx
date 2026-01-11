@@ -1,7 +1,7 @@
+// CODEX ACCESS TEST
 import { useEffect, useRef, useState } from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
-
-const LOCATIONS_OPTIONS = { url: "/data/locations.json" };
+import { createInMemoryStore } from "@simulateur/data";
 
 export default function Terminal() {
   const [lines, setLines] = useState([
@@ -10,6 +10,7 @@ export default function Terminal() {
   ]);
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
+  const storeRef = useRef(createInMemoryStore());
   const coreStateRef = useRef(createInitialState());
 
   async function onEnter() {
@@ -23,7 +24,7 @@ export default function Terminal() {
         coreStateRef.current,
         cmd,
         {
-          locations: LOCATIONS_OPTIONS,
+          locations: storeRef.current,
         }
       );
       coreStateRef.current = state;
@@ -40,6 +41,10 @@ export default function Terminal() {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    storeRef.current.loadFromUrl?.().catch(() => {});
   }, []);
 
   return (

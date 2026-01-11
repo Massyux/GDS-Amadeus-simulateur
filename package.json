@@ -2,12 +2,15 @@
   "name": "gds-amadeus-simulateur",
   "private": true,
   "workspaces": [
-    "apps/web",
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
+    "install:all": "npm install",
     "dev:web": "npm --prefix apps/web run dev",
     "build:web": "npm --prefix apps/web run build",
-    "test": "npm --prefix packages/core run test"
+    "test": "npm --prefix packages/core run test",
+    "test:core": "npm --prefix packages/core run test",
+    "test:data": "npm --prefix packages/data run test"
   }
 }
