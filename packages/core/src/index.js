@@ -448,7 +448,11 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     try {
-      const lines = await cmdDAC(m[1], options.locations);
+      const locations = options.locations;
+      const lines =
+        locations && typeof locations.cmdDAC === "function"
+          ? await locations.cmdDAC(m[1])
+          : await cmdDAC(m[1], locations);
       lines.forEach(print);
     } catch (e) {
       print("INVALID FORMAT");
@@ -459,7 +463,11 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("DAN")) {
     const text = raw.slice(3).trim();
     try {
-      const lines = await cmdDAN(text, options.locations);
+      const locations = options.locations;
+      const lines =
+        locations && typeof locations.cmdDAN === "function"
+          ? await locations.cmdDAN(text)
+          : await cmdDAN(text, locations);
       lines.forEach(print);
     } catch (e) {
       print("INVALID FORMAT");
@@ -603,3 +611,4 @@ export async function processCommand(state, cmd, options = {}) {
   print("INVALID FORMAT");
   return { events, state };
 }
+

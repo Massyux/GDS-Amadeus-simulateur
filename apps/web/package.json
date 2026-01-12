@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@simulateur/core": "file:../../packages/core",
+    "@simulateur/data": "file:../../packages/data",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -1,7 +1,7 @@
+// CODEX ACCESS TEST
 import { useEffect, useRef, useState } from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
-
-const LOCATIONS_OPTIONS = { url: "/data/locations.json" };
+import { createInMemoryStore } from "@simulateur/data";
 
 export default function Terminal() {
   const [lines, setLines] = useState([
@@ -10,6 +10,10 @@ export default function Terminal() {
   ]);
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
+  const storeRef = useRef(null);
+  if (!storeRef.current) {
+    storeRef.current = createInMemoryStore();
+  }
   const coreStateRef = useRef(createInitialState());
 
   async function onEnter() {
@@ -19,11 +23,15 @@ export default function Terminal() {
     if (!cmd) return;
 
     try {
+      const cmdUpper = cmd.toUpperCase();
+      if (cmdUpper.startsWith("DAC") || cmdUpper.startsWith("DAN")) {
+        await storeRef.current.loadFromUrl?.().catch(() => {});
+      }
       const { events, state } = await processCommand(
         coreStateRef.current,
         cmd,
         {
-          locations: LOCATIONS_OPTIONS,
+          locations: storeRef.current,
         }
       );
       coreStateRef.current = state;
@@ -40,6 +48,10 @@ export default function Terminal() {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    storeRef.current.loadFromUrl?.().catch(() => {});
   }, []);
 
   return (
