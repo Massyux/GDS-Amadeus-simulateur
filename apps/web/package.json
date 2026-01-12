@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@simulateur/core": "file:../../packages/core",
-    "@simulateur/data": "file:../../packages/data",
+    "@simulateur/core": "workspace:*",
+    "@simulateur/data": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

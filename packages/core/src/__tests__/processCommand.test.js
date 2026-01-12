@@ -48,4 +48,14 @@ describe("processCommand", () => {
     const lines = await runCommand(state, "ANXYZ");
     assert.deepEqual(lines, ["INVALID FORMAT"]);
   });
+
+  it("returns sorted offline AN availability", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "AN26DECALGPAR", {});
+    const results = result.state.lastAN?.results || [];
+    assert.ok(results.length >= 8);
+    for (let i = 1; i < results.length; i++) {
+      assert.ok(results[i - 1].depTime <= results[i].depTime);
+    }
+  });
 });

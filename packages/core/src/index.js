@@ -106,6 +106,119 @@ function wrapTokens(tokens, maxPerLine) {
   return out;
 }
 
+function hashSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function createSeededRandom(seed) {
+  let x = hashSeed(seed) || 0x9e3779b9;
+  return () => {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return (x >>> 0) / 4294967296;
+  };
+}
+
+function timeFromMinutes(totalMinutes) {
+  const h = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  return `${pad2(h)}${pad2(m)}`;
+}
+
+function buildOfflineAvailability({ from, to, ddmmm, dow }) {
+  const rand = createSeededRandom(`${from}${to}${ddmmm}`);
+  const randInt = (max) => Math.floor(rand() * max);
+  const carriers = ["AH", "AF", "TK", "PC", "SV", "AT"];
+  for (let i = carriers.length - 1; i > 0; i--) {
+    const j = randInt(i + 1);
+    [carriers[i], carriers[j]] = [carriers[j], carriers[i]];
+  }
+  const carrierCount = 2 + randInt(3);
+  const chosenCarriers = carriers.slice(0, carrierCount);
+
+  const classes = [
+    "J",
+    "C",
+    "D",
+    "Y",
+    "E",
+    "B",
+    "M",
+    "H",
+    "K",
+    "Q",
+    "V",
+    "L",
+    "T",
+    "N",
+    "R",
+    "S",
+    "X",
+    "W",
+    "A",
+    "F",
+    "Z",
+    "I",
+  ];
+
+  const pickSeats = (code) => {
+    if (code === "J" || code === "C" || code === "D") {
+      return [0, 0, 2, 4][randInt(4)];
+    }
+    if (code === "Y" || code === "E" || code === "B" || code === "M") {
+      return [4, 9, 9, 2][randInt(4)];
+    }
+    return [0, 2, 4, 9][randInt(4)];
+  };
+
+  const flightsCount = 8 + randInt(5);
+  const depStart = 6 * 60;
+  const depEnd = 22 * 60 - 90;
+  const stepCount = Math.floor((depEnd - depStart) / 15) + 1;
+  const results = [];
+
+  for (let i = 0; i < flightsCount; i++) {
+    const airline = chosenCarriers[i % chosenCarriers.length];
+    const flightNo = 100 + randInt(9900);
+    const depMinutes = depStart + randInt(stepCount) * 15;
+    const duration = 90 + randInt(11) * 15;
+    const arrMinutes = depMinutes + duration;
+    const bookingClasses = classes.map((code) => ({
+      code,
+      seats: pickSeats(code),
+    }));
+
+    results.push({
+      lineNo: i + 1,
+      airline,
+      flightNo,
+      from,
+      to,
+      dateDDMMM: ddmmm,
+      dow,
+      depTime: timeFromMinutes(depMinutes),
+      arrTime: timeFromMinutes(arrMinutes),
+      bookingClasses,
+    });
+  }
+
+  const sorted = results
+    .map((item, idx) => ({ item, idx }))
+    .sort((a, b) => {
+      if (a.item.depTime === b.item.depTime) return a.idx - b.idx;
+      return a.item.depTime < b.item.depTime ? -1 : 1;
+    })
+    .map((entry, idx) => ({ ...entry.item, lineNo: idx + 1 }));
+
+  return sorted;
+}
+
 function ensurePNR(state) {
   if (!state.activePNR) {
     state.activePNR = {
@@ -212,7 +325,7 @@ function renderPNRLiveView(state) {
   return lines;
 }
 
-function handleAN(state, cmdUpper) {
+async function handleAN(state, cmdUpper, options = {}) {
   let dateObj = null;
   let from = null;
   let to = null;
@@ -238,68 +351,37 @@ function handleAN(state, cmdUpper) {
   const ddmmm = formatDDMMM(dateObj);
   const dow = dayOfWeek2(dateObj);
 
+  let results;
+  if (options.availability && typeof options.availability.search === "function") {
+    const external = await options.availability.search({ from, to, ddmmm, dow });
+    const valid =
+      Array.isArray(external) &&
+      external.every(
+        (item) =>
+          item &&
+          typeof item.airline === "string" &&
+          typeof item.flightNo !== "undefined" &&
+          typeof item.depTime === "string" &&
+          typeof item.arrTime === "string" &&
+          typeof item.from === "string" &&
+          typeof item.to === "string" &&
+          typeof item.dateDDMMM === "string" &&
+          typeof item.dow === "string" &&
+          Array.isArray(item.bookingClasses)
+      );
+    if (!valid) {
+      return { error: "INVALID FORMAT" };
+    }
+    results = external;
+  } else {
+    results = buildOfflineAvailability({ from, to, ddmmm, dow });
+  }
+
+  state.lastAN = { query: { from, to, ddmmm, dow }, results };
+
   const lines = [];
   lines.push(`AN${ddmmm}${from}${to}`);
   lines.push(`** AMADEUS AVAILABILITY - AN ** ${to}`);
-
-  const baseFlights = [
-    { airline: "PC", flightNo: 751, depTime: "0700", arrTime: "0925" },
-    { airline: "PC", flightNo: 686, depTime: "1100", arrTime: "1325" },
-    { airline: "SV", flightNo: 380, depTime: "1500", arrTime: "1725" },
-    { airline: "AH", flightNo: 4038, depTime: "1900", arrTime: "2125" },
-  ];
-
-  const classes = [
-    "J",
-    "C",
-    "D",
-    "Y",
-    "E",
-    "B",
-    "M",
-    "H",
-    "K",
-    "Q",
-    "V",
-    "L",
-    "T",
-    "N",
-    "R",
-    "S",
-    "X",
-    "W",
-    "A",
-    "F",
-    "Z",
-    "I",
-  ];
-
-  const mkAvail = () => {
-    return classes.map((code, i) => {
-      let seats;
-      if (i < 3) seats = 9;
-      else if (i < 7) seats = 4;
-      else if (i < 10) seats = 9;
-      else if (i < 14) seats = 4;
-      else seats = 0;
-      return { code, seats };
-    });
-  };
-
-  const results = baseFlights.map((f, idx) => ({
-    lineNo: idx + 1,
-    airline: f.airline,
-    flightNo: f.flightNo,
-    from,
-    to,
-    dateDDMMM: ddmmm,
-    dow,
-    depTime: f.depTime,
-    arrTime: f.arrTime,
-    bookingClasses: mkAvail(),
-  }));
-
-  state.lastAN = { query: { from, to, ddmmm, dow }, results };
 
   results.forEach((r) => {
     const ln = String(r.lineNo);
@@ -476,7 +558,7 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c.startsWith("AN") && c.length > 2) {
-    const result = handleAN(state, c);
+    const result = await handleAN(state, c, options);
     if (result.error) {
       print(result.error);
       return { events, state };
