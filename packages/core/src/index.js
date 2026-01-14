@@ -219,6 +219,219 @@ function buildOfflineAvailability({ from, to, ddmmm, dow }) {
   return sorted;
 }
 
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+function formatMoney(n) {
+  return round2(n).toFixed(2);
+}
+
+function getSortedItinerary(pnr) {
+  const itinerary = pnr.itinerary || [];
+  const decorated = itinerary.map((s, idx) => {
+    const d = ddmmmToDate(s.dateDDMMM);
+    const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
+    return { s, idx, t };
+  });
+  decorated.sort((a, b) => (a.t !== b.t ? a.t - b.t : a.idx - b.idx));
+  return decorated.map((item, index) => ({
+    ...item.s,
+    displayIndex: index + 1,
+  }));
+}
+
+function getPaxCounts(pnr) {
+  const counts = { ADT: 0, CHD: 0, INF: 0 };
+  for (const p of pnr.passengers || []) {
+    if (p.type === "CHD") counts.CHD += 1;
+    else if (p.type === "INF") counts.INF += 1;
+    else counts.ADT += 1;
+  }
+  return counts;
+}
+
+function buildRouteDistance(from, to) {
+  const key = `${from}-${to}`;
+  const map = {
+    "ALG-PAR": 1375,
+    "PAR-ALG": 1375,
+    "ALG-MRS": 780,
+    "MRS-ALG": 780,
+    "ALG-IST": 2400,
+    "IST-ALG": 2400,
+    "ALG-CMN": 1050,
+    "CMN-ALG": 1050,
+  };
+  if (map[key]) return map[key];
+  const rand = createSeededRandom(key);
+  return 700 + Math.floor(rand() * 1400);
+}
+
+function buildFareBasis(classCode, from, rand) {
+  const digits = 10 + Math.floor(rand() * 40);
+  const suffix = (from || "XX").slice(0, 2);
+  return `${classCode}${digits}${suffix}`;
+}
+
+function buildOfflineTsts(pnr) {
+  const segments = getSortedItinerary(pnr);
+  const paxCounts = getPaxCounts(pnr);
+  const paxMix = `ADT${paxCounts.ADT}CHD${paxCounts.CHD}INF${paxCounts.INF}`;
+  const paxOrder = ["ADT", "CHD", "INF"];
+  const paxMultiplier = { ADT: 1, CHD: 0.75, INF: 0.1 };
+  const classMultiplier = {
+    J: 1.8,
+    C: 1.4,
+    D: 1.3,
+    Y: 1.0,
+    E: 0.95,
+    B: 0.9,
+    M: 0.85,
+    H: 0.82,
+    K: 0.8,
+    Q: 0.78,
+    V: 0.76,
+    L: 0.74,
+    T: 0.72,
+    N: 0.7,
+    R: 0.68,
+    S: 0.66,
+    X: 0.64,
+    W: 0.62,
+    A: 0.6,
+    F: 2.2,
+    Z: 1.6,
+    I: 1.5,
+  };
+
+  const tsts = [];
+  for (const paxType of paxOrder) {
+    const paxCount = paxCounts[paxType] || 0;
+    if (!paxCount) continue;
+    const seedParts = segments
+      .map(
+        (s) =>
+          `${s.from}${s.to}${s.dateDDMMM}${s.airline}${s.classCode || "Y"}`
+      )
+      .join("|");
+    const rand = createSeededRandom(`${seedParts}${paxMix}${paxType}`);
+    const fareBasis = [];
+    let baseFare = 0;
+    const taxesMap = new Map();
+
+    for (const seg of segments) {
+      const distance = buildRouteDistance(seg.from, seg.to);
+      const cls = seg.classCode || "Y";
+      const mult = classMultiplier[cls] || 1;
+      baseFare += distance * mult / 10;
+      fareBasis.push(buildFareBasis(cls, seg.from, rand));
+
+      const taxSeed = createSeededRandom(
+        `${seg.from}${seg.to}${seg.dateDDMMM}${seg.airline}${cls}${paxMix}`
+      );
+      const taxes = [
+        { code: seg.from === "ALG" ? "DZ" : "TX", amount: 10 + taxSeed() * 8 },
+        { code: seg.to === "PAR" ? "FR" : "XT", amount: 8 + taxSeed() * 10 },
+        { code: "YQ", amount: 6 + taxSeed() * 6 },
+      ];
+      for (const tax of taxes) {
+        const scaled = tax.amount * paxMultiplier[paxType];
+        const prev = taxesMap.get(tax.code) || 0;
+        taxesMap.set(tax.code, prev + scaled);
+      }
+    }
+
+    const baseScaled = baseFare * paxMultiplier[paxType];
+    const taxes = Array.from(taxesMap.entries()).map(([code, amount]) => ({
+      code,
+      amount: round2(amount),
+    }));
+    const totalTax = taxes.reduce((sum, t) => sum + t.amount, 0);
+    const total = round2(baseScaled + totalTax);
+
+    tsts.push({
+      paxType,
+      paxCount,
+      segments: segments.map((s) => s.displayIndex),
+      validatingCarrier: segments[0]?.airline || "XX",
+      fareBasis,
+      baseFare: round2(baseScaled),
+      taxes,
+      totalTax: round2(totalTax),
+      total,
+      currency: "EUR",
+      status: "QUOTE",
+    });
+  }
+
+  return tsts;
+}
+
+function formatSegmentsRange(segments) {
+  if (!segments.length) return "-";
+  if (segments.length === 1) return `${segments[0]}`;
+  return `${segments[0]}-${segments[segments.length - 1]}`;
+}
+
+function formatTaxDetails(taxes) {
+  return taxes.map((t) => `${t.code} ${formatMoney(t.amount)}`).join(", ");
+}
+
+function listTstSummary(tst) {
+  return `TST ${tst.id}  PAX ${tst.paxType}*${tst.paxCount}  EUR ${formatMoney(
+    tst.total
+  )}  VC ${tst.validatingCarrier}  ${tst.status}`;
+}
+
+function buildTstDetailLines(tst) {
+  const lines = [];
+  lines.push(`TST ${tst.id}  PAX ${tst.paxType}*${tst.paxCount}`);
+  lines.push(
+    `SEGMENTS ${formatSegmentsRange(tst.segments)}  VC ${tst.validatingCarrier}`
+  );
+  lines.push(`FARE BASIS ${tst.fareBasis.join(" / ")}`);
+  lines.push(`FARE      EUR ${formatMoney(tst.baseFare)}`);
+  for (const tax of tst.taxes) {
+    lines.push(`TAX ${tax.code} EUR ${formatMoney(tax.amount)}`);
+  }
+  lines.push(`TOTAL     EUR ${formatMoney(tst.total)}`);
+  return lines;
+}
+
+async function buildPricingTsts(state, options = {}) {
+  const pnr = state.activePNR;
+  if (!pnr) return { error: "NO ACTIVE PNR" };
+  if (!pnr.passengers || pnr.passengers.length === 0) {
+    return { error: "NO PAX" };
+  }
+  if (!pnr.itinerary || pnr.itinerary.length === 0) {
+    return { error: "NO SEGMENTS" };
+  }
+
+  let tsts;
+  if (options.pricing && typeof options.pricing.price === "function") {
+    tsts = await options.pricing.price({ pnr });
+  } else {
+    tsts = buildOfflineTsts(pnr);
+  }
+
+  if (!Array.isArray(tsts) || tsts.length === 0) {
+    return { error: "NO TST" };
+  }
+
+  const normalized = tsts.map((tst) => {
+    const id = tst.id || ++state.lastTstId;
+    return {
+      ...tst,
+      id,
+      status: tst.status || "QUOTE",
+    };
+  });
+
+  return { tsts: normalized };
+}
+
 function ensurePNR(state) {
   if (!state.activePNR) {
     state.activePNR = {
@@ -320,6 +533,12 @@ function renderPNRLiveView(state) {
   if (state.activePNR.recordLocator) {
     lines.push(`${padL(n, 2)} REC LOC ${state.activePNR.recordLocator}`);
     n++;
+  }
+
+  if (state.tsts && state.tsts.length > 0) {
+    for (const tst of state.tsts) {
+      lines.push(listTstSummary(tst));
+    }
   }
 
   return lines;
@@ -486,6 +705,8 @@ export function createInitialState() {
   return {
     activePNR: null,
     lastAN: null,
+    tsts: [],
+    lastTstId: 0,
   };
 }
 
@@ -687,6 +908,90 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c === "RT") {
     renderPNRLiveView(state).forEach(print);
+    return { events, state };
+  }
+
+  if (c === "FXP") {
+    const result = await buildPricingTsts(state, options);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    state.tsts = result.tsts;
+    for (const tst of result.tsts) {
+      print(`TST CREATED  ${tst.id}  PAX ${tst.paxType}*${tst.paxCount}`);
+      print(
+        `SEGMENTS ${formatSegmentsRange(tst.segments)}  VC ${tst.validatingCarrier}`
+      );
+      print(`FARE      EUR ${formatMoney(tst.baseFare)}`);
+      print(
+        `TAX       EUR ${formatMoney(tst.totalTax)}  (${formatTaxDetails(
+          tst.taxes
+        )})`
+      );
+      print(`TOTAL     EUR ${formatMoney(tst.total)}`);
+      print(`FARE BASIS ${tst.fareBasis.join(" / ")}`);
+    }
+    return { events, state };
+  }
+
+  if (c === "FXB") {
+    if (!state.activePNR) {
+      print("NO ACTIVE PNR");
+      return { events, state };
+    }
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
+      return { events, state };
+    }
+    state.tsts = state.tsts.map((tst) => ({ ...tst, status: "ACTIVE" }));
+    state.activePNR.tsts = state.tsts;
+    print("TST COMMITTED");
+    return { events, state };
+  }
+
+  if (c === "FXR") {
+    if (!state.activePNR) {
+      print("NO ACTIVE PNR");
+      return { events, state };
+    }
+    const oldTotal = (state.tsts || []).reduce(
+      (sum, t) => sum + (t.total || 0),
+      0
+    );
+    const result = await buildPricingTsts(state, options);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    state.tsts = result.tsts;
+    const newTotal = result.tsts.reduce((sum, t) => sum + (t.total || 0), 0);
+    const diff = round2(newTotal - oldTotal);
+    print(`OLD EUR ${formatMoney(oldTotal)}`);
+    print(`NEW EUR ${formatMoney(newTotal)}`);
+    print(`DIFF EUR ${formatMoney(diff)}`);
+    return { events, state };
+  }
+
+  if (c.startsWith("FXL")) {
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
+      return { events, state };
+    }
+    const m = c.match(/^FXL(\d+)$/);
+    if (m) {
+      const id = parseInt(m[1], 10);
+      const tst = state.tsts.find((t) => t.id === id);
+      if (!tst) {
+        print("NO TST");
+        return { events, state };
+      }
+      buildTstDetailLines(tst).forEach(print);
+      return { events, state };
+    }
+    state.tsts.forEach((tst) => {
+      print(listTstSummary(tst));
+    });
     return { events, state };
   }
 

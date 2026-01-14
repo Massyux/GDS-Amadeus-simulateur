@@ -58,4 +58,43 @@ describe("processCommand", () => {
       assert.ok(results[i - 1].depTime <= results[i].depTime);
     }
   });
+
+  it("supports FXP/FXL/FXB/FXR with multi-pax TST", async () => {
+    const state = createInitialState();
+
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y2");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "NM1DOE/JIM (CHD/10)");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+
+    const fxp = await processCommand(state, "FXP");
+    const fxpLines = fxp.events.map((event) => event.text);
+    assert.ok(fxpLines.some((line) => line.includes("TST CREATED")));
+    assert.ok(fxpLines.some((line) => line.includes("ADT*1")));
+    assert.ok(fxp.state.tsts.length >= 1);
+
+    const rt = await processCommand(state, "RT");
+    const rtLines = rt.events.map((event) => event.text);
+    assert.ok(rtLines.some((line) => line.includes("TST 1")));
+
+    const fxl = await processCommand(state, "FXL");
+    const fxlLines = fxl.events.map((event) => event.text);
+    assert.ok(fxlLines.some((line) => line.startsWith("TST 1")));
+
+    const fxl1 = await processCommand(state, "FXL1");
+    const fxl1Lines = fxl1.events.map((event) => event.text);
+    assert.ok(fxl1Lines.some((line) => line.includes("FARE BASIS")));
+
+    const fxb = await processCommand(state, "FXB");
+    const fxbLines = fxb.events.map((event) => event.text);
+    assert.ok(fxbLines.includes("TST COMMITTED"));
+
+    const fxr = await processCommand(state, "FXR");
+    const fxrLines = fxr.events.map((event) => event.text);
+    assert.ok(fxrLines.some((line) => line.startsWith("OLD EUR")));
+    assert.ok(fxrLines.some((line) => line.startsWith("NEW EUR")));
+    assert.ok(fxrLines.some((line) => line.startsWith("DIFF EUR")));
+  });
 });
