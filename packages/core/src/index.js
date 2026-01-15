@@ -219,6 +219,295 @@ function buildOfflineAvailability({ from, to, ddmmm, dow }) {
   return sorted;
 }
 
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+function formatMoney(n) {
+  return round2(n).toFixed(2);
+}
+
+function getSortedItinerary(pnr) {
+  const itinerary = pnr.itinerary || [];
+  const decorated = itinerary.map((s, idx) => {
+    const d = ddmmmToDate(s.dateDDMMM);
+    const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
+    return { s, idx, t };
+  });
+  decorated.sort((a, b) => (a.t !== b.t ? a.t - b.t : a.idx - b.idx));
+  return decorated.map((item, index) => ({
+    ...item.s,
+    displayIndex: index + 1,
+  }));
+}
+
+function getPaxCounts(pnr) {
+  const counts = { ADT: 0, CHD: 0, INF: 0 };
+  for (const p of pnr.passengers || []) {
+    if (p.type === "CHD") counts.CHD += 1;
+    else if (p.type === "INF") counts.INF += 1;
+    else counts.ADT += 1;
+  }
+  return counts;
+}
+
+function inferPaxCounts(pnr) {
+  const paxCounts = getPaxCounts(pnr);
+  if (paxCounts.ADT || paxCounts.CHD || paxCounts.INF) {
+    return paxCounts;
+  }
+  const paxCount = Math.max(
+    1,
+    ...(pnr.itinerary || []).map((seg) => seg.paxCount || 1)
+  );
+  return { ADT: paxCount, CHD: 0, INF: 0 };
+}
+
+function resolveZone(iata) {
+  const code = String(iata || "").toUpperCase();
+  const DZ = ["ALG", "ORN", "CZL", "TLM"];
+  const TR = ["IST", "SAW"];
+  const EU = ["PAR", "LON", "MAD", "ROM", "AMS", "BRU", "FRA", "MUC", "BCN", "LIS"];
+  if (DZ.includes(code)) return "DZ";
+  if (TR.includes(code)) return "TR";
+  if (EU.includes(code)) return "EU";
+  return "OTHER";
+}
+
+function getTaxRates(fromZone, toZone) {
+  const isDomestic = fromZone === toZone;
+  if (fromZone === "DZ" && isDomestic) {
+    return { DZ: 9.0, FR: 6.4, YQ: 8.0, XT: 3.0 };
+  }
+  if (
+    (fromZone === "DZ" && toZone === "EU") ||
+    (fromZone === "EU" && toZone === "DZ")
+  ) {
+    return { DZ: 18.0, FR: 22.4, YQ: 18.0, XT: 6.0 };
+  }
+  if (
+    (fromZone === "DZ" && toZone === "TR") ||
+    (fromZone === "TR" && toZone === "DZ")
+  ) {
+    return { DZ: 18.0, FR: 16.4, YQ: 14.0, XT: 5.0 };
+  }
+  if (fromZone === "EU" && toZone === "EU") {
+    return { DZ: 0, FR: 18.6, YQ: 12.0, XT: 5.0 };
+  }
+  return { DZ: 0, FR: 20.0, YQ: 16.0, XT: 5.0 };
+}
+
+function isRoundTrip(segments) {
+  for (let i = 0; i < segments.length; i++) {
+    for (let j = i + 1; j < segments.length; j++) {
+      if (segments[i].from === segments[j].to && segments[i].to === segments[j].from) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function buildRouteDistance(from, to) {
+  const key = `${from}-${to}`;
+  const map = {
+    "ALG-PAR": 1375,
+    "PAR-ALG": 1375,
+    "ALG-MRS": 780,
+    "MRS-ALG": 780,
+    "ALG-IST": 2400,
+    "IST-ALG": 2400,
+    "ALG-CMN": 1050,
+    "CMN-ALG": 1050,
+  };
+  if (map[key]) return map[key];
+  const rand = createSeededRandom(key);
+  return 700 + Math.floor(rand() * 1400);
+}
+
+function buildFareBasis(classCode, from, seed) {
+  const rand = createSeededRandom(seed);
+  const digits = 10 + Math.floor(rand() * 40);
+  const suffix = (from || "XX").slice(0, 2);
+  return `${classCode}${digits}${suffix}`;
+}
+
+function buildPricingData(pnr, mode, segmentsOverride) {
+  const segments = segmentsOverride || getSortedItinerary(pnr);
+  const paxCounts = inferPaxCounts(pnr);
+  const paxMix = `ADT${paxCounts.ADT}CHD${paxCounts.CHD}INF${paxCounts.INF}`;
+  const taxes = { DZ: 0, FR: 0, YQ: 0, XT: 0 };
+  const paxMultiplier = { ADT: 1, CHD: 0.75, INF: 0.1 };
+  const classMultiplier = {
+    J: 1.8,
+    C: 1.4,
+    D: 1.3,
+    Y: 1.0,
+    B: 0.9,
+    M: 0.85,
+    H: 0.82,
+    K: 0.8,
+    Q: 0.78,
+    V: 0.76,
+    L: 0.74,
+    T: 0.72,
+    N: 0.7,
+    R: 0.68,
+    S: 0.66,
+  };
+  const fareBasis = [];
+  let baseFare = 0;
+
+  for (const seg of segments) {
+    const fromZone = resolveZone(seg.from);
+    const toZone = resolveZone(seg.to);
+    const rates = getTaxRates(fromZone, toZone);
+    const seed = `${seg.from}${seg.to}${seg.dateDDMMM}${seg.airline}${seg.flightNo}${seg.classCode}${paxMix}${mode}`;
+    const rand = createSeededRandom(seed);
+    const distance = buildRouteDistance(seg.from, seg.to);
+    const mult = classMultiplier[seg.classCode] || 1;
+    const offset = rand() * 25;
+    const segBase = distance * mult / 10 + offset;
+    baseFare += segBase * paxMultiplier.ADT * paxCounts.ADT;
+    baseFare += segBase * paxMultiplier.CHD * paxCounts.CHD;
+    baseFare += segBase * paxMultiplier.INF * paxCounts.INF;
+    fareBasis.push(buildFareBasis(seg.classCode, seg.from, seed));
+
+    const addTax = (code, amount) => {
+      taxes[code] = round2(taxes[code] + amount);
+    };
+    const applyTaxes = (count, type) => {
+      if (!count) return;
+      if (type === "ADT") {
+        addTax("DZ", rates.DZ * count);
+        addTax("FR", rates.FR * count);
+        addTax("YQ", rates.YQ * count);
+        addTax("XT", rates.XT * count);
+      } else if (type === "CHD") {
+        addTax("DZ", round2(rates.DZ * 0.75) * count);
+        addTax("FR", round2(rates.FR * 0.75) * count);
+        addTax("YQ", round2(rates.YQ * 0.75) * count);
+        addTax("XT", rates.XT * count);
+      } else if (type === "INF") {
+        addTax("DZ", round2(rates.DZ * 0.2) * count);
+        addTax("FR", round2(rates.FR * 0.2) * count);
+        addTax("XT", 1.0 * count);
+      }
+    };
+    applyTaxes(paxCounts.ADT, "ADT");
+    applyTaxes(paxCounts.CHD, "CHD");
+    applyTaxes(paxCounts.INF, "INF");
+  }
+
+  if (isRoundTrip(segments)) {
+    const paxTotal = paxCounts.ADT + paxCounts.CHD + paxCounts.INF;
+    taxes.XT = round2(taxes.XT + 2.0 * paxTotal);
+  }
+
+  const taxTotal = round2(taxes.DZ + taxes.FR + taxes.YQ + taxes.XT);
+  const total = round2(round2(baseFare) + taxTotal);
+
+  return {
+    segments,
+    paxCounts,
+    fareBasis,
+    baseFare: round2(baseFare),
+    taxes,
+    taxTotal,
+    total,
+    validatingCarrier: segments[0]?.airline || "XX",
+  };
+}
+
+const RBD_LADDER = ["J", "C", "D", "Y", "B", "M", "H", "K", "Q", "V", "L", "T", "N", "R", "S"];
+
+function rebookSegments(pnr, mode) {
+  const rebooked = [];
+  for (const seg of pnr.itinerary || []) {
+    const current = seg.classCode || "Y";
+    const idx = RBD_LADDER.indexOf(current);
+    const index = idx === -1 ? 3 : idx;
+    const seed = `${seg.from}${seg.to}${seg.dateDDMMM}${seg.airline}${seg.flightNo}${current}${mode}`;
+    const rand = createSeededRandom(seed);
+    const maxStep = Math.max(1, RBD_LADDER.length - 1 - index);
+    const step = Math.min(maxStep, 1 + Math.floor(rand() * 3));
+    const newIndex = Math.min(RBD_LADDER.length - 1, index + step);
+    const next = RBD_LADDER[newIndex];
+    rebooked.push({ from: current, to: next });
+    seg.classCode = next;
+  }
+  return rebooked;
+}
+
+function formatPaxSummary(paxCounts) {
+  const parts = [];
+  parts.push(`ADT*${paxCounts.ADT}`);
+  if (paxCounts.CHD) parts.push(`CHD*${paxCounts.CHD}`);
+  if (paxCounts.INF) parts.push(`INF*${paxCounts.INF}`);
+  return parts.join(" ");
+}
+
+function formatSegmentsRange(segments) {
+  if (!segments.length) return "-";
+  if (segments.length === 1) return `${segments[0]}`;
+  return `${segments[0]}-${segments[segments.length - 1]}`;
+}
+
+function buildTstSummaryLine(tst) {
+  const paxSummary = formatPaxSummary(tst.paxCounts);
+  return `TST ${tst.id}  PAX ${paxSummary}  EUR ${formatMoney(
+    tst.total
+  )}  VC ${tst.validatingCarrier}  STATUS ${tst.status}`;
+}
+
+function buildTstDetailLines(tst) {
+  const lines = [];
+  lines.push(`TQT${tst.id}`);
+  lines.push(`TST ${tst.id}   STATUS: ${tst.status}`);
+  lines.push(`PAX: ${formatPaxSummary(tst.paxCounts)}`);
+  lines.push(`VC: ${tst.validatingCarrier}`);
+  lines.push(`SEGMENTS:`);
+  for (const seg of tst.segmentDetails) {
+    lines.push(
+      `  ${seg.displayIndex}  ${seg.airline} ${seg.flightNo}  ${seg.classCode}  ${seg.dateDDMMM}  ${seg.from}${seg.to}  ${seg.depTime} ${seg.arrTime}`
+    );
+  }
+  lines.push(``);
+  lines.push(`FARE BASIS:`);
+  tst.fareBasis.forEach((fb, idx) => {
+    lines.push(`  ${idx + 1}  ${fb}`);
+  });
+  lines.push(``);
+  lines.push(`FARE     EUR ${formatMoney(tst.baseFare)}`);
+  lines.push(`TAX      EUR ${formatMoney(tst.taxTotal)}`);
+  lines.push(`  DZ     ${formatMoney(tst.taxes.DZ)}`);
+  lines.push(`  FR     ${formatMoney(tst.taxes.FR)}`);
+  lines.push(`  YQ     ${formatMoney(tst.taxes.YQ)}`);
+  lines.push(`  XT     ${formatMoney(tst.taxes.XT)}`);
+  lines.push(`TOTAL    EUR ${formatMoney(tst.total)}`);
+  return lines;
+}
+
+function buildFqnLines(fareBasis, seed) {
+  const rand = createSeededRandom(seed);
+  const changeFee = 40 + Math.floor(rand() * 80);
+  const noShow = 60 + Math.floor(rand() * 90);
+  const baggage = rand() > 0.3 ? "1PC" : "0PC";
+  const advance = rand() > 0.5 ? "7 DAYS" : "3 DAYS";
+  const minStay = rand() > 0.5 ? "2D" : "1D";
+  const maxStay = rand() > 0.5 ? "3M" : "6M";
+  return [
+    `FARE NOTES / CONDITIONS (SIMULATED)`,
+    `FARE BASIS: ${fareBasis}`,
+    `REFUND: NON-REFUNDABLE`,
+    `CHANGES: PERMITTED WITH FEE EUR ${changeFee}`,
+    `NO-SHOW: EUR ${noShow}`,
+    `BAGGAGE: ${baggage}`,
+    `ADVANCE PURCHASE: ${advance}`,
+    `MIN/MAX STAY: ${minStay} / ${maxStay}`,
+  ];
+}
+
 function ensurePNR(state) {
   if (!state.activePNR) {
     state.activePNR = {
@@ -320,6 +609,12 @@ function renderPNRLiveView(state) {
   if (state.activePNR.recordLocator) {
     lines.push(`${padL(n, 2)} REC LOC ${state.activePNR.recordLocator}`);
     n++;
+  }
+
+  if (state.tsts && state.tsts.length > 0) {
+    for (const tst of state.tsts) {
+      lines.push(buildTstSummaryLine(tst));
+    }
   }
 
   return lines;
@@ -486,6 +781,8 @@ export function createInitialState() {
   return {
     activePNR: null,
     lastAN: null,
+    tsts: [],
+    lastTstId: 0,
   };
 }
 
@@ -679,6 +976,11 @@ export async function processCommand(state, cmd, options = {}) {
 
     pnr.recordLocator = generateRecordLocator();
     pnr.status = "RECORDED";
+    if (state.tsts && state.tsts.length > 0) {
+      state.tsts = state.tsts.map((tst) =>
+        tst.status === "CREATED" ? { ...tst, status: "VALIDATED" } : tst
+      );
+    }
     print("PNR RECORDED");
     print("RECORD LOCATOR " + pnr.recordLocator);
     renderPNRLiveView(state).forEach(print);
@@ -687,6 +989,243 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c === "RT") {
     renderPNRLiveView(state).forEach(print);
+    return { events, state };
+  }
+
+  if (c === "FXP") {
+    const pnr = state.activePNR;
+    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
+    const pricing = buildPricingData(pnr, "FXP");
+    const id = ++state.lastTstId;
+    const tst = {
+      id,
+      paxCounts: pricing.paxCounts,
+      segments: pricing.segments.map((s) => s.displayIndex),
+      segmentDetails: pricing.segments.map((s) => ({ ...s })),
+      validatingCarrier: pricing.validatingCarrier,
+      fareBasis: pricing.fareBasis,
+      baseFare: pricing.baseFare,
+      taxes: pricing.taxes,
+      taxTotal: pricing.taxTotal,
+      total: pricing.total,
+      status: "CREATED",
+    };
+    state.tsts = [tst];
+
+    print("FXP");
+    print("PRICING - FXP (BOOKED RBD)");
+    print(
+      `TST CREATED  ${id}  PAX ${formatPaxSummary(
+        pricing.paxCounts
+      )}   STATUS: CREATED`
+    );
+    print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
+    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
+    print("");
+    print("FARE BASIS:");
+    pricing.fareBasis.forEach((fb, idx) => {
+      print(`  ${idx + 1}  ${fb}`);
+    });
+    print("");
+    print(`FARE     EUR ${formatMoney(pricing.baseFare)}`);
+    print(`TAX      EUR ${formatMoney(pricing.taxTotal)}`);
+    print(`  DZ     ${formatMoney(pricing.taxes.DZ)}`);
+    print(`  FR     ${formatMoney(pricing.taxes.FR)}`);
+    print(`  YQ     ${formatMoney(pricing.taxes.YQ)}`);
+    print(`  XT     ${formatMoney(pricing.taxes.XT)}`);
+    print(`TOTAL    EUR ${formatMoney(pricing.total)}`);
+    print("");
+    print("NOTE: TST VALIDATION REQUIRES RF + ER");
+    return { events, state };
+  }
+
+  if (c === "FXX") {
+    const pnr = state.activePNR;
+    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
+    const pricing = buildPricingData(pnr, "FXX");
+    print("FXX");
+    print("QUOTE - FXX (BOOKED RBD) - NO TST CREATED");
+    print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
+    print(
+      `SEGMENTS: ${formatSegmentsRange(
+        pricing.segments.map((s) => s.displayIndex)
+      )}`
+    );
+    print("");
+    print(`FARE     EUR ${formatMoney(pricing.baseFare)}`);
+    print(`TAX      EUR ${formatMoney(pricing.taxTotal)}`);
+    print(`TOTAL    EUR ${formatMoney(pricing.total)}`);
+    return { events, state };
+  }
+
+  if (c === "FXR") {
+    const pnr = state.activePNR;
+    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
+    const before = getSortedItinerary(pnr).map((s) => ({
+      displayIndex: s.displayIndex,
+      classCode: s.classCode || "Y",
+    }));
+    rebookSegments(pnr, "FXR");
+    const pricing = buildPricingData(pnr, "FXR");
+    print("FXR");
+    print("REBOOK TO LOWEST AVAILABLE - NO TST CREATED");
+    print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
+    print("REBOOKED SEGMENTS:");
+    pricing.segments.forEach((seg) => {
+      const old = before.find((b) => b.displayIndex === seg.displayIndex);
+      const oldCode = old ? old.classCode : seg.classCode;
+      print(`  ${seg.displayIndex}  ${oldCode} -> ${seg.classCode}`);
+    });
+    print("");
+    print(`NEW FARE  EUR ${formatMoney(pricing.baseFare)}`);
+    print(`NEW TAX   EUR ${formatMoney(pricing.taxTotal)}`);
+    print(`NEW TOTAL EUR ${formatMoney(pricing.total)}`);
+    return { events, state };
+  }
+
+  if (c === "FXB") {
+    const pnr = state.activePNR;
+    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
+    const before = getSortedItinerary(pnr).map((s) => ({
+      displayIndex: s.displayIndex,
+      classCode: s.classCode || "Y",
+    }));
+    rebookSegments(pnr, "FXB");
+    const pricing = buildPricingData(pnr, "FXB");
+    const id = ++state.lastTstId;
+    const tst = {
+      id,
+      paxCounts: pricing.paxCounts,
+      segments: pricing.segments.map((s) => s.displayIndex),
+      segmentDetails: pricing.segments.map((s) => ({ ...s })),
+      validatingCarrier: pricing.validatingCarrier,
+      fareBasis: pricing.fareBasis,
+      baseFare: pricing.baseFare,
+      taxes: pricing.taxes,
+      taxTotal: pricing.taxTotal,
+      total: pricing.total,
+      status: "CREATED",
+    };
+    state.tsts = [tst];
+
+    print("FXB");
+    print("BEST BUY - REBOOK + CREATE TST");
+    print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
+    print("REBOOKED SEGMENTS:");
+    pricing.segments.forEach((seg) => {
+      const old = before.find((b) => b.displayIndex === seg.displayIndex);
+      const oldCode = old ? old.classCode : seg.classCode;
+      print(`  ${seg.displayIndex}  ${oldCode} -> ${seg.classCode}`);
+    });
+    print("");
+    print(
+      `TST CREATED  ${id}  PAX ${formatPaxSummary(
+        pricing.paxCounts
+      )}   STATUS: CREATED`
+    );
+    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
+    print("");
+    print(`FARE     EUR ${formatMoney(pricing.baseFare)}`);
+    print(`TAX      EUR ${formatMoney(pricing.taxTotal)}`);
+    print(`  DZ     ${formatMoney(pricing.taxes.DZ)}`);
+    print(`  FR     ${formatMoney(pricing.taxes.FR)}`);
+    print(`  YQ     ${formatMoney(pricing.taxes.YQ)}`);
+    print(`  XT     ${formatMoney(pricing.taxes.XT)}`);
+    print(`TOTAL    EUR ${formatMoney(pricing.total)}`);
+    print("");
+    print("NOTE: TST VALIDATION REQUIRES RF + ER");
+    return { events, state };
+  }
+
+  if (c.startsWith("FXL")) {
+    if (c.includes("/")) {
+      print("FXL");
+      print("FUNCTION NOT APPLICABLE");
+      return { events, state };
+    }
+    const pnr = state.activePNR;
+    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
+    const baseSegments = getSortedItinerary(pnr);
+    const options = [];
+    for (let i = 0; i < 3; i++) {
+      const optionSegments = baseSegments.map((seg) => {
+        const idx = RBD_LADDER.indexOf(seg.classCode || "Y");
+        const index = idx === -1 ? 3 : idx;
+        const newIndex = Math.min(RBD_LADDER.length - 1, index + i + 1);
+        return { ...seg, classCode: RBD_LADDER[newIndex] };
+      });
+      const pricing = buildPricingData(pnr, `FXL${i + 1}`, optionSegments);
+      options.push({
+        total: pricing.total,
+        rbd: optionSegments.map((s) => s.classCode).join("/"),
+        fareBasis: pricing.fareBasis.join("/"),
+      });
+    }
+    print("FXL");
+    print("LOWEST FARES - DISPLAY ONLY (NO REBOOK / NO TST)");
+    print("");
+    options.forEach((opt, idx) => {
+      print(
+        `OPTION ${idx + 1}  TOTAL EUR ${formatMoney(opt.total)}  RBD ${
+          opt.rbd
+        }   FARE BASIS ${opt.fareBasis}`
+      );
+    });
+    print("");
+    print("USE FXB TO APPLY BEST BUY AND CREATE TST");
+    return { events, state };
+  }
+
+  if (c.startsWith("TQT")) {
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
+      return { events, state };
+    }
+    const m = c.match(/^TQT(\d+)?$/);
+    if (!m) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const id = m[1] ? parseInt(m[1], 10) : state.tsts[state.tsts.length - 1].id;
+    const tst = state.tsts.find((t) => t.id === id);
+    if (!tst) {
+      print("NO TST");
+      return { events, state };
+    }
+    buildTstDetailLines(tst).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("FQN")) {
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
+      return { events, state };
+    }
+    const m = c.match(/^FQN(\d+)?$/);
+    if (!m) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const index = m[1] ? parseInt(m[1], 10) : 1;
+    const tst = state.tsts[state.tsts.length - 1];
+    const fareBasis = tst.fareBasis[index - 1] || tst.fareBasis[0];
+    print(`FQN${index}`);
+    buildFqnLines(fareBasis, `${fareBasis}${index}`).forEach(print);
     return { events, state };
   }
 
