@@ -624,18 +624,25 @@ async function handleAN(state, cmdUpper, options = {}) {
   let dateObj = null;
   let from = null;
   let to = null;
+  let airlineFilter = null;
 
-  let m = cmdUpper.match(/^AN(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})$/);
+  let m = cmdUpper.match(
+    /^AN(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(?:\/([A-Z]{2}))?$/
+  );
   if (m) {
     dateObj = parseDDMMM(m[1]);
     from = m[2];
     to = m[3];
+    airlineFilter = m[4] || null;
   } else {
-    m = cmdUpper.match(/^AN([A-Z]{3})([A-Z]{3})\/(\d{1,2}[A-Z]{3})$/);
+    m = cmdUpper.match(
+      /^AN([A-Z]{3})([A-Z]{3})\/(\d{1,2}[A-Z]{3})(?:\/([A-Z]{2}))?$/
+    );
     if (m) {
       from = m[1];
       to = m[2];
       dateObj = parseDDMMM(m[3]);
+      airlineFilter = m[4] || null;
     }
   }
 
@@ -672,11 +679,20 @@ async function handleAN(state, cmdUpper, options = {}) {
     results = buildOfflineAvailability({ from, to, ddmmm, dow });
   }
 
+  if (airlineFilter) {
+    results = results.filter((r) => r.airline === airlineFilter);
+  }
+
   state.lastAN = { query: { from, to, ddmmm, dow }, results };
 
   const lines = [];
   lines.push(`AN${ddmmm}${from}${to}`);
   lines.push(`** AMADEUS AVAILABILITY - AN ** ${to}`);
+
+  if (results.length === 0) {
+    lines.push("NO FLIGHTS");
+    return { lines };
+  }
 
   results.forEach((r) => {
     const ln = String(r.lineNo);

@@ -66,6 +66,28 @@ describe("processCommand", () => {
     }
   });
 
+  it("filters AN availability by airline", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "AN26DECALGPAR/AF", {});
+    const lines = result.events.map((event) => event.text);
+    const rows = lines.filter((line) => /^\s*\d{1,2}\s+[A-Z0-9]{2}\s+\d{3,4}\b/.test(line));
+    if (rows.length === 0) {
+      assert.ok(lines.includes("NO FLIGHTS"));
+      return;
+    }
+    rows.forEach((line) => {
+      const match = line.match(/^\s*\d{1,2}\s+([A-Z0-9]{2})\s+/);
+      assert.equal(match[1], "AF");
+    });
+  });
+
+  it("prints NO FLIGHTS when filter yields no results", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "AN26DECALGPAR/ZZ", {});
+    const lines = result.events.map((event) => event.text);
+    assert.ok(lines.includes("NO FLIGHTS"));
+  });
+
   it("FXP creates TST and keeps classes unchanged", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");

@@ -27,10 +27,13 @@ body {
 
 .terminal {
   padding: 12px 18px;
+  height: 100vh;
 }
 
 .screen {
   white-space: pre-wrap;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .line {
@@ -42,6 +45,11 @@ body {
   align-items: baseline;
 }
 
+.prompt-gap {
+  display: inline-block;
+  width: 12ch;
+}
+
 .prompt-char {
   color: #2f2a7a;
 }
@@ -49,11 +57,44 @@ body {
 .prompt-input {
   font-family: "Courier New", Courier, monospace;
   font-size: 1em;
-  width: 80%;
+  width: 100%;
   border: none;
   outline: none;
   background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.prompt-field {
+  position: relative;
+  flex: 1;
+  min-height: 1.2em;
+}
+
+.prompt-ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   color: #2f2a7a;
+  white-space: pre;
+}
+
+.caret-block {
+  display: inline-block;
+  width: 0.6ch;
+  height: 1.05em;
+  background: #2f2a7a;
+  margin-left: 0.1ch;
+  animation: caret-blink 1s steps(1) infinite;
+  vertical-align: baseline;
+}
+
+.caret-anchor {
+  display: block;
+  height: 1px;
+  width: 1px;
 }
 
 .pnr-block {
@@ -84,4 +125,19 @@ body {
 
 .pnr-text {
   flex: 1;
+}
+
+.selected-row {
+  border-bottom: 1px solid rgba(47, 42, 122, 0.2);
+}
+
+.token-selected {
+  background: #2f2a7a;
+  color: #dde5f4;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
 }
