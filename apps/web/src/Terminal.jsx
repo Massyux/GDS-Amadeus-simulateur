@@ -2,11 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
 import { createInMemoryStore } from "@simulateur/data";
+import PNRRenderer from "./PNRRenderer.jsx";
 
 export default function Terminal() {
-  const [lines, setLines] = useState([
-    "AMADEUS SELLING PLATFORM",
-    "TRAINING MODE",
+  const [entries, setEntries] = useState([
+    { type: "text", text: "AMADEUS SELLING PLATFORM" },
+    { type: "text", text: "TRAINING MODE" },
   ]);
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
@@ -18,7 +19,7 @@ export default function Terminal() {
 
   async function onEnter() {
     const cmd = value.trim();
-    setLines((prev) => [...prev, `> ${cmd}`]);
+    setEntries((prev) => [...prev, { type: "input", text: `> ${cmd}` }]);
     setValue("");
     if (!cmd) return;
 
@@ -39,10 +40,28 @@ export default function Terminal() {
         .filter((event) => event.type === "print")
         .map((event) => event.text);
       if (outputLines.length > 0) {
-        setLines((prev) => [...prev, ...outputLines]);
+        setEntries((prev) => {
+          if (cmdUpper === "RT") {
+            return [
+              ...prev,
+              {
+                type: "pnr",
+                lines: outputLines,
+                tsts: coreStateRef.current.tsts,
+              },
+            ];
+          }
+          return [
+            ...prev,
+            ...outputLines.map((line) => ({ type: "text", text: line })),
+          ];
+        });
       }
     } catch (error) {
-      setLines((prev) => [...prev, "INVALID FORMAT"]);
+      setEntries((prev) => [
+        ...prev,
+        { type: "text", text: "INVALID FORMAT" },
+      ]);
     }
   }
 
@@ -55,21 +74,26 @@ export default function Terminal() {
   }, []);
 
   return (
-    <div style={{ fontFamily: "monospace", padding: 16 }}>
-      <div
-        style={{
-          minHeight: 420,
-          border: "1px solid #444",
-          padding: 12,
-          overflow: "auto",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {lines.map((l, i) => (
-          <div key={i}>{l}</div>
-        ))}
-        <div>
-          &gt;{" "}
+    <div className="terminal">
+      <div className="screen">
+        {entries.map((entry, i) => {
+          if (entry.type === "pnr") {
+            return (
+              <PNRRenderer
+                key={`pnr-${i}`}
+                lines={entry.lines}
+                tsts={entry.tsts}
+              />
+            );
+          }
+          return (
+            <div className="line" key={`line-${i}`}>
+              {entry.text}
+            </div>
+          );
+        })}
+        <div className="line prompt">
+          <span className="prompt-char">&gt;</span>{" "}
           <input
             ref={inputRef}
             value={value}
@@ -77,13 +101,7 @@ export default function Terminal() {
             onKeyDown={(e) => {
               if (e.key === "Enter") onEnter();
             }}
-            style={{
-              fontFamily: "monospace",
-              width: "80%",
-              border: "none",
-              outline: "none",
-              background: "transparent",
-            }}
+            className="prompt-input"
           />
         </div>
       </div>
