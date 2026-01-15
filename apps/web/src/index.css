@@ -27,7 +27,7 @@ body {
 
 .terminal {
   padding: 12px 18px;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .screen {
@@ -45,8 +45,24 @@ body {
   align-items: baseline;
 }
 
+.prompt-line {
+  display: flex;
+  align-items: baseline;
+}
+
+.prompt-gap {
+  display: inline-block;
+  width: 2ch;
+}
+
 .prompt-char {
   color: #2f2a7a;
+}
+
+.prompt-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .prompt-input {
@@ -58,19 +74,12 @@ body {
   background: transparent;
   color: transparent;
   caret-color: transparent;
-  position: relative;
-  z-index: 1;
-}
-
-.prompt-field {
-  position: relative;
-  flex: 1;
-  min-height: 1.2em;
 }
 
 .prompt-ghost {
   position: absolute;
   inset: 0;
+  white-space: pre;
   pointer-events: none;
   color: #2f2a7a;
   white-space: pre;
@@ -90,6 +99,35 @@ body {
   display: block;
   height: 1px;
   width: 1px;
+}
+
+.prompt-caret {
+  display: inline-block;
+  width: 0.7ch;
+  height: 1em;
+  background: #2f2a7a;
+  vertical-align: bottom;
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+.token {
+  display: inline-block;
+}
+
+.token-selected {
+  background: #2f2a7a;
+  color: #dde5f4;
+}
+
+@keyframes caret-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .pnr-block {
