@@ -1,8 +1,37 @@
 // CODEX ACCESS TEST
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
 import { createInMemoryStore } from "@simulateur/data";
 import PNRRenderer from "./PNRRenderer.jsx";
+
+function isAvailabilityRow(line) {
+  return /^\s*\d{1,2}\s+[A-Z0-9]{2}\s+\d{3,4}\b/.test(line);
+}
+
+function extractAvailabilityRows(entries) {
+  const rows = [];
+  entries.forEach((entry, index) => {
+    if (entry.type !== "text") return;
+    if (!isAvailabilityRow(entry.text)) return;
+    const match = entry.text.match(/^\s*(\d{1,2})\s+/);
+    if (!match) return;
+    rows.push({
+      lineNo: Number.parseInt(match[1], 10),
+      raw: entry.text,
+      entryIndex: index,
+    });
+  });
+  return rows;
+}
+
+function isNearBottom(scrollEl, thresholdPx = 40) {
+  return (
+    scrollEl.scrollHeight -
+      scrollEl.scrollTop -
+      scrollEl.clientHeight <
+    thresholdPx
+  );
+}
 
 export default function Terminal() {
   const [entries, setEntries] = useState([
@@ -10,12 +39,24 @@ export default function Terminal() {
     { type: "text", text: "TRAINING MODE" },
   ]);
   const [value, setValue] = useState("");
+  const [history, setHistory] = useState([]);
+  const [historyPos, setHistoryPos] = useState(-1);
+  const [autoFollow, setAutoFollow] = useState(true);
+  const [selectedAvailIndex, setSelectedAvailIndex] = useState(-1);
   const inputRef = useRef(null);
+  const scrollRef = useRef(null);
+  const caretAnchorRef = useRef(null);
+  const historyDraftRef = useRef("");
   const storeRef = useRef(null);
   if (!storeRef.current) {
     storeRef.current = createInMemoryStore();
   }
   const coreStateRef = useRef(createInitialState());
+  const availRows = useMemo(() => extractAvailabilityRows(entries), [entries]);
+  const selectedEntryIndex =
+    selectedAvailIndex >= 0 && availRows[selectedAvailIndex]
+      ? availRows[selectedAvailIndex].entryIndex
+      : -1;
 
   async function onEnter() {
     const cmd = value.trim();
@@ -57,6 +98,12 @@ export default function Terminal() {
           ];
         });
       }
+      setHistory((prev) => {
+        if (!cmd) return prev;
+        if (prev.length > 0 && prev[prev.length - 1] === cmd) return prev;
+        return [...prev, cmd];
+      });
+      setHistoryPos(-1);
     } catch (error) {
       setEntries((prev) => [
         ...prev,
@@ -73,9 +120,76 @@ export default function Terminal() {
     storeRef.current.loadFromUrl?.().catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!availRows.length) {
+      if (selectedAvailIndex !== -1) setSelectedAvailIndex(-1);
+      return;
+    }
+    if (selectedAvailIndex < 0) {
+      setSelectedAvailIndex(0);
+      return;
+    }
+    if (selectedAvailIndex >= availRows.length) {
+      setSelectedAvailIndex(availRows.length - 1);
+    }
+  }, [availRows, selectedAvailIndex]);
+
+  useEffect(() => {
+    if (!autoFollow) return;
+    const anchor = caretAnchorRef.current;
+    if (!anchor) return;
+    requestAnimationFrame(() => {
+      anchor.scrollIntoView({ block: "center" });
+    });
+  }, [autoFollow, entries, value]);
+
+  function handleScroll() {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    const nearBottom = isNearBottom(scrollEl);
+    setAutoFollow(nearBottom);
+  }
+
+  function moveHistory(delta) {
+    if (history.length === 0) return;
+    if (historyPos === -1) {
+      historyDraftRef.current = value;
+      const nextPos = delta < 0 ? history.length - 1 : -1;
+      if (nextPos >= 0) {
+        setHistoryPos(nextPos);
+        const nextValue = history[nextPos];
+        setValue(nextValue);
+        moveCaretToEnd(nextValue);
+      }
+      return;
+    }
+    const nextPos = historyPos + delta;
+    if (nextPos < 0) return;
+    if (nextPos >= history.length) {
+      setHistoryPos(-1);
+      const nextValue = historyDraftRef.current;
+      setValue(nextValue);
+      moveCaretToEnd(nextValue);
+      return;
+    }
+    setHistoryPos(nextPos);
+    const nextValue = history[nextPos];
+    setValue(nextValue);
+    moveCaretToEnd(nextValue);
+  }
+
+  function moveCaretToEnd(nextValue) {
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (!input) return;
+      const len = nextValue.length;
+      input.setSelectionRange(len, len);
+    });
+  }
+
   return (
     <div className="terminal">
-      <div className="screen">
+      <div className="screen" ref={scrollRef} onScroll={handleScroll}>
         {entries.map((entry, i) => {
           if (entry.type === "pnr") {
             return (
@@ -87,22 +201,96 @@ export default function Terminal() {
             );
           }
           return (
-            <div className="line" key={`line-${i}`}>
+            <div
+              className={`line${
+                i === selectedEntryIndex ? " selected-row" : ""
+              }`}
+              key={`line-${i}`}
+            >
               {entry.text}
             </div>
           );
         })}
         <div className="line prompt">
           <span className="prompt-char">&gt;</span>{" "}
-          <input
-            ref={inputRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onEnter();
-            }}
-            className="prompt-input"
-          />
+          <span className="prompt-field">
+            <span className="prompt-ghost">
+              {value}
+              <span className="caret-block" />
+            </span>
+            <input
+              ref={inputRef}
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value);
+                if (historyPos !== -1) setHistoryPos(-1);
+              }}
+              onKeyDown={(e) => {
+                if (e.altKey && e.key === "ArrowUp") {
+                  e.preventDefault();
+                  moveHistory(-1);
+                  return;
+                }
+                if (e.altKey && e.key === "ArrowDown") {
+                  e.preventDefault();
+                  moveHistory(1);
+                  return;
+                }
+                if (!e.altKey && e.key === "ArrowUp" && availRows.length > 0) {
+                  e.preventDefault();
+                  setSelectedAvailIndex((prev) =>
+                    Math.max(0, prev === -1 ? 0 : prev - 1)
+                  );
+                  return;
+                }
+                if (!e.altKey && e.key === "ArrowDown" && availRows.length > 0) {
+                  e.preventDefault();
+                  setSelectedAvailIndex((prev) =>
+                    Math.min(availRows.length - 1, prev + 1)
+                  );
+                  return;
+                }
+                if (e.key === "End") {
+                  setAutoFollow(true);
+                  const anchor = caretAnchorRef.current;
+                  if (anchor) {
+                    anchor.scrollIntoView({ block: "center" });
+                  }
+                  return;
+                }
+                if (e.key === "Enter") {
+                  if (
+                    selectedAvailIndex >= 0 &&
+                    availRows[selectedAvailIndex] &&
+                    value.trim() === ""
+                  ) {
+                    e.preventDefault();
+                    const nextValue = `SS${availRows[selectedAvailIndex].lineNo}Y1`;
+                    setValue(nextValue);
+                    moveCaretToEnd(nextValue);
+                    return;
+                  }
+                  onEnter();
+                  return;
+                }
+                if (
+                  e.key.length === 1 &&
+                  /[A-Z]/i.test(e.key) &&
+                  /^SS\d+[A-Z]\d+$/.test(value)
+                ) {
+                  e.preventDefault();
+                  const nextValue = value.replace(
+                    /^SS(\d+)[A-Z](\d+)$/,
+                    `SS$1${e.key.toUpperCase()}$2`
+                  );
+                  setValue(nextValue);
+                  moveCaretToEnd(nextValue);
+                }
+              }}
+              className="prompt-input"
+            />
+            <span ref={caretAnchorRef} className="caret-anchor" />
+          </span>
         </div>
       </div>
     </div>
