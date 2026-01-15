@@ -298,6 +298,12 @@ export default function Terminal() {
           ];
         });
       }
+      setHistory((prev) => {
+        if (!cmd) return prev;
+        if (prev.length > 0 && prev[prev.length - 1] === cmd) return prev;
+        return [...prev, cmd];
+      });
+      setHistoryPos(-1);
     } catch (error) {
       setEntries((prev) => [
         ...prev,
@@ -348,6 +354,73 @@ export default function Terminal() {
     const classCode = token?.code || "Y";
     const cmd = `SS${row.originalLineNo}${classCode}1`;
     await executeCommand(cmd, cmd, null);
+  }
+
+  useEffect(() => {
+    if (!availRows.length) {
+      if (selectedAvailIndex !== -1) setSelectedAvailIndex(-1);
+      return;
+    }
+    if (selectedAvailIndex < 0) {
+      setSelectedAvailIndex(0);
+      return;
+    }
+    if (selectedAvailIndex >= availRows.length) {
+      setSelectedAvailIndex(availRows.length - 1);
+    }
+  }, [availRows, selectedAvailIndex]);
+
+  useEffect(() => {
+    if (!autoFollow) return;
+    const anchor = caretAnchorRef.current;
+    if (!anchor) return;
+    requestAnimationFrame(() => {
+      anchor.scrollIntoView({ block: "center" });
+    });
+  }, [autoFollow, entries, value]);
+
+  function handleScroll() {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    const nearBottom = isNearBottom(scrollEl);
+    setAutoFollow(nearBottom);
+  }
+
+  function moveHistory(delta) {
+    if (history.length === 0) return;
+    if (historyPos === -1) {
+      historyDraftRef.current = value;
+      const nextPos = delta < 0 ? history.length - 1 : -1;
+      if (nextPos >= 0) {
+        setHistoryPos(nextPos);
+        const nextValue = history[nextPos];
+        setValue(nextValue);
+        moveCaretToEnd(nextValue);
+      }
+      return;
+    }
+    const nextPos = historyPos + delta;
+    if (nextPos < 0) return;
+    if (nextPos >= history.length) {
+      setHistoryPos(-1);
+      const nextValue = historyDraftRef.current;
+      setValue(nextValue);
+      moveCaretToEnd(nextValue);
+      return;
+    }
+    setHistoryPos(nextPos);
+    const nextValue = history[nextPos];
+    setValue(nextValue);
+    moveCaretToEnd(nextValue);
+  }
+
+  function moveCaretToEnd(nextValue) {
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (!input) return;
+      const len = nextValue.length;
+      input.setSelectionRange(len, len);
+    });
   }
 
   return (
@@ -405,7 +478,12 @@ export default function Terminal() {
             );
           }
           return (
-            <div className="line" key={`line-${i}`}>
+            <div
+              className={`line${
+                i === selectedEntryIndex ? " selected-row" : ""
+              }`}
+              key={`line-${i}`}
+            >
               {entry.text}
             </div>
           );
