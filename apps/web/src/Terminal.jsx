@@ -4,6 +4,9 @@ import { createInitialState, processCommand } from "@simulateur/core";
 import { createInMemoryStore } from "@simulateur/data";
 import PNRRenderer from "./PNRRenderer.jsx";
 
+const NEAR_BOTTOM_THRESHOLD_PX = 40;
+const AVAIL_TOKEN_REGEX = /^[A-Z]\d+$/;
+
 function isAvailabilityRow(line) {
   return /^\s*\d{1,2}\s+[A-Z0-9]{2}\s+\d{3,4}\b/.test(line);
 }
@@ -15,16 +18,37 @@ function extractAvailabilityRows(entries) {
     if (!isAvailabilityRow(entry.text)) return;
     const match = entry.text.match(/^\s*(\d{1,2})\s+/);
     if (!match) return;
+    const tokens = getAvailabilityTokens(entry.text);
     rows.push({
       lineNo: Number.parseInt(match[1], 10),
       raw: entry.text,
       entryIndex: index,
+      tokens,
     });
   });
   return rows;
 }
 
-function isNearBottom(scrollEl, thresholdPx = 40) {
+function getAvailabilityTokens(line) {
+  return line
+    .split(/\s+/)
+    .filter((part) => part.length > 0 && AVAIL_TOKEN_REGEX.test(part));
+}
+
+function tokenizeAvailabilityLine(line) {
+  const parts = line.split(/(\s+)/);
+  let tokenIndex = 0;
+  return parts.map((part) => {
+    if (AVAIL_TOKEN_REGEX.test(part)) {
+      const segment = { type: "token", text: part, tokenIndex };
+      tokenIndex += 1;
+      return segment;
+    }
+    return { type: "text", text: part };
+  });
+}
+
+function isNearBottom(scrollEl, thresholdPx = NEAR_BOTTOM_THRESHOLD_PX) {
   return (
     scrollEl.scrollHeight -
       scrollEl.scrollTop -
@@ -43,9 +67,9 @@ export default function Terminal() {
   const [historyPos, setHistoryPos] = useState(-1);
   const [autoFollow, setAutoFollow] = useState(true);
   const [selectedAvailIndex, setSelectedAvailIndex] = useState(-1);
+  const [selectedTokenIndex, setSelectedTokenIndex] = useState(0);
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
-  const caretAnchorRef = useRef(null);
   const historyDraftRef = useRef("");
   const storeRef = useRef(null);
   if (!storeRef.current) {
@@ -58,10 +82,9 @@ export default function Terminal() {
       ? availRows[selectedAvailIndex].entryIndex
       : -1;
 
-  async function onEnter() {
-    const cmd = value.trim();
+  async function executeCommand(commandText) {
+    const cmd = commandText.trim();
     setEntries((prev) => [...prev, { type: "input", text: `> ${cmd}` }]);
-    setValue("");
     if (!cmd) return;
 
     try {
@@ -109,7 +132,17 @@ export default function Terminal() {
         ...prev,
         { type: "text", text: "INVALID FORMAT" },
       ]);
+    } finally {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     }
+  }
+
+  async function onEnter() {
+    const cmd = value.trim();
+    setValue("");
+    await executeCommand(cmd);
   }
 
   useEffect(() => {
@@ -123,25 +156,35 @@ export default function Terminal() {
   useEffect(() => {
     if (!availRows.length) {
       if (selectedAvailIndex !== -1) setSelectedAvailIndex(-1);
+      if (selectedTokenIndex !== 0) setSelectedTokenIndex(0);
       return;
     }
     if (selectedAvailIndex < 0) {
       setSelectedAvailIndex(0);
+      if (selectedTokenIndex !== 0) setSelectedTokenIndex(0);
       return;
     }
     if (selectedAvailIndex >= availRows.length) {
       setSelectedAvailIndex(availRows.length - 1);
     }
-  }, [availRows, selectedAvailIndex]);
+    const tokens = availRows[selectedAvailIndex]?.tokens ?? [];
+    if (tokens.length === 0) {
+      if (selectedTokenIndex !== 0) setSelectedTokenIndex(0);
+      return;
+    }
+    if (selectedTokenIndex >= tokens.length) {
+      setSelectedTokenIndex(tokens.length - 1);
+    }
+  }, [availRows, selectedAvailIndex, selectedTokenIndex]);
 
   useEffect(() => {
     if (!autoFollow) return;
-    const anchor = caretAnchorRef.current;
-    if (!anchor) return;
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
     requestAnimationFrame(() => {
-      anchor.scrollIntoView({ block: "center" });
+      scrollEl.scrollTop = scrollEl.scrollHeight;
     });
-  }, [autoFollow, entries, value]);
+  }, [autoFollow, entries]);
 
   function handleScroll() {
     const scrollEl = scrollRef.current;
@@ -200,13 +243,35 @@ export default function Terminal() {
               />
             );
           }
+          if (entry.type === "text" && isAvailabilityRow(entry.text)) {
+            const segments = tokenizeAvailabilityLine(entry.text);
+            const isSelectedRow = i === selectedEntryIndex;
+            return (
+              <div className="line" key={`line-${i}`}>
+                {segments.map((segment, segIndex) => {
+                  if (segment.type === "token") {
+                    const isSelectedToken =
+                      isSelectedRow && segment.tokenIndex === selectedTokenIndex;
+                    return (
+                      <span
+                        key={`token-${i}-${segIndex}`}
+                        className={`avail-token${
+                          isSelectedToken ? " selected" : ""
+                        }`}
+                      >
+                        {segment.text}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={`text-${i}-${segIndex}`}>{segment.text}</span>
+                  );
+                })}
+              </div>
+            );
+          }
           return (
-            <div
-              className={`line${
-                i === selectedEntryIndex ? " selected-row" : ""
-              }`}
-              key={`line-${i}`}
-            >
+            <div className="line" key={`line-${i}`}>
               {entry.text}
             </div>
           );
@@ -236,25 +301,65 @@ export default function Terminal() {
                   moveHistory(1);
                   return;
                 }
+                if (
+                  !e.altKey &&
+                  e.key === "ArrowLeft" &&
+                  availRows.length > 0 &&
+                  selectedAvailIndex >= 0 &&
+                  value.length === 0
+                ) {
+                  const tokens = availRows[selectedAvailIndex]?.tokens ?? [];
+                  if (tokens.length === 0) return;
+                  e.preventDefault();
+                  setSelectedTokenIndex((prev) => Math.max(0, prev - 1));
+                  return;
+                }
+                if (
+                  !e.altKey &&
+                  e.key === "ArrowRight" &&
+                  availRows.length > 0 &&
+                  selectedAvailIndex >= 0 &&
+                  value.length === 0
+                ) {
+                  const tokens = availRows[selectedAvailIndex]?.tokens ?? [];
+                  if (tokens.length === 0) return;
+                  e.preventDefault();
+                  setSelectedTokenIndex((prev) =>
+                    Math.min(tokens.length - 1, prev + 1)
+                  );
+                  return;
+                }
                 if (!e.altKey && e.key === "ArrowUp" && availRows.length > 0) {
                   e.preventDefault();
-                  setSelectedAvailIndex((prev) =>
-                    Math.max(0, prev === -1 ? 0 : prev - 1)
+                  const nextIndex = Math.max(
+                    0,
+                    selectedAvailIndex === -1 ? 0 : selectedAvailIndex - 1
                   );
+                  if (nextIndex !== selectedAvailIndex) {
+                    setSelectedAvailIndex(nextIndex);
+                    setSelectedTokenIndex(0);
+                  }
                   return;
                 }
                 if (!e.altKey && e.key === "ArrowDown" && availRows.length > 0) {
                   e.preventDefault();
-                  setSelectedAvailIndex((prev) =>
-                    Math.min(availRows.length - 1, prev + 1)
+                  const nextIndex = Math.min(
+                    availRows.length - 1,
+                    selectedAvailIndex === -1 ? 0 : selectedAvailIndex + 1
                   );
+                  if (nextIndex !== selectedAvailIndex) {
+                    setSelectedAvailIndex(nextIndex);
+                    setSelectedTokenIndex(0);
+                  }
                   return;
                 }
                 if (e.key === "End") {
                   setAutoFollow(true);
-                  const anchor = caretAnchorRef.current;
-                  if (anchor) {
-                    anchor.scrollIntoView({ block: "center" });
+                  const scrollEl = scrollRef.current;
+                  if (scrollEl) {
+                    requestAnimationFrame(() => {
+                      scrollEl.scrollTop = scrollEl.scrollHeight;
+                    });
                   }
                   return;
                 }
@@ -264,11 +369,15 @@ export default function Terminal() {
                     availRows[selectedAvailIndex] &&
                     value.trim() === ""
                   ) {
-                    e.preventDefault();
-                    const nextValue = `SS${availRows[selectedAvailIndex].lineNo}Y1`;
-                    setValue(nextValue);
-                    moveCaretToEnd(nextValue);
-                    return;
+                    const tokens = availRows[selectedAvailIndex].tokens ?? [];
+                    const token =
+                      tokens[selectedTokenIndex] ?? tokens[0] ?? null;
+                    if (token) {
+                      e.preventDefault();
+                      const nextValue = `SS${availRows[selectedAvailIndex].lineNo}${token[0]}1`;
+                      executeCommand(nextValue);
+                      return;
+                    }
                   }
                   onEnter();
                   return;
@@ -289,7 +398,6 @@ export default function Terminal() {
               }}
               className="prompt-input"
             />
-            <span ref={caretAnchorRef} className="caret-anchor" />
           </span>
         </div>
       </div>
