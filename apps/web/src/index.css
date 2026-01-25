@@ -86,12 +86,6 @@ body {
   vertical-align: baseline;
 }
 
-.caret-anchor {
-  display: block;
-  height: 1px;
-  width: 1px;
-}
-
 .pnr-block {
   margin: 2px 0 6px;
 }
@@ -124,6 +118,16 @@ body {
 
 .selected-row {
   background: rgba(120, 110, 200, 0.2);
+}
+
+.avail-token {
+  display: inline-block;
+  padding: 0 0.1ch;
+}
+
+.avail-token.selected {
+  background: rgba(120, 110, 200, 0.25);
+  color: #1f1a5f;
 }
 
 @keyframes caret-blink {
