@@ -98,6 +98,10 @@ function generateRecordLocator() {
   return rl;
 }
 
+function deepCopy(value) {
+  return value ? JSON.parse(JSON.stringify(value)) : value;
+}
+
 function wrapTokens(tokens, maxPerLine) {
   const out = [];
   for (let i = 0; i < tokens.length; i += maxPerLine) {
@@ -749,29 +753,15 @@ function handleXE(state, cmdUpper) {
   }
   if (state.activePNR.itinerary.length === 0) return { error: "NO SEGMENTS" };
 
-  if (cmdUpper === "XEALL") {
-    state.activePNR.itinerary = [];
-    return { lines: ["ITINERARY CANCELLED", ...renderPNRLiveView(state)] };
-  }
-
-  let m = cmdUpper.match(/^XE(\d{1,2})$/);
+  const m = cmdUpper.match(/^XE(\d{1,2})$/);
   if (m) {
     const n = parseInt(m[1], 10);
     if (n < 1 || n > state.activePNR.itinerary.length)
-      return { error: "INVALID FORMAT" };
+      return { error: "SEGMENT NOT FOUND" };
     state.activePNR.itinerary.splice(n - 1, 1);
-    return { lines: ["SEGMENT CANCELLED", ...renderPNRLiveView(state)] };
-  }
-
-  m = cmdUpper.match(/^XE(\d{1,2})-(\d{1,2})$/);
-  if (m) {
-    let a = parseInt(m[1], 10);
-    let b = parseInt(m[2], 10);
-    if (a > b) [a, b] = [b, a];
-    if (a < 1 || b > state.activePNR.itinerary.length)
-      return { error: "INVALID FORMAT" };
-    for (let i = b; i >= a; i--) state.activePNR.itinerary.splice(i - 1, 1);
-    return { lines: ["SEGMENTS CANCELLED", ...renderPNRLiveView(state)] };
+    return {
+      lines: ["OK", "SEGMENT CANCELLED", ...renderPNRLiveView(state)],
+    };
   }
 
   return { error: "INVALID FORMAT" };
@@ -783,6 +773,7 @@ export function createInitialState() {
     lastAN: null,
     tsts: [],
     lastTstId: 0,
+    pnrStore: {},
   };
 }
 
@@ -809,7 +800,10 @@ export async function processCommand(state, cmd, options = {}) {
     print("ANddMMMXXXYYY       AVAILABILITY (ex: AN26DECALGPAR)");
     print("ANXXXYYY/ddMMM      AVAILABILITY (ex: ANALGPAR/26DEC)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
-    print("XE1 / XE1-3 / XEALL CANCEL");
+    print("XE1                 CANCEL SEGMENT");
+    print("IG                  IGNORE PNR");
+    print("IRXXXXXX            RETRIEVE PNR");
+    print("XI                  CANCEL PNR (SIGN/ER REQUIRED)");
     print("DAC XXX             DECODE IATA (ex: DAC ALG)");
     print("DAN <TEXT>          ENCODE SEARCH (ex: DAN PARIS)");
     print("NM                  NAME (MR/MRS optional, CHD/INF)");
@@ -851,6 +845,57 @@ export async function processCommand(state, cmd, options = {}) {
     } catch (e) {
       print("INVALID FORMAT");
     }
+    return { events, state };
+  }
+
+  if (c === "IG") {
+    if (!state.activePNR) {
+      renderPNRLiveView(state).forEach(print);
+      return { events, state };
+    }
+    state.activePNR = null;
+    state.tsts = [];
+    print("IGNORED");
+    renderPNRLiveView(state).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("IR")) {
+    const match = raw.toUpperCase().match(/^IR\s*([A-Z]{6})$/);
+    if (!match) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const recordLocator = match[1];
+    state.pnrStore ||= {};
+    const stored = state.pnrStore[recordLocator];
+    if (!stored) {
+      print("PNR NOT FOUND");
+      return { events, state };
+    }
+    state.activePNR = deepCopy(stored.pnrSnapshot);
+    state.tsts = deepCopy(stored.tstsSnapshot) || [];
+    print("RETRIEVED");
+    renderPNRLiveView(state).forEach(print);
+    return { events, state };
+  }
+
+  if (c === "XI") {
+    if (!state.activePNR) {
+      renderPNRLiveView(state).forEach(print);
+      return { events, state };
+    }
+    const pnr = state.activePNR;
+    pnr.cancelRequested = true;
+    pnr.passengers = [];
+    pnr.itinerary = [];
+    pnr.contacts = [];
+    pnr.ssr = [];
+    pnr.osi = [];
+    pnr.rf = null;
+    state.tsts = [];
+    print("PNR CANCELLED - SIGN/ER REQUIRED");
+    renderPNRLiveView(state).forEach(print);
     return { events, state };
   }
 
@@ -961,6 +1006,17 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ACTIVE PNR");
       return { events, state };
     }
+    if (pnr.cancelRequested) {
+      if (pnr.recordLocator && state.pnrStore) {
+        delete state.pnrStore[pnr.recordLocator];
+      }
+      state.activePNR = null;
+      state.tsts = [];
+      print("OK");
+      print("PNR CANCELLED");
+      renderPNRLiveView(state).forEach(print);
+      return { events, state };
+    }
     if (!pnr.passengers.length) {
       print("END PNR FIRST");
       return { events, state };
@@ -981,6 +1037,11 @@ export async function processCommand(state, cmd, options = {}) {
         tst.status === "CREATED" ? { ...tst, status: "VALIDATED" } : tst
       );
     }
+    state.pnrStore ||= {};
+    state.pnrStore[pnr.recordLocator] = {
+      pnrSnapshot: deepCopy(pnr),
+      tstsSnapshot: deepCopy(state.tsts),
+    };
     print("PNR RECORDED");
     print("RECORD LOCATOR " + pnr.recordLocator);
     renderPNRLiveView(state).forEach(print);

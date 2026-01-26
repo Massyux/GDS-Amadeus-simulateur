@@ -14,6 +14,13 @@ function getMoney(lines, label) {
   return match ? Number.parseFloat(match[1]) : null;
 }
 
+function getRecordLocator(lines) {
+  const locatorLine = lines.find((line) => line.startsWith("RECORD LOCATOR "));
+  if (!locatorLine) return null;
+  const match = locatorLine.match(/^RECORD LOCATOR ([A-Z]{6})$/);
+  return match ? match[1] : null;
+}
+
 describe("processCommand", () => {
   it("returns help output", async () => {
     const state = createInitialState();
@@ -170,5 +177,72 @@ describe("processCommand", () => {
     const fxlBad = await processCommand(state, "FXL/ABC");
     const fxlBadLines = fxlBad.events.map((event) => event.text);
     assert.deepEqual(fxlBadLines, ["FXL", "FUNCTION NOT APPLICABLE"]);
+  });
+
+  it("IG clears the active PNR", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+
+    const igLines = await runCommand(state, "IG");
+    assert.ok(igLines.includes("IGNORED"));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.deepEqual(rtLines, ["NO ACTIVE PNR"]);
+  });
+
+  it("IR retrieves a recorded PNR", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const recordLocator = getRecordLocator(erLines);
+    assert.ok(recordLocator);
+
+    await runCommand(state, "IG");
+    const irLines = await runCommand(state, `IR${recordLocator}`);
+    assert.ok(irLines.includes("RETRIEVED"));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes(`REC LOC ${recordLocator}`)));
+    assert.ok(rtLines.some((line) => line.includes("DOE/JOHN")));
+  });
+
+  it("XI cancels PNR on ER and removes it from the store", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const recordLocator = getRecordLocator(erLines);
+    assert.ok(recordLocator);
+
+    const xiLines = await runCommand(state, "XI");
+    assert.ok(xiLines.includes("PNR CANCELLED - SIGN/ER REQUIRED"));
+
+    const erCancelLines = await runCommand(state, "ER");
+    assert.ok(erCancelLines.includes("PNR CANCELLED"));
+    assert.ok(erCancelLines.includes("NO ACTIVE PNR"));
+
+    const irLines = await runCommand(state, `IR${recordLocator}`);
+    assert.deepEqual(irLines, ["PNR NOT FOUND"]);
+  });
+
+  it("XE requires a segment number and returns segment errors", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+
+    const xeMissing = await runCommand(state, "XE");
+    assert.deepEqual(xeMissing, ["INVALID FORMAT"]);
+
+    const xeMissingSegment = await runCommand(state, "XE99");
+    assert.deepEqual(xeMissingSegment, ["SEGMENT NOT FOUND"]);
+
+    const xeOk = await runCommand(state, "XE1");
+    assert.ok(xeOk.includes("SEGMENT CANCELLED"));
+    assert.equal(state.activePNR.itinerary.length, 0);
   });
 });
