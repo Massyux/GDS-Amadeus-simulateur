@@ -90,11 +90,32 @@ function ddmmmToDate(ddmmm) {
   return new Date(now.getFullYear(), map[mon], dd);
 }
 
-function generateRecordLocator() {
+function buildRecordLocatorSeed(pnr) {
+  if (!pnr) return "PNR|EMPTY";
+  const paxPart = (pnr.passengers || [])
+    .map(
+      (p) =>
+        `${p.type || "ADT"}:${p.lastName || ""}/${p.firstName || ""}:${p.title || ""}:${p.age || ""}`
+    )
+    .join("|");
+  const segPart = (pnr.itinerary || [])
+    .map(
+      (s) =>
+        `${s.dateDDMMM || ""}:${s.from || ""}-${s.to || ""}:${s.airline || ""}${s.flightNo || ""}:${s.classCode || ""}:${s.paxCount || 1}`
+    )
+    .join("|");
+  const contactPart = (pnr.contacts || []).join("|");
+  const rfPart = pnr.rf || "";
+  return `PNR|${paxPart}|${segPart}|${contactPart}|${rfPart}`;
+}
+
+function generateRecordLocator(pnr) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const rand = createSeededRandom(buildRecordLocatorSeed(pnr));
   let rl = "";
-  for (let i = 0; i < 6; i++)
-    rl += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 6; i++) {
+    rl += chars[Math.floor(rand() * chars.length)];
+  }
   return rl;
 }
 
@@ -624,6 +645,153 @@ function renderPNRLiveView(state) {
   return lines;
 }
 
+function buildElementIndex(state) {
+  if (!state.activePNR) return [];
+  const pnr = state.activePNR;
+  const elements = [];
+  let elementNo = 1;
+
+  const passengers = pnr.passengers || [];
+  passengers.forEach((_, index) => {
+    elements.push({ elementNo, kind: "PAX", index, ref: { paxIndex: index } });
+    elementNo += 1;
+  });
+
+  const itinerary = pnr.itinerary || [];
+  if (itinerary.length > 0) {
+    const decorated = itinerary.map((s, idx) => {
+      const d = ddmmmToDate(s.dateDDMMM);
+      const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
+      return { s, idx, t };
+    });
+    decorated.sort((a, b) => (a.t !== b.t ? a.t - b.t : a.idx - b.idx));
+    for (const item of decorated) {
+      elements.push({ elementNo, kind: "SEG", ref: item.s });
+      elementNo += 1;
+    }
+  }
+
+  const contacts = pnr.contacts || [];
+  contacts.forEach((_, index) => {
+    elements.push({ elementNo, kind: "AP", index });
+    elementNo += 1;
+  });
+
+  const ssr = pnr.ssr || [];
+  ssr.forEach((_, index) => {
+    elements.push({ elementNo, kind: "SSR", index });
+    elementNo += 1;
+  });
+
+  const osi = pnr.osi || [];
+  osi.forEach((_, index) => {
+    elements.push({ elementNo, kind: "OSI", index });
+    elementNo += 1;
+  });
+
+  if (pnr.rf) {
+    elements.push({ elementNo, kind: "RF" });
+    elementNo += 1;
+  }
+
+  if (pnr.recordLocator) {
+    elements.push({ elementNo, kind: "RECLOC" });
+    elementNo += 1;
+  }
+
+  if (state.tsts && state.tsts.length > 0) {
+    state.tsts.forEach((_, index) => {
+      elements.push({ elementNo, kind: "TST", index });
+      elementNo += 1;
+    });
+  }
+
+  return elements;
+}
+
+function cancelElements(state, elements) {
+  const pnr = state.activePNR;
+  if (!pnr) return;
+  pnr.contacts ||= [];
+  pnr.ssr ||= [];
+  pnr.osi ||= [];
+
+  const apIndexes = [];
+  const ssrIndexes = [];
+  const osiIndexes = [];
+  let cancelRf = false;
+
+  for (const element of elements) {
+    if (element.kind === "SEG" && element.ref) {
+      element.ref.status = "XX";
+    } else if (element.kind === "AP") {
+      apIndexes.push(element.index);
+    } else if (element.kind === "SSR") {
+      ssrIndexes.push(element.index);
+    } else if (element.kind === "OSI") {
+      osiIndexes.push(element.index);
+    } else if (element.kind === "RF") {
+      cancelRf = true;
+    }
+  }
+
+  apIndexes.sort((a, b) => b - a).forEach((idx) => {
+    if (idx >= 0 && idx < pnr.contacts.length) pnr.contacts.splice(idx, 1);
+  });
+  ssrIndexes.sort((a, b) => b - a).forEach((idx) => {
+    if (idx >= 0 && idx < pnr.ssr.length) pnr.ssr.splice(idx, 1);
+  });
+  osiIndexes.sort((a, b) => b - a).forEach((idx) => {
+    if (idx >= 0 && idx < pnr.osi.length) pnr.osi.splice(idx, 1);
+  });
+  if (cancelRf) pnr.rf = null;
+}
+
+function cancelPaxElement(state, element) {
+  // kind === "PAX"
+  {
+    // 1) Interdit si TST présent (sinon incohérences multi-pax / pricing)
+    if (state.tsts && state.tsts.length > 0) {
+      return { error: "NOT ALLOWED - TST PRESENT" };
+    }
+
+    // 2) Règle Amadeus-like demandée: ne pas autoriser si un seul adulte
+    const adtCount = (state.activePNR.passengers || []).filter(
+      (p) => p && p.type === "ADT"
+    ).length;
+
+    if (adtCount <= 1) {
+      return { error: "NOT ALLOWED - LAST ADT" };
+    }
+
+    // 3) Interdit si INF associé à ce pax
+    // Hypothèse: tu stockes les INF avec un lien vers l’adulte (ex: p.type==="INF" et p.associatedTo === adultIndex)
+    // OU tu as une relation similaire. Adapte le champ EXACT utilisé dans ton modèle.
+    const paxIndex = element.ref.paxIndex; // à définir dans ton mapping buildElementIndex (index dans passengers)
+    const hasAssociatedInf = (state.activePNR.passengers || []).some((p) => {
+      if (!p) return false;
+      if (p.type !== "INF") return false;
+      // Adapte selon ton modèle:
+      return p.associatedTo === paxIndex || p.associatedToPaxIndex === paxIndex;
+    });
+
+    if (hasAssociatedInf) {
+      return { error: "NOT ALLOWED - INF ASSOCIATED" };
+    }
+
+    // 4) Annulation autorisée: supprimer le pax
+    const nextPassengers = [...state.activePNR.passengers];
+    nextPassengers.splice(paxIndex, 1);
+
+    state.activePNR.passengers = nextPassengers;
+
+    // 5) (Optionnel mais recommandé) nettoyer RF/contact etc si ton métier le demande
+    // Ici on ne touche pas aux segments, AP, SSR/OSI car ils ne sont pas pax-linked dans ton modèle actuel.
+
+    return { ok: true, message: "NAME CANCELLED" };
+  }
+}
+
 async function handleAN(state, cmdUpper, options = {}) {
   let dateObj = null;
   let from = null;
@@ -748,19 +916,65 @@ function handleSS(state, cmdUpper) {
 }
 
 function handleXE(state, cmdUpper) {
-  if (!state.activePNR || !state.activePNR.itinerary) {
+  if (!state.activePNR) {
     return { error: "NO ACTIVE PNR" };
   }
-  if (state.activePNR.itinerary.length === 0) return { error: "NO SEGMENTS" };
+  const elements = buildElementIndex(state);
+  const cancellableKinds = new Set(["SEG", "AP", "SSR", "OSI", "RF", "PAX"]);
+  const cancellableAllKinds = new Set(["SEG", "AP", "SSR", "OSI", "RF"]);
+  const totalCancellable = elements.filter((el) =>
+    cancellableAllKinds.has(el.kind)
+  ).length;
 
-  const m = cmdUpper.match(/^XE(\d{1,2})$/);
+  if (cmdUpper === "XEALL") {
+    if (totalCancellable === 0) return { error: "NOTHING TO CANCEL" };
+    const toCancel = elements.filter((el) => cancellableAllKinds.has(el.kind));
+    cancelElements(state, toCancel);
+    return {
+      lines: ["OK", "ITINERARY CANCELLED", ...renderPNRLiveView(state)],
+    };
+  }
+
+  let m = cmdUpper.match(/^XE(\d{1,3})$/);
   if (m) {
     const n = parseInt(m[1], 10);
-    if (n < 1 || n > state.activePNR.itinerary.length)
-      return { error: "SEGMENT NOT FOUND" };
-    state.activePNR.itinerary.splice(n - 1, 1);
+    if (n < 1 || n > elements.length) return { error: "ELEMENT NOT FOUND" };
+    const element = elements[n - 1];
+    if (element.kind === "PAX") {
+      const paxResult = cancelPaxElement(state, element);
+      if (paxResult && paxResult.error) return { error: paxResult.error };
+      return {
+        lines: ["OK", paxResult.message, ...renderPNRLiveView(state)],
+      };
+    }
+    if (!cancellableKinds.has(element.kind)) return { error: "NOT ALLOWED" };
+    cancelElements(state, [element]);
     return {
-      lines: ["OK", "SEGMENT CANCELLED", ...renderPNRLiveView(state)],
+      lines: ["OK", "ELEMENT CANCELLED", ...renderPNRLiveView(state)],
+    };
+  }
+
+  m = cmdUpper.match(/^XE(\d{1,3})-(\d{1,3})$/);
+  if (m) {
+    let a = parseInt(m[1], 10);
+    let b = parseInt(m[2], 10);
+    if (a > b) [a, b] = [b, a];
+    if (a < 1 || b > elements.length) return { error: "ELEMENT NOT FOUND" };
+    const selected = elements.slice(a - 1, b);
+    if (selected.some((el) => !cancellableKinds.has(el.kind))) {
+      return { error: "NOT ALLOWED" };
+    }
+    const paxElements = selected
+      .filter((el) => el.kind === "PAX")
+      .sort((left, right) => right.ref.paxIndex - left.ref.paxIndex);
+    for (const paxElement of paxElements) {
+      const paxResult = cancelPaxElement(state, paxElement);
+      if (paxResult && paxResult.error) return { error: paxResult.error };
+    }
+    const otherElements = selected.filter((el) => el.kind !== "PAX");
+    cancelElements(state, otherElements);
+    return {
+      lines: ["OK", "ELEMENTS CANCELLED", ...renderPNRLiveView(state)],
     };
   }
 
@@ -1030,7 +1244,9 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
 
-    pnr.recordLocator = generateRecordLocator();
+    if (!pnr.recordLocator) {
+      pnr.recordLocator = generateRecordLocator(pnr);
+    }
     pnr.status = "RECORDED";
     if (state.tsts && state.tsts.length > 0) {
       state.tsts = state.tsts.map((tst) =>

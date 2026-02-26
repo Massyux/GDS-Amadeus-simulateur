@@ -51,6 +51,43 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("REC LOC")));
   });
 
+  it("keeps the same record locator on repeated ER", async () => {
+    const state = createInitialState();
+
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+
+    const er1Lines = await runCommand(state, "ER");
+    const locator1 = getRecordLocator(er1Lines);
+    assert.ok(locator1);
+
+    const er2Lines = await runCommand(state, "ER");
+    const locator2 = getRecordLocator(er2Lines);
+    assert.ok(locator2);
+    assert.equal(locator2, locator1);
+  });
+
+  it("generates deterministic but distinct record locators for different PNR content", async () => {
+    const stateA = createInitialState();
+    await runCommand(stateA, "NM1DOE/JOHN MR");
+    await runCommand(stateA, "AP111111");
+    await runCommand(stateA, "RFTEST");
+    const erALines = await runCommand(stateA, "ER");
+    const locatorA = getRecordLocator(erALines);
+    assert.ok(locatorA);
+
+    const stateB = createInitialState();
+    await runCommand(stateB, "NM1DOE/JANE MRS");
+    await runCommand(stateB, "AP111111");
+    await runCommand(stateB, "RFTEST");
+    const erBLines = await runCommand(stateB, "ER");
+    const locatorB = getRecordLocator(erBLines);
+    assert.ok(locatorB);
+
+    assert.notEqual(locatorA, locatorB);
+  });
+
   it("returns no availability when selling without AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "SS1Y1");
@@ -230,19 +267,73 @@ describe("processCommand", () => {
     assert.deepEqual(irLines, ["PNR NOT FOUND"]);
   });
 
-  it("XE requires a segment number and returns segment errors", async () => {
+  it("XE rejects missing parameters", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const xeMissing = await runCommand(state, "XE");
+    assert.deepEqual(xeMissing, ["INVALID FORMAT"]);
+  });
+
+  it("XE returns element not found when index is out of range", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
     await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const xeMissing = await runCommand(state, "XE99");
+    assert.deepEqual(xeMissing, ["ELEMENT NOT FOUND"]);
+  });
 
-    const xeMissing = await runCommand(state, "XE");
-    assert.deepEqual(xeMissing, ["INVALID FORMAT"]);
+  it("XE cancels a segment by RT element number", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const rtLines = await runCommand(state, "RT");
+    const segMatch = rtLines
+      .map((line) =>
+        line.match(
+          /^\s*(\d+)\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+[A-Z]{2}\d$/
+        )
+      )
+      .find(Boolean);
+    assert.ok(segMatch);
+    const segmentElementNo = segMatch[1];
 
-    const xeMissingSegment = await runCommand(state, "XE99");
-    assert.deepEqual(xeMissingSegment, ["SEGMENT NOT FOUND"]);
+    const xeLines = await runCommand(state, `XE${segmentElementNo}`);
+    assert.equal(xeLines[0], "OK");
+    assert.equal(xeLines[1], "ELEMENT CANCELLED");
 
-    const xeOk = await runCommand(state, "XE1");
-    assert.ok(xeOk.includes("SEGMENT CANCELLED"));
-    assert.equal(state.activePNR.itinerary.length, 0);
+    const rtAfter = await runCommand(state, "RT");
+    const segCancelled = rtAfter.some((line) =>
+      new RegExp(`^\\s*${segmentElementNo}\\s+.*\\sXX\\d$`).test(line)
+    );
+    assert.ok(segCancelled);
+  });
+
+  it("XEALL marks all segments as cancelled", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "SS2Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const segmentCount = state.activePNR.itinerary.length;
+
+    const xeAll = await runCommand(state, "XEALL");
+    assert.equal(xeAll[0], "OK");
+    assert.equal(xeAll[1], "ITINERARY CANCELLED");
+
+    const rtLines = await runCommand(state, "RT");
+    const cancelledSegments = rtLines.filter((line) =>
+      /^\s*\d+\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+XX\d$/.test(
+        line
+      )
+    );
+    assert.equal(cancelledSegments.length, segmentCount);
   });
 });
