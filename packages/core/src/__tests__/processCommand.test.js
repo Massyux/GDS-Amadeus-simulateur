@@ -29,6 +29,16 @@ describe("processCommand", () => {
     assert.ok(lines.includes("RT                  DISPLAY PNR (same as live)"));
   });
 
+  it("emits error event for an invalid command", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "ZZZ");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("returns a date for JD", async () => {
     const state = createInitialState();
     const [line] = await runCommand(state, "JD");

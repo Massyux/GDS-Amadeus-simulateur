@@ -1008,8 +1008,34 @@ export function createInitialState() {
 }
 
 export async function processCommand(state, cmd, options = {}) {
+  const ERROR_EVENT_TEXTS = new Set([
+    "INVALID FORMAT",
+    "NO ACTIVE PNR",
+    "NO ITINERARY",
+    "NO AVAILABILITY",
+    "NO SEATS",
+    "NOT ENOUGH SEATS",
+    "PNR NOT FOUND",
+    "END PNR FIRST",
+    "ELEMENT NOT FOUND",
+    "NOT ALLOWED",
+    "NOT ALLOWED - TST PRESENT",
+    "NOT ALLOWED - LAST ADT",
+    "NOT ALLOWED - INF ASSOCIATED",
+    "NOTHING TO CANCEL",
+    "FUNCTION NOT APPLICABLE",
+    "NO TST",
+  ]);
   const events = [];
-  const print = (text) => events.push({ type: "print", text: String(text) });
+  const error = (text) => events.push({ type: "error", text: String(text) });
+  const print = (text) => {
+    const value = String(text);
+    if (ERROR_EVENT_TEXTS.has(value)) {
+      error(value);
+      return;
+    }
+    events.push({ type: "print", text: value });
+  };
   const raw = (cmd || "").trim();
   const c = raw.toUpperCase();
   if (!c) return { events, state };

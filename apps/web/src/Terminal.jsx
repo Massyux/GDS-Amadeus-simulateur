@@ -101,7 +101,7 @@ export default function Terminal() {
       );
       coreStateRef.current = state;
       const outputLines = events
-        .filter((event) => event.type === "print")
+        .filter((event) => event.type === "print" || event.type === "error")
         .map((event) => event.text);
       if (outputLines.length > 0) {
         setEntries((prev) => {
