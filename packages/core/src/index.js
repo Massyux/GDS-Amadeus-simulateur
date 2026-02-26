@@ -1047,7 +1047,8 @@ export function createInitialState() {
 }
 
 function buildDefaultDeps() {
-  const rng = () => Math.random();
+  const fallbackRng = createSeededRandom("DEFAULT_DEPS_RNG");
+  const rng = () => fallbackRng();
   const clock = {
     now: () => new Date(),
     today: () => {

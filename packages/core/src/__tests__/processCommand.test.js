@@ -112,6 +112,22 @@ describe("processCommand", () => {
     assert.notEqual(locatorA, locatorB);
   });
 
+  it("generates the same record locator for identical PNR content", async () => {
+    const createAndRecord = async () => {
+      const state = createInitialState();
+      await runCommand(state, "NM1DOE/JOHN MR");
+      await runCommand(state, "AP123456");
+      await runCommand(state, "RFTEST");
+      const erLines = await runCommand(state, "ER");
+      return getRecordLocator(erLines);
+    };
+
+    const locator1 = await createAndRecord();
+    const locator2 = await createAndRecord();
+    assert.ok(locator1);
+    assert.equal(locator1, locator2);
+  });
+
   it("returns no availability when selling without AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "SS1Y1");
