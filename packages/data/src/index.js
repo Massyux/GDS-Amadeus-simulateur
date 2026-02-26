@@ -2,6 +2,16 @@ export function createInMemoryStore() {
   return new InMemoryStore();
 }
 
+export function createLocationProvider(store) {
+  if (!store) {
+    throw new Error("store is required");
+  }
+  return {
+    decodeIata: (code) => store.cmdDAC(code),
+    searchByText: (text) => store.cmdDAN(text),
+  };
+}
+
 class InMemoryStore {
   constructor() {
     this.loaded = false;

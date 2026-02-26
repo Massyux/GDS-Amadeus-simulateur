@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createInMemoryStore } from "../index.js";
+import { createInMemoryStore, createLocationProvider } from "../index.js";
 
 describe("InMemoryStore", () => {
   it("loads from array and cmdDAC/cmdDAN work", async () => {
@@ -15,5 +15,17 @@ describe("InMemoryStore", () => {
     assert.ok(Array.isArray(dan));
     const found = await store.findByIata("DEF");
     assert.equal(found.iata, "DEF");
+  });
+
+  it("exposes a core-compatible location provider adapter", async () => {
+    const store = createInMemoryStore();
+    await store.loadFromArray([
+      { iata: "ALG", city: "ALGIERS", name: "HOUARI", country: "DZ" },
+    ]);
+    const provider = createLocationProvider(store);
+    const dac = await provider.decodeIata("ALG");
+    const dan = await provider.searchByText("ALGIERS");
+    assert.ok(dac.some((line) => line.startsWith("DAC ALG")));
+    assert.ok(dan.some((line) => line.startsWith("DAN ALGIERS")));
   });
 });

@@ -1,7 +1,7 @@
 // CODEX ACCESS TEST
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
-import { createInMemoryStore } from "@simulateur/data";
+import { createInMemoryStore, createLocationProvider } from "@simulateur/data";
 import PNRRenderer from "./PNRRenderer.jsx";
 
 const NEAR_BOTTOM_THRESHOLD_PX = 40;
@@ -75,6 +75,10 @@ export default function Terminal() {
   if (!storeRef.current) {
     storeRef.current = createInMemoryStore();
   }
+  const locationProviderRef = useRef(null);
+  if (!locationProviderRef.current) {
+    locationProviderRef.current = createLocationProvider(storeRef.current);
+  }
   const coreStateRef = useRef(createInitialState());
   const availRows = useMemo(() => extractAvailabilityRows(entries), [entries]);
   const selectedEntryIndex =
@@ -96,7 +100,9 @@ export default function Terminal() {
         coreStateRef.current,
         cmd,
         {
-          locations: storeRef.current,
+          deps: {
+            locations: locationProviderRef.current,
+          },
         }
       );
       coreStateRef.current = state;

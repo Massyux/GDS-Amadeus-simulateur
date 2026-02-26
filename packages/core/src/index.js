@@ -1,4 +1,3 @@
-import { cmdDAC, cmdDAN } from "./db.js";
 import { createSimAvailabilityProvider } from "./providers/availability/sim.js";
 import { createSimPricingProvider } from "./providers/pricing/sim.js";
 
@@ -1065,6 +1064,7 @@ function buildDefaultDeps() {
     pricing: createSimPricingProvider({ buildPricingData }),
     clock,
     rng,
+    locations: null,
   };
 }
 
@@ -1092,11 +1092,26 @@ function resolveDeps(options = {}) {
   } else if (provided.rng && typeof provided.rng.nextFloat === "function") {
     resolvedRng = () => provided.rng.nextFloat();
   }
+  const rawLocationsProvider = provided.locations || options.locations || null;
+  const resolvedLocations =
+    rawLocationsProvider &&
+    typeof rawLocationsProvider.decodeIata === "function" &&
+    typeof rawLocationsProvider.searchByText === "function"
+      ? rawLocationsProvider
+      : rawLocationsProvider &&
+          typeof rawLocationsProvider.cmdDAC === "function" &&
+          typeof rawLocationsProvider.cmdDAN === "function"
+        ? {
+            decodeIata: (code) => rawLocationsProvider.cmdDAC(code),
+            searchByText: (text) => rawLocationsProvider.cmdDAN(text),
+          }
+        : null;
   return {
     availability: provided.availability || defaults.availability,
     pricing: provided.pricing || defaults.pricing,
     clock: resolvedClock,
     rng: resolvedRng,
+    locations: resolvedLocations,
   };
 }
 
@@ -1125,6 +1140,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NOTHING TO CANCEL",
     "FUNCTION NOT APPLICABLE",
     "NO TST",
+    "LOCATION PROVIDER NOT CONFIGURED",
   ]);
   const events = [];
   const error = (text) => events.push({ type: "error", text: String(text) });
@@ -1177,12 +1193,16 @@ export async function processCommand(state, cmd, options = {}) {
       print("INVALID FORMAT");
       return { events, state };
     }
+    if (!deps.locations) {
+      print("LOCATION PROVIDER NOT CONFIGURED");
+      return { events, state };
+    }
     try {
-      const locations = options.locations;
-      const lines =
-        locations && typeof locations.cmdDAC === "function"
-          ? await locations.cmdDAC(m[1])
-          : await cmdDAC(m[1], locations);
+      const lines = await deps.locations.decodeIata(m[1]);
+      if (!Array.isArray(lines)) {
+        print("INVALID FORMAT");
+        return { events, state };
+      }
       lines.forEach(print);
     } catch (e) {
       print("INVALID FORMAT");
@@ -1192,12 +1212,16 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("DAN")) {
     const text = raw.slice(3).trim();
+    if (!deps.locations) {
+      print("LOCATION PROVIDER NOT CONFIGURED");
+      return { events, state };
+    }
     try {
-      const locations = options.locations;
-      const lines =
-        locations && typeof locations.cmdDAN === "function"
-          ? await locations.cmdDAN(text)
-          : await cmdDAN(text, locations);
+      const lines = await deps.locations.searchByText(text);
+      if (!Array.isArray(lines)) {
+        print("INVALID FORMAT");
+        return { events, state };
+      }
       lines.forEach(print);
     } catch (e) {
       print("INVALID FORMAT");

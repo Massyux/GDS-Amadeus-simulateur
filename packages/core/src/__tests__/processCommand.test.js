@@ -39,6 +39,57 @@ describe("processCommand", () => {
     );
   });
 
+  it("uses deps.locations provider for DAC/DAN", async () => {
+    const state = createInitialState();
+    const provider = {
+      decodeIata: async (code) => [`DAC ${code}`, "PROVIDER OK"],
+      searchByText: async (text) => [`DAN ${text.toUpperCase()}`, "PROVIDER OK"],
+    };
+    const dac = await processCommand(state, "DAC ALG", {
+      deps: { locations: provider },
+    });
+    const dan = await processCommand(state, "DAN PARIS", {
+      deps: { locations: provider },
+    });
+    const dacLines = dac.events.map((event) => event.text);
+    const danLines = dan.events.map((event) => event.text);
+    assert.ok(dacLines.includes("PROVIDER OK"));
+    assert.ok(danLines.includes("PROVIDER OK"));
+  });
+
+  it("returns explicit error when DAC/DAN provider is missing", async () => {
+    const state = createInitialState();
+    const dac = await processCommand(state, "DAC ALG");
+    const dan = await processCommand(state, "DAN PARIS");
+    assert.ok(
+      dac.events.some(
+        (event) =>
+          event.type === "error" &&
+          event.text === "LOCATION PROVIDER NOT CONFIGURED"
+      )
+    );
+    assert.ok(
+      dan.events.some(
+        (event) =>
+          event.type === "error" &&
+          event.text === "LOCATION PROVIDER NOT CONFIGURED"
+      )
+    );
+  });
+
+  it("keeps backward compatibility with legacy options.locations cmdDAC/cmdDAN", async () => {
+    const state = createInitialState();
+    const legacyLocations = {
+      cmdDAC: async (code) => [`DAC ${code}`, "LEGACY PROVIDER"],
+      cmdDAN: async (text) => [`DAN ${text.toUpperCase()}`, "LEGACY PROVIDER"],
+    };
+    const dac = await processCommand(state, "DAC ALG", {
+      locations: legacyLocations,
+    });
+    const lines = dac.events.map((event) => event.text);
+    assert.ok(lines.includes("LEGACY PROVIDER"));
+  });
+
   it("returns a date for JD", async () => {
     const state = createInitialState();
     const [line] = await runCommand(state, "JD");
