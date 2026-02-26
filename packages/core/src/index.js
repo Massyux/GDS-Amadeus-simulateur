@@ -50,7 +50,15 @@ function parseDDMMM(s) {
   const mm = map[mon];
   if (!mm) return null;
   const now = new Date();
-  return new Date(now.getFullYear(), mm - 1, dd);
+  const date = new Date(now.getFullYear(), mm - 1, dd);
+  if (
+    date.getFullYear() !== now.getFullYear() ||
+    date.getMonth() !== mm - 1 ||
+    date.getDate() !== dd
+  ) {
+    return null;
+  }
+  return date;
 }
 
 function formatDDMMM(dateObj) {
@@ -87,7 +95,15 @@ function ddmmmToDate(ddmmm) {
   };
   if (!(mon in map)) return null;
   const now = new Date();
-  return new Date(now.getFullYear(), map[mon], dd);
+  const date = new Date(now.getFullYear(), map[mon], dd);
+  if (
+    date.getFullYear() !== now.getFullYear() ||
+    date.getMonth() !== map[mon] ||
+    date.getDate() !== dd
+  ) {
+    return null;
+  }
+  return date;
 }
 
 function buildRecordLocatorSeed(pnr) {

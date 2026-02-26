@@ -100,6 +100,18 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["INVALID FORMAT"]);
   });
 
+  it("rejects AN with invalid date rollover", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "AN31FEBALGPAR");
+    assert.deepEqual(lines, ["INVALID FORMAT"]);
+  });
+
+  it("rejects AN alternate format with invalid date rollover", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "ANALGPAR/31FEB");
+    assert.deepEqual(lines, ["INVALID FORMAT"]);
+  });
+
   it("returns sorted offline AN availability", async () => {
     const state = createInitialState();
     const result = await processCommand(state, "AN26DECALGPAR", {});
