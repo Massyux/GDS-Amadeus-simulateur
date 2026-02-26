@@ -132,6 +132,34 @@ describe("processCommand", () => {
     }
   });
 
+  it("uses a custom availability provider passed via deps", async () => {
+    const state = createInitialState();
+    const customAvailability = [
+      {
+        lineNo: 1,
+        airline: "ZZ",
+        flightNo: 9999,
+        from: "ALG",
+        to: "PAR",
+        dateDDMMM: "26DEC",
+        dow: "TH",
+        depTime: "1010",
+        arrTime: "1210",
+        bookingClasses: [{ code: "Y", seats: 9 }],
+      },
+    ];
+    const result = await processCommand(state, "AN26DECALGPAR", {
+      deps: {
+        availability: {
+          searchAvailability: async () => customAvailability,
+        },
+      },
+    });
+    assert.equal(result.state.lastAN.results[0].airline, "ZZ");
+    const output = result.events.map((event) => event.text);
+    assert.ok(output.some((line) => line.includes("ZZ 9999")));
+  });
+
   it("FXP creates TST and keeps classes unchanged", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");

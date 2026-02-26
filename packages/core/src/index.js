@@ -1,4 +1,6 @@
 import { cmdDAC, cmdDAN } from "./db.js";
+import { createSimAvailabilityProvider } from "./providers/availability/sim.js";
+import { createSimPricingProvider } from "./providers/pricing/sim.js";
 
 function padL(s, w, ch = " ") {
   return String(s ?? "").padStart(w, ch);
@@ -808,7 +810,7 @@ function cancelPaxElement(state, element) {
   }
 }
 
-async function handleAN(state, cmdUpper, options = {}) {
+async function handleAN(state, cmdUpper, deps, options = {}) {
   let dateObj = null;
   let from = null;
   let to = null;
@@ -835,7 +837,36 @@ async function handleAN(state, cmdUpper, options = {}) {
   const dow = dayOfWeek2(dateObj);
 
   let results;
-  if (options.availability && typeof options.availability.search === "function") {
+  if (
+    deps?.availability &&
+    typeof deps.availability.searchAvailability === "function"
+  ) {
+    const external = await deps.availability.searchAvailability({
+      from,
+      to,
+      ddmmm,
+      dow,
+    });
+    const valid =
+      Array.isArray(external) &&
+      external.every(
+        (item) =>
+          item &&
+          typeof item.airline === "string" &&
+          typeof item.flightNo !== "undefined" &&
+          typeof item.depTime === "string" &&
+          typeof item.arrTime === "string" &&
+          typeof item.from === "string" &&
+          typeof item.to === "string" &&
+          typeof item.dateDDMMM === "string" &&
+          typeof item.dow === "string" &&
+          Array.isArray(item.bookingClasses)
+      );
+    if (!valid) {
+      return { error: "INVALID FORMAT" };
+    }
+    results = external;
+  } else if (options.availability && typeof options.availability.search === "function") {
     const external = await options.availability.search({ from, to, ddmmm, dow });
     const valid =
       Array.isArray(external) &&
@@ -1007,7 +1038,33 @@ export function createInitialState() {
   };
 }
 
+function buildDefaultDeps() {
+  return {
+    availability: createSimAvailabilityProvider({ buildOfflineAvailability }),
+    pricing: createSimPricingProvider({ buildPricingData }),
+    clock: {
+      now: () => new Date(),
+    },
+    rng: {
+      nextFloat: () => Math.random(),
+      nextInt: (maxExclusive) => Math.floor(Math.random() * maxExclusive),
+    },
+  };
+}
+
+function resolveDeps(options = {}) {
+  const defaults = buildDefaultDeps();
+  const provided = options.deps || {};
+  return {
+    availability: provided.availability || defaults.availability,
+    pricing: provided.pricing || defaults.pricing,
+    clock: provided.clock || defaults.clock,
+    rng: provided.rng || defaults.rng,
+  };
+}
+
 export async function processCommand(state, cmd, options = {}) {
+  const deps = resolveDeps(options);
   const ERROR_EVENT_TEXTS = new Set([
     "INVALID FORMAT",
     "NO ACTIVE PNR",
@@ -1047,7 +1104,11 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c === "JD") {
-    print(new Date().toDateString().toUpperCase());
+    const now =
+      deps.clock && typeof deps.clock.now === "function"
+        ? deps.clock.now()
+        : new Date();
+    print(new Date(now).toDateString().toUpperCase());
     return { events, state };
   }
 
@@ -1156,7 +1217,7 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c.startsWith("AN") && c.length > 2) {
-    const result = await handleAN(state, c, options);
+    const result = await handleAN(state, c, deps, options);
     if (result.error) {
       print(result.error);
       return { events, state };
@@ -1317,7 +1378,10 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const pricing = buildPricingData(pnr, "FXP");
+    const pricing = deps.pricing.price({
+      pnr,
+      mode: "FXP",
+    });
     const id = ++state.lastTstId;
     const tst = {
       id,
@@ -1367,7 +1431,10 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const pricing = buildPricingData(pnr, "FXX");
+    const pricing = deps.pricing.price({
+      pnr,
+      mode: "FXX",
+    });
     print("FXX");
     print("QUOTE - FXX (BOOKED RBD) - NO TST CREATED");
     print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
@@ -1394,7 +1461,10 @@ export async function processCommand(state, cmd, options = {}) {
       classCode: s.classCode || "Y",
     }));
     rebookSegments(pnr, "FXR");
-    const pricing = buildPricingData(pnr, "FXR");
+    const pricing = deps.pricing.price({
+      pnr,
+      mode: "FXR",
+    });
     print("FXR");
     print("REBOOK TO LOWEST AVAILABLE - NO TST CREATED");
     print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
@@ -1422,7 +1492,10 @@ export async function processCommand(state, cmd, options = {}) {
       classCode: s.classCode || "Y",
     }));
     rebookSegments(pnr, "FXB");
-    const pricing = buildPricingData(pnr, "FXB");
+    const pricing = deps.pricing.price({
+      pnr,
+      mode: "FXB",
+    });
     const id = ++state.lastTstId;
     const tst = {
       id,
@@ -1488,7 +1561,11 @@ export async function processCommand(state, cmd, options = {}) {
         const newIndex = Math.min(RBD_LADDER.length - 1, index + i + 1);
         return { ...seg, classCode: RBD_LADDER[newIndex] };
       });
-      const pricing = buildPricingData(pnr, `FXL${i + 1}`, optionSegments);
+      const pricing = deps.pricing.price({
+        pnr,
+        mode: `FXL${i + 1}`,
+        segmentsOverride: optionSegments,
+      });
       options.push({
         total: pricing.total,
         rbd: optionSegments.map((s) => s.classCode).join("/"),
