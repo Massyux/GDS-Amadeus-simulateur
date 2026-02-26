@@ -1101,6 +1101,12 @@ function resolveDeps(options = {}) {
 }
 
 export async function processCommand(state, cmd, options = {}) {
+  /*
+   * deps contract (in options.deps):
+   * - deps.clock.now(): returns current Date
+   * - deps.rng(): returns float in [0, 1)
+   * Missing deps are auto-filled with simulation-safe defaults.
+   */
   const deps = resolveDeps(options);
   const ERROR_EVENT_TEXTS = new Set([
     "INVALID FORMAT",
