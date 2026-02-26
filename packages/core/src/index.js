@@ -1039,27 +1039,55 @@ export function createInitialState() {
 }
 
 function buildDefaultDeps() {
+  const rng = () => Math.random();
+  const clock = {
+    now: () => new Date(),
+    today: () => {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    },
+    todayUTC: () => {
+      const now = new Date();
+      return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    },
+  };
   return {
     availability: createSimAvailabilityProvider({ buildOfflineAvailability }),
     pricing: createSimPricingProvider({ buildPricingData }),
-    clock: {
-      now: () => new Date(),
-    },
-    rng: {
-      nextFloat: () => Math.random(),
-      nextInt: (maxExclusive) => Math.floor(Math.random() * maxExclusive),
-    },
+    clock,
+    rng,
   };
 }
 
 function resolveDeps(options = {}) {
   const defaults = buildDefaultDeps();
   const provided = options.deps || {};
+  const clockNow =
+    provided.clock && typeof provided.clock.now === "function"
+      ? provided.clock.now
+      : defaults.clock.now;
+  const resolvedClock = {
+    now: clockNow,
+    today:
+      provided.clock && typeof provided.clock.today === "function"
+        ? provided.clock.today
+        : defaults.clock.today,
+    todayUTC:
+      provided.clock && typeof provided.clock.todayUTC === "function"
+        ? provided.clock.todayUTC
+        : defaults.clock.todayUTC,
+  };
+  let resolvedRng = defaults.rng;
+  if (typeof provided.rng === "function") {
+    resolvedRng = provided.rng;
+  } else if (provided.rng && typeof provided.rng.nextFloat === "function") {
+    resolvedRng = () => provided.rng.nextFloat();
+  }
   return {
     availability: provided.availability || defaults.availability,
     pricing: provided.pricing || defaults.pricing,
-    clock: provided.clock || defaults.clock,
-    rng: provided.rng || defaults.rng,
+    clock: resolvedClock,
+    rng: resolvedRng,
   };
 }
 

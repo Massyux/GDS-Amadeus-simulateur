@@ -45,6 +45,20 @@ describe("processCommand", () => {
     assert.match(line, /^[A-Z]{3} [A-Z]{3} \d{1,2} \d{4}$/);
   });
 
+  it("uses deps.clock.now for JD output", async () => {
+    const state = createInitialState();
+    const fixed = new Date(2030, 0, 2, 12, 0, 0);
+    const result = await processCommand(state, "JD", {
+      deps: {
+        clock: {
+          now: () => fixed,
+        },
+      },
+    });
+    const line = result.events.map((event) => event.text)[0];
+    assert.equal(line, fixed.toDateString().toUpperCase());
+  });
+
   it("creates a PNR and returns it with RT", async () => {
     const state = createInitialState();
 
