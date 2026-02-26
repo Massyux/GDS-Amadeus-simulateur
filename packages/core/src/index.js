@@ -30,7 +30,7 @@ function month2Mon(m) {
   return mons[m - 1] || "???";
 }
 
-function parseDDMMM(s) {
+function parseDDMMM(s, clock) {
   const m = s.match(/^(\d{1,2})([A-Z]{3})$/);
   if (!m) return null;
   const dd = parseInt(m[1], 10);
@@ -51,7 +51,7 @@ function parseDDMMM(s) {
   };
   const mm = map[mon];
   if (!mm) return null;
-  const now = new Date();
+  const now = getClockNow(clock);
   const date = new Date(now.getFullYear(), mm - 1, dd);
   if (
     date.getFullYear() !== now.getFullYear() ||
@@ -75,7 +75,15 @@ function dayOfWeek2(dateObj) {
   return map[d] || "??";
 }
 
-function ddmmmToDate(ddmmm) {
+function getClockNow(clock) {
+  if (clock && typeof clock.now === "function") {
+    const value = clock.now();
+    return value instanceof Date ? value : new Date(value);
+  }
+  return new Date();
+}
+
+function ddmmmToDate(ddmmm, clock) {
   if (!ddmmm || typeof ddmmm !== "string") return null;
   const m = ddmmm.toUpperCase().match(/^(\d{1,2})([A-Z]{3})$/);
   if (!m) return null;
@@ -96,7 +104,7 @@ function ddmmmToDate(ddmmm) {
     DEC: 11,
   };
   if (!(mon in map)) return null;
-  const now = new Date();
+  const now = getClockNow(clock);
   const date = new Date(now.getFullYear(), map[mon], dd);
   if (
     date.getFullYear() !== now.getFullYear() ||
@@ -270,10 +278,10 @@ function formatMoney(n) {
   return round2(n).toFixed(2);
 }
 
-function getSortedItinerary(pnr) {
+function getSortedItinerary(pnr, clock) {
   const itinerary = pnr.itinerary || [];
   const decorated = itinerary.map((s, idx) => {
-    const d = ddmmmToDate(s.dateDDMMM);
+    const d = ddmmmToDate(s.dateDDMMM, clock);
     const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
     return { s, idx, t };
   });
@@ -375,8 +383,8 @@ function buildFareBasis(classCode, from, seed) {
   return `${classCode}${digits}${suffix}`;
 }
 
-function buildPricingData(pnr, mode, segmentsOverride) {
-  const segments = segmentsOverride || getSortedItinerary(pnr);
+function buildPricingData(pnr, mode, segmentsOverride, clock) {
+  const segments = segmentsOverride || getSortedItinerary(pnr, clock);
   const paxCounts = inferPaxCounts(pnr);
   const paxMix = `ADT${paxCounts.ADT}CHD${paxCounts.CHD}INF${paxCounts.INF}`;
   const taxes = { DZ: 0, FR: 0, YQ: 0, XT: 0 };
@@ -595,7 +603,7 @@ function segmentLineForPNR(s) {
   return `${airline} ${flightNo} ${cls} ${ddmmm} ${pair} ${dep} ${arr} ${st}${pax}`;
 }
 
-function renderPNRLiveView(state) {
+function renderPNRLiveView(state, clock) {
   if (!state.activePNR) {
     return ["NO ACTIVE PNR"];
   }
@@ -663,7 +671,7 @@ function renderPNRLiveView(state) {
   return lines;
 }
 
-function buildElementIndex(state) {
+function buildElementIndex(state, clock) {
   if (!state.activePNR) return [];
   const pnr = state.activePNR;
   const elements = [];
@@ -678,7 +686,7 @@ function buildElementIndex(state) {
   const itinerary = pnr.itinerary || [];
   if (itinerary.length > 0) {
     const decorated = itinerary.map((s, idx) => {
-      const d = ddmmmToDate(s.dateDDMMM);
+      const d = ddmmmToDate(s.dateDDMMM, clock);
       const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
       return { s, idx, t };
     });
@@ -817,7 +825,7 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
 
   let m = cmdUpper.match(/^AN(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})$/);
   if (m) {
-    dateObj = parseDDMMM(m[1]);
+    dateObj = parseDDMMM(m[1], deps?.clock);
     from = m[2];
     to = m[3];
   } else {
@@ -825,7 +833,7 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
     if (m) {
       from = m[1];
       to = m[2];
-      dateObj = parseDDMMM(m[3]);
+      dateObj = parseDDMMM(m[3], deps?.clock);
     }
   }
 
@@ -919,7 +927,7 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
   return { lines };
 }
 
-function handleSS(state, cmdUpper) {
+function handleSS(state, cmdUpper, clock) {
   if (!state.lastAN || !state.lastAN.results || state.lastAN.results.length === 0) {
     return { error: "NO AVAILABILITY" };
   }
@@ -958,15 +966,15 @@ function handleSS(state, cmdUpper) {
 
   state.activePNR.itinerary.push(seg);
 
-  const lines = ["OK", ...renderPNRLiveView(state)];
+  const lines = ["OK", ...renderPNRLiveView(state, clock)];
   return { lines };
 }
 
-function handleXE(state, cmdUpper) {
+function handleXE(state, cmdUpper, clock) {
   if (!state.activePNR) {
     return { error: "NO ACTIVE PNR" };
   }
-  const elements = buildElementIndex(state);
+  const elements = buildElementIndex(state, clock);
   const cancellableKinds = new Set(["SEG", "AP", "SSR", "OSI", "RF", "PAX"]);
   const cancellableAllKinds = new Set(["SEG", "AP", "SSR", "OSI", "RF"]);
   const totalCancellable = elements.filter((el) =>
@@ -978,7 +986,7 @@ function handleXE(state, cmdUpper) {
     const toCancel = elements.filter((el) => cancellableAllKinds.has(el.kind));
     cancelElements(state, toCancel);
     return {
-      lines: ["OK", "ITINERARY CANCELLED", ...renderPNRLiveView(state)],
+      lines: ["OK", "ITINERARY CANCELLED", ...renderPNRLiveView(state, clock)],
     };
   }
 
@@ -991,13 +999,13 @@ function handleXE(state, cmdUpper) {
       const paxResult = cancelPaxElement(state, element);
       if (paxResult && paxResult.error) return { error: paxResult.error };
       return {
-        lines: ["OK", paxResult.message, ...renderPNRLiveView(state)],
+        lines: ["OK", paxResult.message, ...renderPNRLiveView(state, clock)],
       };
     }
     if (!cancellableKinds.has(element.kind)) return { error: "NOT ALLOWED" };
     cancelElements(state, [element]);
     return {
-      lines: ["OK", "ELEMENT CANCELLED", ...renderPNRLiveView(state)],
+      lines: ["OK", "ELEMENT CANCELLED", ...renderPNRLiveView(state, clock)],
     };
   }
 
@@ -1021,7 +1029,7 @@ function handleXE(state, cmdUpper) {
     const otherElements = selected.filter((el) => el.kind !== "PAX");
     cancelElements(state, otherElements);
     return {
-      lines: ["OK", "ELEMENTS CANCELLED", ...renderPNRLiveView(state)],
+      lines: ["OK", "ELEMENTS CANCELLED", ...renderPNRLiveView(state, clock)],
     };
   }
 
@@ -1132,10 +1140,7 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c === "JD") {
-    const now =
-      deps.clock && typeof deps.clock.now === "function"
-        ? deps.clock.now()
-        : new Date();
+    const now = deps.clock.now();
     print(new Date(now).toDateString().toUpperCase());
     return { events, state };
   }
@@ -1195,13 +1200,13 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c === "IG") {
     if (!state.activePNR) {
-      renderPNRLiveView(state).forEach(print);
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
     state.activePNR = null;
     state.tsts = [];
     print("IGNORED");
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
@@ -1221,13 +1226,13 @@ export async function processCommand(state, cmd, options = {}) {
     state.activePNR = deepCopy(stored.pnrSnapshot);
     state.tsts = deepCopy(stored.tstsSnapshot) || [];
     print("RETRIEVED");
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
   if (c === "XI") {
     if (!state.activePNR) {
-      renderPNRLiveView(state).forEach(print);
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
     const pnr = state.activePNR;
@@ -1240,7 +1245,7 @@ export async function processCommand(state, cmd, options = {}) {
     pnr.rf = null;
     state.tsts = [];
     print("PNR CANCELLED - SIGN/ER REQUIRED");
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
@@ -1255,7 +1260,7 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c.startsWith("SS")) {
-    const result = handleSS(state, c);
+    const result = handleSS(state, c, deps.clock);
     if (result.error) {
       print(result.error);
       return { events, state };
@@ -1265,7 +1270,7 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c.startsWith("XE")) {
-    const result = handleXE(state, c);
+    const result = handleXE(state, c, deps.clock);
     if (result.error) {
       print(result.error);
       return { events, state };
@@ -1291,7 +1296,7 @@ export async function processCommand(state, cmd, options = {}) {
         type: "CHD",
         age: chdMatch[4] ? chdMatch[4] : null,
       });
-      renderPNRLiveView(state).forEach(print);
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
 
@@ -1301,7 +1306,7 @@ export async function processCommand(state, cmd, options = {}) {
         firstName: infMatch[2],
         type: "INF",
       });
-      renderPNRLiveView(state).forEach(print);
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
 
@@ -1312,7 +1317,7 @@ export async function processCommand(state, cmd, options = {}) {
         type: "ADT",
         title: adultMatch[3] || "",
       });
-      renderPNRLiveView(state).forEach(print);
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
 
@@ -1324,7 +1329,7 @@ export async function processCommand(state, cmd, options = {}) {
     ensurePNR(state);
     const pnr = state.activePNR;
     pnr.contacts.push(c);
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
@@ -1341,7 +1346,7 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     pnr.rf = rfValue;
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
@@ -1359,7 +1364,7 @@ export async function processCommand(state, cmd, options = {}) {
       state.tsts = [];
       print("OK");
       print("PNR CANCELLED");
-      renderPNRLiveView(state).forEach(print);
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
     if (!pnr.passengers.length) {
@@ -1391,12 +1396,12 @@ export async function processCommand(state, cmd, options = {}) {
     };
     print("PNR RECORDED");
     print("RECORD LOCATOR " + pnr.recordLocator);
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
   if (c === "RT") {
-    renderPNRLiveView(state).forEach(print);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 
@@ -1409,6 +1414,7 @@ export async function processCommand(state, cmd, options = {}) {
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXP",
+      clock: deps.clock,
     });
     const id = ++state.lastTstId;
     const tst = {
@@ -1462,6 +1468,7 @@ export async function processCommand(state, cmd, options = {}) {
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXX",
+      clock: deps.clock,
     });
     print("FXX");
     print("QUOTE - FXX (BOOKED RBD) - NO TST CREATED");
@@ -1484,7 +1491,7 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const before = getSortedItinerary(pnr).map((s) => ({
+    const before = getSortedItinerary(pnr, deps.clock).map((s) => ({
       displayIndex: s.displayIndex,
       classCode: s.classCode || "Y",
     }));
@@ -1492,6 +1499,7 @@ export async function processCommand(state, cmd, options = {}) {
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXR",
+      clock: deps.clock,
     });
     print("FXR");
     print("REBOOK TO LOWEST AVAILABLE - NO TST CREATED");
@@ -1515,7 +1523,7 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const before = getSortedItinerary(pnr).map((s) => ({
+    const before = getSortedItinerary(pnr, deps.clock).map((s) => ({
       displayIndex: s.displayIndex,
       classCode: s.classCode || "Y",
     }));
@@ -1523,6 +1531,7 @@ export async function processCommand(state, cmd, options = {}) {
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXB",
+      clock: deps.clock,
     });
     const id = ++state.lastTstId;
     const tst = {
@@ -1580,7 +1589,7 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const baseSegments = getSortedItinerary(pnr);
+    const baseSegments = getSortedItinerary(pnr, deps.clock);
     const options = [];
     for (let i = 0; i < 3; i++) {
       const optionSegments = baseSegments.map((seg) => {
@@ -1593,6 +1602,7 @@ export async function processCommand(state, cmd, options = {}) {
         pnr,
         mode: `FXL${i + 1}`,
         segmentsOverride: optionSegments,
+        clock: deps.clock,
       });
       options.push({
         total: pricing.total,
@@ -1656,4 +1666,6 @@ export async function processCommand(state, cmd, options = {}) {
   print("INVALID FORMAT");
   return { events, state };
 }
+
+
 

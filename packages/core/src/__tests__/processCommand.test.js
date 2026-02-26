@@ -146,6 +146,20 @@ describe("processCommand", () => {
     }
   });
 
+  it("uses deps.clock for AN date-year parsing", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "AN29FEBALGPAR", {
+      deps: {
+        clock: {
+          now: () => new Date(2024, 0, 1, 10, 0, 0),
+        },
+      },
+    });
+    const lines = result.events.map((event) => event.text);
+    assert.ok(!lines.includes("INVALID FORMAT"));
+    assert.equal(result.state.lastAN?.query?.ddmmm, "29FEB");
+  });
+
   it("uses a custom availability provider passed via deps", async () => {
     const state = createInitialState();
     const customAvailability = [
