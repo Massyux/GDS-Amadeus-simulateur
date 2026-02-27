@@ -405,6 +405,23 @@ describe("processCommand", () => {
     );
   });
 
+  it("SN returns schedule lines", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "SN26DECALGPAR");
+    assert.ok(lines.some((line) => line.startsWith("SN26DECALGPAR")));
+    assert.ok(lines.some((line) => line.includes("AMADEUS SCHEDULE - SN")));
+  });
+
+  it("SN rejects invalid format with error event", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "SNBADINPUT");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("returns invalid format for a malformed AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "ANXYZ");

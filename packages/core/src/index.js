@@ -1231,6 +1231,88 @@ async function handleTN(state, cmdUpper, deps) {
   return { lines };
 }
 
+async function handleSN(state, cmdUpper, deps) {
+  let dateObj = null;
+  let from = null;
+  let to = null;
+
+  let m = cmdUpper.match(/^SN(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})$/);
+  if (m) {
+    dateObj = parseDDMMM(m[1], deps?.clock);
+    from = m[2];
+    to = m[3];
+  } else {
+    m = cmdUpper.match(/^SN\s+(\d{1,2}[A-Z]{3})\s+([A-Z]{3})\s+([A-Z]{3})$/);
+    if (m) {
+      dateObj = parseDDMMM(m[1], deps?.clock);
+      from = m[2];
+      to = m[3];
+    }
+  }
+
+  if (!dateObj || !from || !to) {
+    return { error: "INVALID FORMAT" };
+  }
+
+  const ddmmm = formatDDMMM(dateObj);
+  const dow = dayOfWeek2(dateObj);
+
+  let results;
+  if (deps?.timetable && typeof deps.timetable.searchTimetable === "function") {
+    results = await deps.timetable.searchTimetable({ from, to, ddmmm, dow });
+  } else if (
+    deps?.availability &&
+    typeof deps.availability.searchAvailability === "function"
+  ) {
+    results = await deps.availability.searchAvailability({ from, to, ddmmm, dow });
+  } else {
+    results = buildOfflineAvailability({ from, to, ddmmm, dow });
+  }
+
+  const valid =
+    Array.isArray(results) &&
+    results.every(
+      (item) =>
+        item &&
+        typeof item.airline === "string" &&
+        typeof item.flightNo !== "undefined" &&
+        typeof item.depTime === "string" &&
+        typeof item.arrTime === "string" &&
+        typeof item.from === "string" &&
+        typeof item.to === "string" &&
+        typeof item.dateDDMMM === "string" &&
+        typeof item.dow === "string" &&
+        Array.isArray(item.bookingClasses)
+    );
+  if (!valid) {
+    return { error: "INVALID FORMAT" };
+  }
+
+  const normalized = [...results]
+    .sort((a, b) =>
+      a.depTime === b.depTime
+        ? String(a.airline).localeCompare(String(b.airline))
+        : a.depTime.localeCompare(b.depTime)
+    )
+    .map((item, idx) => ({ ...item, lineNo: idx + 1 }));
+
+  state.lastAN = { query: { from, to, ddmmm, dow }, results: normalized };
+
+  const lines = [];
+  lines.push(`SN${ddmmm}${from}${to}`);
+  lines.push(`** AMADEUS SCHEDULE - SN ** ${from}-${to}`);
+  normalized.forEach((item) => {
+    lines.push(
+      `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
+        String(item.flightNo),
+        4,
+        "0"
+      )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
+    );
+  });
+  return { lines };
+}
+
 function buildSegmentDisplayIndexByItineraryIndex(pnr, clock) {
   const itinerary = pnr.itinerary || [];
   const decorated = itinerary.map((segment, index) => {
@@ -1754,6 +1836,16 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("TN")) {
     const result = await handleTN(state, c, deps);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("SN")) {
+    const result = await handleSN(state, c, deps);
     if (result.error) {
       print(result.error);
       return { events, state };
