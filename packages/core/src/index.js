@@ -1661,6 +1661,8 @@ export function createInitialState() {
     recordedSnapshot: null,
     lastRecordedLocator: null,
     queueStore: {},
+    activeQueue: null,
+    currentQueueItem: null,
   };
 }
 
@@ -2103,6 +2105,24 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     queue.forEach((recordLocator, index) => print(`${index + 1} ${recordLocator}`));
+    return { events, state };
+  }
+
+  if (c.startsWith("QE")) {
+    const match = c.match(/^QE\/?([A-Z0-9]{2,8})$/);
+    if (!match) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const queueId = normalizeQueueId(match[1]);
+    const queue = state.queueStore ? state.queueStore[queueId] : null;
+    if (!queue) {
+      print("QUEUE NOT FOUND");
+      return { events, state };
+    }
+    state.activeQueue = queueId;
+    state.currentQueueItem = null;
+    print(`QUEUE ${queueId} OPEN`);
     return { events, state };
   }
 
