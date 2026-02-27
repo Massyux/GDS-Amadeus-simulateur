@@ -526,6 +526,22 @@ describe("processCommand", () => {
     assert.ok(fxrTotal > 0);
   });
 
+  it("FXR does not mutate itinerary fields", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "SS2Y1");
+    await processCommand(state, "NM2DOE/JOHN SMITH/JANE");
+    await processCommand(state, "XE1");
+    const before = JSON.parse(JSON.stringify(state.activePNR.itinerary));
+
+    await processCommand(state, "FXR");
+    const after = state.activePNR.itinerary;
+    assert.deepEqual(after, before);
+    assert.equal(state.tsts.length, 1);
+    assert.equal(state.tsts[0].status, "REPRICED");
+  });
+
   it("FXB creates final TST without rebooking classes", async () => {
     const baseState = createInitialState();
     await processCommand(baseState, "AN26DECALGPAR");
