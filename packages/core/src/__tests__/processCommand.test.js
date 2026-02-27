@@ -42,6 +42,18 @@ describe("processCommand", () => {
     assert.ok(lines.includes("RT                  DISPLAY PNR (same as live)"));
   });
 
+  it("HELP index contains core command families", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "HELP");
+    assert.ok(lines.some((line) => line.startsWith("AN")));
+    assert.ok(lines.some((line) => line.startsWith("SS")));
+    assert.ok(lines.some((line) => line.startsWith("NM")));
+    assert.ok(lines.some((line) => line.startsWith("ER")));
+    assert.ok(lines.some((line) => line.startsWith("RT")));
+    assert.ok(lines.some((line) => line.includes("FXP/FXX/FXR/FXB")));
+    assert.ok(lines.some((line) => line.includes("TTP")));
+  });
+
   it("HE returns generic help", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "HE");

@@ -1597,6 +1597,8 @@ export async function processCommand(state, cmd, options = {}) {
     print("AVAILABLE COMMANDS");
     print("ANddMMMXXXYYY       AVAILABILITY (ex: AN26DECALGPAR)");
     print("ANXXXYYY/ddMMM      AVAILABILITY (ex: ANALGPAR/26DEC)");
+    print("TNddMMMXXXYYY       TIMETABLE (ex: TN26DECALGPAR)");
+    print("SNddMMMXXXYYY       SCHEDULE (ex: SN26DECALGPAR)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("XE1                 CANCEL SEGMENT");
     print("IG                  IGNORE PNR");
@@ -1606,7 +1608,10 @@ export async function processCommand(state, cmd, options = {}) {
     print("DAN <TEXT>          ENCODE SEARCH (ex: DAN PARIS)");
     print("NM                  NAME (MR/MRS optional, CHD/INF)");
     print("AP                  CONTACT");
+    print("APE                 EMAIL CONTACT");
+    print("OP                  OPTION/REMINDER");
     print("RF                  SIGNATURE (RFMM)");
+    print("FXP/FXX/FXR/FXB     PRICING");
     print("ER                  END PNR");
     print("RT                  DISPLAY PNR (same as live)");
     print("ET / TTP            ISSUE TICKET");
