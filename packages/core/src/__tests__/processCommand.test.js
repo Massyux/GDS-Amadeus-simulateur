@@ -513,7 +513,7 @@ describe("processCommand", () => {
     assert.ok(fxrTotal > 0);
   });
 
-  it("FXB changes classes, creates TST, and is cheaper or equal to FXP", async () => {
+  it("FXB creates final TST without rebooking classes", async () => {
     const baseState = createInitialState();
     await processCommand(baseState, "AN26DECALGPAR");
     await processCommand(baseState, "SS1Y2");
@@ -530,9 +530,26 @@ describe("processCommand", () => {
     const fxbTotal = getMoney(fxbLines, "TOTAL");
     assert.ok(fxbLines[0] === "FXB");
     assert.ok(state.tsts.length === 1);
-    assert.notEqual(state.activePNR.itinerary[0].classCode, beforeClass);
+    assert.equal(state.activePNR.itinerary[0].classCode, beforeClass);
+    assert.equal(state.tsts[0].status, "READY_TO_TICKET");
     assert.ok(fxpTotal !== null && fxbTotal !== null);
-    assert.ok(fxbTotal <= fxpTotal);
+    assert.ok(fxbTotal > 0);
+  });
+
+  it("FXB works after ER and keeps a ticket-ready TST", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "AP123456");
+    await processCommand(state, "RFTEST");
+    await processCommand(state, "ER");
+
+    const fxb = await processCommand(state, "FXB");
+    const fxbLines = fxb.events.map((event) => event.text);
+    assert.ok(fxbLines.some((line) => line.includes("READY_TO_TICKET")));
+    assert.equal(state.tsts.length, 1);
+    assert.equal(state.tsts[0].status, "READY_TO_TICKET");
   });
 
   it("FXL lists options and invalid variants are rejected", async () => {

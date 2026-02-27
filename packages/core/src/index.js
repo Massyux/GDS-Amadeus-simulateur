@@ -2008,36 +2008,36 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const before = getSortedItinerary(pnr, deps.clock).map((s) => ({
-      displayIndex: s.displayIndex,
-      classCode: s.classCode || "Y",
-    }));
-    rebookSegments(pnr, "FXB");
+    const activeSegments = getActiveSortedItinerary(pnr, deps.clock);
+    if (activeSegments.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXB",
+      segmentsOverride: activeSegments,
       clock: deps.clock,
     });
-    const id = ++state.lastTstId;
-    const tst = createNormalizedTst({ id, pricing, status: "CREATED" });
+    const currentTst = state.tsts && state.tsts.length > 0 ? state.tsts[0] : null;
+    const id = currentTst ? currentTst.id : ++state.lastTstId;
+    const tst = createNormalizedTst({
+      id,
+      pricing,
+      status: "READY_TO_TICKET",
+    });
     state.tsts = [tst];
 
     print("FXB");
-    print("BEST BUY - REBOOK + CREATE TST");
+    print("BEST BUY - FINAL PRICING");
     print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
-    print("REBOOKED SEGMENTS:");
-    pricing.segments.forEach((seg) => {
-      const old = before.find((b) => b.displayIndex === seg.displayIndex);
-      const oldCode = old ? old.classCode : seg.classCode;
-      print(`  ${seg.displayIndex}  ${oldCode} -> ${seg.classCode}`);
-    });
+    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
     print("");
     print(
-      `TST CREATED  ${id}  PAX ${formatPaxSummary(
+      `TST ${currentTst ? "UPDATED" : "CREATED"}  ${id}  PAX ${formatPaxSummary(
         pricing.paxCounts
-      )}   STATUS: CREATED`
+      )}   STATUS: READY_TO_TICKET`
     );
-    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
     print("");
     print(`FARE     EUR ${formatMoney(pricing.baseFare)}`);
     print(`TAX      EUR ${formatMoney(pricing.taxTotal)}`);
