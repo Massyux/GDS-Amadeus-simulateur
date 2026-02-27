@@ -147,6 +147,27 @@ describe("processCommand", () => {
     );
   });
 
+  it("stores RF value and displays it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const rfLines = await runCommand(state, "RF M.MASSI");
+    assert.equal(state.activePNR.rf, "M.MASSI");
+    assert.ok(rfLines.some((line) => line.includes("RF M.MASSI")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("RF M.MASSI")));
+  });
+
+  it("returns error event when RF is empty", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "RF");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("keeps the same record locator on repeated ER", async () => {
     const state = createInitialState();
 
