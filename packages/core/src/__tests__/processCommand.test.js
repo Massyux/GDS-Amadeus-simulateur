@@ -1086,6 +1086,53 @@ describe("processCommand", () => {
     assert.deepEqual(xeMissing, ["ELEMENT NOT FOUND"]);
   });
 
+  it("XE cancels AP line correctly when FA/FB ticket lines exist", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "FP CASH");
+    await runCommand(state, "FXP");
+    await runCommand(state, "ET");
+
+    const rtBefore = await runCommand(state, "RT");
+    const apLine = rtBefore.find((line) => line.includes("AP123456"));
+    assert.ok(apLine);
+    const apElementNo = apLine.match(/^\s*(\d+)/);
+    assert.ok(apElementNo);
+
+    const xeAp = await runCommand(state, `XE${apElementNo[1]}`);
+    assert.equal(xeAp[0], "OK");
+    assert.equal(xeAp[1], "ELEMENT CANCELLED");
+    assert.equal(state.activePNR.contacts.length, 0);
+    assert.equal(state.activePNR.rf, "TEST");
+
+    const rtAfter = await runCommand(state, "RT");
+    assert.ok(!rtAfter.some((line) => line.includes("AP123456")));
+    assert.ok(rtAfter.some((line) => line.includes("RF TEST")));
+  });
+
+  it("XE returns NOT ALLOWED when targeting FA/FB ticket lines", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "FP CASH");
+    await runCommand(state, "FXP");
+    await runCommand(state, "ET");
+
+    const rtBefore = await runCommand(state, "RT");
+    const faLine = rtBefore.find((line) => line.includes("FA 172-0000000001"));
+    assert.ok(faLine);
+    const faElementNo = faLine.match(/^\s*(\d+)/);
+    assert.ok(faElementNo);
+
+    const xeFa = await runCommand(state, `XE${faElementNo[1]}`);
+    assert.deepEqual(xeFa, ["NOT ALLOWED"]);
+  });
+
   it("XE cancels a segment by RT element number", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");

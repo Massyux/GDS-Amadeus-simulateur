@@ -872,10 +872,16 @@ function buildElementIndex(state, clock) {
       entry.kind === "AP" ||
       entry.kind === "SSR" ||
       entry.kind === "OSI" ||
-      entry.kind === "RM" ||
-      entry.kind === "TKT"
+      entry.kind === "RM"
     ) {
       elements.push({ elementNo, kind: entry.kind, index: entry.index });
+      elementNo += 1;
+      continue;
+    }
+    if (entry.kind === "TKT") {
+      elements.push({ elementNo, kind: "TKT_FA", index: entry.index });
+      elementNo += 1;
+      elements.push({ elementNo, kind: "TKT_FB", index: entry.index });
       elementNo += 1;
       continue;
     }
@@ -888,13 +894,6 @@ function buildElementIndex(state, clock) {
       elements.push({ elementNo, kind: entry.kind });
       elementNo += 1;
     }
-  }
-
-  if (state.tsts && state.tsts.length > 0) {
-    state.tsts.forEach((_, index) => {
-      elements.push({ elementNo, kind: "TST", index });
-      elementNo += 1;
-    });
   }
 
   return elements;
