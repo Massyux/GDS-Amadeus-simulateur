@@ -1823,6 +1823,7 @@ export async function processCommand(state, cmd, options = {}) {
     "TICKET ALREADY ISSUED",
     "NO SEGMENTS",
     "QUEUE NOT FOUND",
+    "NO ACTIVE QUEUE",
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
@@ -2123,6 +2124,42 @@ export async function processCommand(state, cmd, options = {}) {
     state.activeQueue = queueId;
     state.currentQueueItem = null;
     print(`QUEUE ${queueId} OPEN`);
+    return { events, state };
+  }
+
+  if (c.startsWith("QN")) {
+    if (c !== "QN") {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    if (!state.activeQueue) {
+      print("NO ACTIVE QUEUE");
+      return { events, state };
+    }
+    const queue = state.queueStore ? state.queueStore[state.activeQueue] : null;
+    if (!queue || queue.length === 0) {
+      print("QUEUE EMPTY");
+      return { events, state };
+    }
+    let nextRecordLocator = queuePeek(state.queueStore, state.activeQueue);
+    if (state.currentQueueItem) {
+      const currentIndex = queue.indexOf(state.currentQueueItem);
+      if (currentIndex >= 0 && currentIndex + 1 < queue.length) {
+        nextRecordLocator = queue[currentIndex + 1];
+      } else if (currentIndex >= 0) {
+        nextRecordLocator = queue[currentIndex];
+      } else {
+        nextRecordLocator = queue[0];
+      }
+    }
+
+    const restored = restoreRecordedState(state, nextRecordLocator);
+    if (!restored) {
+      print("PNR NOT FOUND");
+      return { events, state };
+    }
+    state.currentQueueItem = nextRecordLocator;
+    print(`PNR FROM QUEUE ${state.activeQueue} ${nextRecordLocator}`);
     return { events, state };
   }
 
