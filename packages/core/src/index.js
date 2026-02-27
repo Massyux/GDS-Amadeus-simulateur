@@ -1437,6 +1437,13 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
+  if (c.startsWith("XI")) {
+    // XI element-level cancellation is intentionally not supported here.
+    // Use XE<n> / XE<n-m> for deterministic element cancellation.
+    print("INVALID FORMAT");
+    return { events, state };
+  }
+
   if (c.startsWith("AN") && c.length > 2) {
     const result = await handleAN(state, c, deps, options);
     if (result.error) {

@@ -611,6 +611,16 @@ describe("processCommand", () => {
     assert.deepEqual(irLines, ["PNR NOT FOUND"]);
   });
 
+  it("returns error for unsupported XI element syntax", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "XI1");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("ER/RT keeps full PNR content with ordered PNR elements", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
