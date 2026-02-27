@@ -1112,24 +1112,11 @@ function handleXE(state, cmdUpper, clock) {
     "RF",
     "PAX",
   ]);
-  const cancellableAllKinds = new Set([
-    "SEG",
-    "AP",
-    "SSR",
-    "OSI",
-    "RM",
-    "TKTL",
-    "FP",
-    "RF",
-  ]);
-  const totalCancellable = elements.filter((el) =>
-    cancellableAllKinds.has(el.kind)
-  ).length;
+  const segmentElements = elements.filter((el) => el.kind === "SEG");
 
   if (cmdUpper === "XEALL") {
-    if (totalCancellable === 0) return { error: "NOTHING TO CANCEL" };
-    const toCancel = elements.filter((el) => cancellableAllKinds.has(el.kind));
-    cancelElements(state, toCancel);
+    if (segmentElements.length === 0) return { error: "NO SEGMENTS" };
+    cancelElements(state, segmentElements);
     return {
       lines: ["OK", "ITINERARY CANCELLED", ...renderPNRLiveView(state, clock)],
     };
@@ -1287,6 +1274,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NOTHING TO CANCEL",
     "FUNCTION NOT APPLICABLE",
     "NO TST",
+    "NO SEGMENTS",
     "LOCATION PROVIDER NOT CONFIGURED",
   ]);
   const events = [];

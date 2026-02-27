@@ -21,6 +21,19 @@ function getRecordLocator(lines) {
   return match ? match[1] : null;
 }
 
+function getRtSegmentLines(lines) {
+  return lines.filter((line) =>
+    /^\s*\d+\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+[A-Z]{2}\d$/.test(
+      line
+    )
+  );
+}
+
+function getSegmentStatus(line) {
+  const match = line.match(/\s([A-Z]{2})\d$/);
+  return match ? match[1] : null;
+}
+
 describe("processCommand", () => {
   it("returns help output", async () => {
     const state = createInitialState();
@@ -695,6 +708,39 @@ describe("processCommand", () => {
     assert.ok(segCancelled);
   });
 
+  it("XE1 cancels first segment and keeps second active", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "SS2Y1");
+
+    const xeLines = await runCommand(state, "XE1");
+    assert.equal(xeLines[0], "OK");
+
+    const rtAfter = await runCommand(state, "RT");
+    const segments = getRtSegmentLines(rtAfter);
+    assert.equal(segments.length, 2);
+    assert.equal(getSegmentStatus(segments[0]), "XX");
+    assert.equal(getSegmentStatus(segments[1]), "HK");
+  });
+
+  it("XE1-2 cancels both segments with visible XX status", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "SS2Y1");
+
+    const xeRange = await runCommand(state, "XE1-2");
+    assert.equal(xeRange[0], "OK");
+    assert.equal(xeRange[1], "ELEMENTS CANCELLED");
+
+    const rtAfter = await runCommand(state, "RT");
+    const segments = getRtSegmentLines(rtAfter);
+    assert.equal(segments.length, 2);
+    assert.equal(getSegmentStatus(segments[0]), "XX");
+    assert.equal(getSegmentStatus(segments[1]), "XX");
+  });
+
   it("XEALL marks all segments as cancelled", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
@@ -710,11 +756,16 @@ describe("processCommand", () => {
     assert.equal(xeAll[1], "ITINERARY CANCELLED");
 
     const rtLines = await runCommand(state, "RT");
-    const cancelledSegments = rtLines.filter((line) =>
-      /^\s*\d+\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+XX\d$/.test(
-        line
-      )
+    const cancelledSegments = getRtSegmentLines(rtLines).filter(
+      (line) => getSegmentStatus(line) === "XX"
     );
     assert.equal(cancelledSegments.length, segmentCount);
+  });
+
+  it("XEALL returns error when no segment exists", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const xeAll = await runCommand(state, "XEALL");
+    assert.deepEqual(xeAll, ["NO SEGMENTS"]);
   });
 });
