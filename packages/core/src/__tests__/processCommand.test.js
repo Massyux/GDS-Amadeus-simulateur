@@ -430,6 +430,12 @@ describe("processCommand", () => {
 
     const fxp = await processCommand(state, "FXP");
     const fxpLines = fxp.events.map((event) => event.text);
+    const createdTst = state.tsts[0];
+    assert.equal(createdTst.currency, "EUR");
+    assert.equal(createdTst.pricingStatus, "CREATED");
+    assert.equal(createdTst.totals.total, createdTst.total);
+    assert.equal(createdTst.totals.taxTotal, createdTst.taxTotal);
+    assert.deepEqual(createdTst.totals.taxes, createdTst.taxes);
     assert.equal(state.activePNR.itinerary[0].classCode, beforeClass);
     assert.ok(fxpLines[0] === "FXP");
     assert.ok(fxpLines.some((line) => line.includes("TST CREATED")));
@@ -523,6 +529,20 @@ describe("processCommand", () => {
     const fxlBad = await processCommand(state, "FXL/ABC");
     const fxlBadLines = fxlBad.events.map((event) => event.text);
     assert.deepEqual(fxlBadLines, ["FXL", "FUNCTION NOT APPLICABLE"]);
+  });
+
+  it("FXP creates deterministic normalized TST totals for same inputs", async () => {
+    const createTstTotals = async () => {
+      const state = createInitialState();
+      await processCommand(state, "AN26DECALGPAR");
+      await processCommand(state, "SS1Y2");
+      await processCommand(state, "NM1DOE/JOHN MR");
+      await processCommand(state, "FXP");
+      return state.tsts[0].totals;
+    };
+    const totalsA = await createTstTotals();
+    const totalsB = await createTstTotals();
+    assert.deepEqual(totalsA, totalsB);
   });
 
   it("returns error for IG when no recorded PNR is available", async () => {

@@ -558,6 +558,30 @@ function buildFqnLines(fareBasis, seed) {
   ];
 }
 
+function createNormalizedTst({ id, pricing, status = "CREATED", currency = "EUR" }) {
+  return {
+    id,
+    currency,
+    pricingStatus: status,
+    status,
+    paxCounts: pricing.paxCounts,
+    segments: pricing.segments.map((s) => s.displayIndex),
+    segmentDetails: pricing.segments.map((s) => ({ ...s })),
+    validatingCarrier: pricing.validatingCarrier,
+    fareBasis: pricing.fareBasis,
+    totals: {
+      fare: pricing.baseFare,
+      taxes: { ...pricing.taxes },
+      taxTotal: pricing.taxTotal,
+      total: pricing.total,
+    },
+    baseFare: pricing.baseFare,
+    taxes: pricing.taxes,
+    taxTotal: pricing.taxTotal,
+    total: pricing.total,
+  };
+}
+
 function ensurePNR(state) {
   if (!state.activePNR) {
     state.activePNR = {
@@ -1863,19 +1887,7 @@ export async function processCommand(state, cmd, options = {}) {
       clock: deps.clock,
     });
     const id = ++state.lastTstId;
-    const tst = {
-      id,
-      paxCounts: pricing.paxCounts,
-      segments: pricing.segments.map((s) => s.displayIndex),
-      segmentDetails: pricing.segments.map((s) => ({ ...s })),
-      validatingCarrier: pricing.validatingCarrier,
-      fareBasis: pricing.fareBasis,
-      baseFare: pricing.baseFare,
-      taxes: pricing.taxes,
-      taxTotal: pricing.taxTotal,
-      total: pricing.total,
-      status: "CREATED",
-    };
+    const tst = createNormalizedTst({ id, pricing, status: "CREATED" });
     state.tsts = [tst];
 
     print("FXP");
@@ -1980,19 +1992,7 @@ export async function processCommand(state, cmd, options = {}) {
       clock: deps.clock,
     });
     const id = ++state.lastTstId;
-    const tst = {
-      id,
-      paxCounts: pricing.paxCounts,
-      segments: pricing.segments.map((s) => s.displayIndex),
-      segmentDetails: pricing.segments.map((s) => ({ ...s })),
-      validatingCarrier: pricing.validatingCarrier,
-      fareBasis: pricing.fareBasis,
-      baseFare: pricing.baseFare,
-      taxes: pricing.taxes,
-      taxTotal: pricing.taxTotal,
-      total: pricing.total,
-      status: "CREATED",
-    };
+    const tst = createNormalizedTst({ id, pricing, status: "CREATED" });
     state.tsts = [tst];
 
     print("FXB");
