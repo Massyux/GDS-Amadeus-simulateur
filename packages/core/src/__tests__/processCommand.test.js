@@ -878,6 +878,17 @@ describe("processCommand", () => {
     assert.ok(tktlIndex < fpIndex);
   });
 
+  it("RT renders FA line when ticket model exists in PNR", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    state.activePNR.tickets.push({
+      ticketNumber: "172-0000000001",
+      status: "ISSUED",
+    });
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("FA 172-0000000001 ISSUED")));
+  });
+
   it("XE rejects missing parameters", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");

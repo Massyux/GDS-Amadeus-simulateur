@@ -602,6 +602,7 @@ function ensurePNR(state) {
       remarks: [],
       tktl: null,
       fp: null,
+      tickets: [],
       elements: [],
     };
   } else {
@@ -613,6 +614,7 @@ function ensurePNR(state) {
     state.activePNR.remarks ||= [];
     state.activePNR.tktl ||= null;
     state.activePNR.fp ||= null;
+    state.activePNR.tickets ||= [];
     state.activePNR.elements ||= [];
   }
 }
@@ -690,6 +692,7 @@ function rebuildPnrElements(pnr, clock) {
   pnr.ssr ||= [];
   pnr.osi ||= [];
   pnr.remarks ||= [];
+  pnr.tickets ||= [];
 
   const elements = [];
 
@@ -723,6 +726,9 @@ function rebuildPnrElements(pnr, clock) {
 
   if (pnr.tktl) elements.push({ kind: "TKTL" });
   if (pnr.fp) elements.push({ kind: "FP" });
+  pnr.tickets.forEach((_, index) => {
+    elements.push({ kind: "TKT", index });
+  });
 
   pnr.contacts.forEach((_, index) => {
     elements.push({ kind: "AP", index });
@@ -790,6 +796,15 @@ function renderPNRLiveView(state, clock) {
       n++;
       continue;
     }
+    if (element.kind === "TKT") {
+      const ticket = pnr.tickets[element.index];
+      if (!ticket) continue;
+      lines.push(
+        `${padL(n, 2)} FA ${ticket.ticketNumber} ${ticket.status || "ISSUED"}`
+      );
+      n++;
+      continue;
+    }
     if (element.kind === "AP") {
       const ap = pnr.contacts[element.index];
       if (!ap) continue;
@@ -849,7 +864,8 @@ function buildElementIndex(state, clock) {
       entry.kind === "AP" ||
       entry.kind === "SSR" ||
       entry.kind === "OSI" ||
-      entry.kind === "RM"
+      entry.kind === "RM" ||
+      entry.kind === "TKT"
     ) {
       elements.push({ elementNo, kind: entry.kind, index: entry.index });
       elementNo += 1;
@@ -1326,6 +1342,7 @@ export function createInitialState() {
     lastAN: null,
     tsts: [],
     lastTstId: 0,
+    lastTicketSeq: 0,
     pnrStore: {},
     recordedSnapshot: null,
     lastRecordedLocator: null,
