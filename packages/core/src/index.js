@@ -1936,13 +1936,25 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
+    const activeSegments = getActiveSortedItinerary(pnr, deps.clock);
+    if (activeSegments.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXX",
+      segmentsOverride: activeSegments,
       clock: deps.clock,
     });
+    const currentTst = state.tsts && state.tsts.length > 0 ? state.tsts[0] : null;
+    const id = currentTst ? currentTst.id : ++state.lastTstId;
+    const tst = createNormalizedTst({ id, pricing, status: "STORED" });
+    state.tsts = [tst];
+
     print("FXX");
-    print("QUOTE - FXX (BOOKED RBD) - NO TST CREATED");
+    print("QUOTE - FXX (BOOKED RBD)");
+    print(`TST ${currentTst ? "UPDATED" : "CREATED"}  ${id}  STATUS: STORED`);
     print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
     print(
       `SEGMENTS: ${formatSegmentsRange(

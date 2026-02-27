@@ -459,14 +459,33 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("STATUS VALIDATED")));
   });
 
-  it("FXX does not create TST", async () => {
+  it("FXX creates or updates TST as STORED", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
     const fxx = await processCommand(state, "FXX");
     const fxxLines = fxx.events.map((event) => event.text);
-    assert.ok(fxxLines.some((line) => line.includes("NO TST CREATED")));
-    assert.equal(state.tsts.length, 0);
+    assert.ok(fxxLines.some((line) => line.includes("STATUS: STORED")));
+    assert.equal(state.tsts.length, 1);
+    assert.equal(state.tsts[0].status, "STORED");
+    assert.equal(state.tsts[0].pricingStatus, "STORED");
+  });
+
+  it("FXX works after ER and keeps TST in STORED status", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "AP123456");
+    await processCommand(state, "RFTEST");
+    await processCommand(state, "ER");
+
+    const fxx = await processCommand(state, "FXX");
+    const fxxLines = fxx.events.map((event) => event.text);
+    assert.ok(fxxLines.some((line) => line.includes("STATUS: STORED")));
+    assert.equal(state.tsts.length, 1);
+    assert.equal(state.tsts[0].status, "STORED");
   });
 
   it("FXR changes classes and does not create TST", async () => {
