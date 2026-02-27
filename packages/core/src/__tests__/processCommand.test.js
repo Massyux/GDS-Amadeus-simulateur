@@ -488,7 +488,7 @@ describe("processCommand", () => {
     assert.equal(state.tsts[0].status, "STORED");
   });
 
-  it("FXR changes classes and does not create TST", async () => {
+  it("FXR reprices and keeps TST linked to segments without rebook", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
@@ -496,8 +496,11 @@ describe("processCommand", () => {
     const fxr = await processCommand(state, "FXR");
     const fxrLines = fxr.events.map((event) => event.text);
     assert.ok(fxrLines[0] === "FXR");
-    assert.notEqual(state.activePNR.itinerary[0].classCode, beforeClass);
-    assert.equal(state.tsts.length, 0);
+    assert.equal(state.activePNR.itinerary[0].classCode, beforeClass);
+    assert.equal(state.tsts.length, 1);
+    assert.equal(state.tsts[0].status, "REPRICED");
+    assert.equal(state.tsts[0].segments.length, 1);
+    assert.equal(state.tsts[0].segments[0], 1);
 
     const stateFxP = createInitialState();
     await processCommand(stateFxP, "AN26DECALGPAR");
@@ -507,7 +510,7 @@ describe("processCommand", () => {
     const fxpTotal = getMoney(fxpLines, "TOTAL");
     const fxrTotal = getMoney(fxrLines, "NEW TOTAL");
     assert.ok(fxpTotal !== null && fxrTotal !== null);
-    assert.ok(fxrTotal < fxpTotal);
+    assert.ok(fxrTotal > 0);
   });
 
   it("FXB changes classes, creates TST, and is cheaper or equal to FXP", async () => {

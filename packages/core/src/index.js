@@ -1974,25 +1974,27 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const before = getSortedItinerary(pnr, deps.clock).map((s) => ({
-      displayIndex: s.displayIndex,
-      classCode: s.classCode || "Y",
-    }));
-    rebookSegments(pnr, "FXR");
+    const activeSegments = getActiveSortedItinerary(pnr, deps.clock);
+    if (activeSegments.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXR",
+      segmentsOverride: activeSegments,
       clock: deps.clock,
     });
+    const currentTst = state.tsts && state.tsts.length > 0 ? state.tsts[0] : null;
+    const id = currentTst ? currentTst.id : ++state.lastTstId;
+    const tst = createNormalizedTst({ id, pricing, status: "REPRICED" });
+    state.tsts = [tst];
+
     print("FXR");
-    print("REBOOK TO LOWEST AVAILABLE - NO TST CREATED");
+    print("REPRICE - FXR");
+    print(`TST ${currentTst ? "UPDATED" : "CREATED"}  ${id}  STATUS: REPRICED`);
     print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
-    print("REBOOKED SEGMENTS:");
-    pricing.segments.forEach((seg) => {
-      const old = before.find((b) => b.displayIndex === seg.displayIndex);
-      const oldCode = old ? old.classCode : seg.classCode;
-      print(`  ${seg.displayIndex}  ${oldCode} -> ${seg.classCode}`);
-    });
+    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
     print("");
     print(`NEW FARE  EUR ${formatMoney(pricing.baseFare)}`);
     print(`NEW TAX   EUR ${formatMoney(pricing.taxTotal)}`);
