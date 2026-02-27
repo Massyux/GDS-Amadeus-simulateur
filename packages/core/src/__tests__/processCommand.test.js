@@ -552,22 +552,34 @@ describe("processCommand", () => {
     assert.equal(state.tsts[0].status, "READY_TO_TICKET");
   });
 
-  it("FXL lists options and invalid variants are rejected", async () => {
+  it("FXL displays existing TST and invalid variants are rejected", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
-    const beforeClass = state.activePNR.itinerary[0].classCode;
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FXP");
     const fxl = await processCommand(state, "FXL");
     const fxlLines = fxl.events.map((event) => event.text);
     assert.ok(fxlLines[0] === "FXL");
-    assert.ok(fxlLines.some((line) => line.startsWith("OPTION 1")));
-    assert.ok(fxlLines.some((line) => line.startsWith("OPTION 2")));
-    assert.ok(fxlLines.some((line) => line.startsWith("OPTION 3")));
-    assert.equal(state.activePNR.itinerary[0].classCode, beforeClass);
+    assert.ok(fxlLines.some((line) => line.includes("PRICING DISPLAY - STORED TST")));
+    assert.ok(fxlLines.some((line) => line.startsWith("TST ")));
+    assert.ok(fxlLines.some((line) => line.startsWith("TOTAL")));
 
     const fxlBad = await processCommand(state, "FXL/ABC");
     const fxlBadLines = fxlBad.events.map((event) => event.text);
     assert.deepEqual(fxlBadLines, ["FXL", "FUNCTION NOT APPLICABLE"]);
+  });
+
+  it("FXL without TST returns NO TST", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y2");
+    const fxl = await processCommand(state, "FXL");
+    assert.ok(
+      fxl.events.some(
+        (event) => event.type === "error" && event.text === "NO TST"
+      )
+    );
   });
 
   it("FXP creates deterministic normalized TST totals for same inputs", async () => {

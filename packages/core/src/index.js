@@ -2057,44 +2057,26 @@ export async function processCommand(state, cmd, options = {}) {
       print("FUNCTION NOT APPLICABLE");
       return { events, state };
     }
-    const pnr = state.activePNR;
-    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
-      print("NO ITINERARY");
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
       return { events, state };
     }
-    const baseSegments = getSortedItinerary(pnr, deps.clock);
-    const options = [];
-    for (let i = 0; i < 3; i++) {
-      const optionSegments = baseSegments.map((seg) => {
-        const idx = RBD_LADDER.indexOf(seg.classCode || "Y");
-        const index = idx === -1 ? 3 : idx;
-        const newIndex = Math.min(RBD_LADDER.length - 1, index + i + 1);
-        return { ...seg, classCode: RBD_LADDER[newIndex] };
-      });
-      const pricing = deps.pricing.price({
-        pnr,
-        mode: `FXL${i + 1}`,
-        segmentsOverride: optionSegments,
-        clock: deps.clock,
-      });
-      options.push({
-        total: pricing.total,
-        rbd: optionSegments.map((s) => s.classCode).join("/"),
-        fareBasis: pricing.fareBasis.join("/"),
-      });
-    }
+    const tst = state.tsts[state.tsts.length - 1];
     print("FXL");
-    print("LOWEST FARES - DISPLAY ONLY (NO REBOOK / NO TST)");
+    print("PRICING DISPLAY - STORED TST");
+    print(
+      `TST ${tst.id}  STATUS ${tst.status}  VC ${tst.validatingCarrier}  CUR ${tst.currency}`
+    );
+    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
     print("");
-    options.forEach((opt, idx) => {
-      print(
-        `OPTION ${idx + 1}  TOTAL EUR ${formatMoney(opt.total)}  RBD ${
-          opt.rbd
-        }   FARE BASIS ${opt.fareBasis}`
-      );
+    print("FARE BASIS:");
+    tst.fareBasis.forEach((fareBasis, index) => {
+      print(`  ${index + 1}  ${fareBasis}`);
     });
     print("");
-    print("USE FXB TO APPLY BEST BUY AND CREATE TST");
+    print(`FARE     ${tst.currency} ${formatMoney(tst.baseFare)}`);
+    print(`TAX      ${tst.currency} ${formatMoney(tst.taxTotal)}`);
+    print(`TOTAL    ${tst.currency} ${formatMoney(tst.total)}`);
     return { events, state };
   }
 
