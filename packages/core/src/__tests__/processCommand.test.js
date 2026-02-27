@@ -672,6 +672,25 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("FB TST1 172-0000000001")));
   });
 
+  it("ET rejects duplicate issue on the same TST", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+    await processCommand(state, "ET");
+
+    const secondEt = await processCommand(state, "ET");
+    assert.ok(
+      secondEt.events.some(
+        (event) =>
+          event.type === "error" && event.text === "TICKET ALREADY ISSUED"
+      )
+    );
+    assert.equal(state.activePNR.tickets.length, 1);
+  });
+
   it("ET without TST returns NO TST", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");

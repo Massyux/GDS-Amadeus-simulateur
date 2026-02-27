@@ -1500,6 +1500,7 @@ export async function processCommand(state, cmd, options = {}) {
     "FUNCTION NOT APPLICABLE",
     "NO TST",
     "NO TICKET",
+    "TICKET ALREADY ISSUED",
     "NO SEGMENTS",
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
@@ -2149,6 +2150,13 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     const tst = state.tsts[state.tsts.length - 1];
+    const existingIssuedTicket = (pnr.tickets || []).find(
+      (item) => item.tstId === tst.id && item.status !== "VOID"
+    );
+    if (existingIssuedTicket) {
+      print("TICKET ALREADY ISSUED");
+      return { events, state };
+    }
     const ticketSeq = ++state.lastTicketSeq;
     const ticket = {
       id: ticketSeq,
