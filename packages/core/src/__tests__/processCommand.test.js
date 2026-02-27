@@ -597,6 +597,31 @@ describe("processCommand", () => {
     assert.ok(lines.some((line) => line.startsWith("TOTAL    EUR ")));
   });
 
+  it("FQN is stable for the same TST context", async () => {
+    const runFqn = async () => {
+      const state = createInitialState();
+      await processCommand(state, "AN26DECALGPAR");
+      await processCommand(state, "SS1Y2");
+      await processCommand(state, "NM1DOE/JOHN MR");
+      await processCommand(state, "FXP");
+      const fqn = await processCommand(state, "FQN1");
+      return fqn.events.map((event) => event.text);
+    };
+    const linesA = await runFqn();
+    const linesB = await runFqn();
+    assert.deepEqual(linesA, linesB);
+  });
+
+  it("FQN without TST returns NO TST", async () => {
+    const state = createInitialState();
+    const fqn = await processCommand(state, "FQN1");
+    assert.ok(
+      fqn.events.some(
+        (event) => event.type === "error" && event.text === "NO TST"
+      )
+    );
+  });
+
   it("FXP creates deterministic normalized TST totals for same inputs", async () => {
     const createTstTotals = async () => {
       const state = createInitialState();
