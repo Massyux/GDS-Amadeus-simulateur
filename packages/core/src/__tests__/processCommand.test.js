@@ -640,6 +640,7 @@ describe("processCommand", () => {
     const rt = await processCommand(state, "RT");
     const rtLines = rt.events.map((event) => event.text);
     assert.ok(rtLines.some((line) => line.includes("FA 172-0000000001 ISSUED")));
+    assert.ok(rtLines.some((line) => line.includes("FB TST1 172-0000000001")));
   });
 
   it("ET without TST returns NO TST", async () => {
@@ -962,6 +963,43 @@ describe("processCommand", () => {
     });
     const rtLines = await runCommand(state, "RT");
     assert.ok(rtLines.some((line) => line.includes("FA 172-0000000001 ISSUED")));
+  });
+
+  it("RT end-to-end keeps pricing and ticketing blocks in coherent order", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "FP CASH");
+    await runCommand(state, "FXP");
+    await runCommand(state, "FXX");
+    const tqt = await runCommand(state, "TQT");
+    assert.ok(tqt.some((line) => line.startsWith("TQT1")));
+    await runCommand(state, "ET");
+
+    const rtLines = await runCommand(state, "RT");
+    const segmentIndex = rtLines.findIndex((line) =>
+      /^\s*\d+\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+[A-Z]{2}\d$/.test(
+        line
+      )
+    );
+    const fpIndex = rtLines.findIndex((line) => line.includes("FP CASH"));
+    const faIndex = rtLines.findIndex((line) => line.includes("FA 172-0000000001"));
+    const fbIndex = rtLines.findIndex((line) => line.includes("FB TST1 172-0000000001"));
+    const tstSummaryIndex = rtLines.findIndex((line) =>
+      line.includes("TST 1") && line.includes("STATUS TICKETED")
+    );
+
+    assert.ok(segmentIndex > -1);
+    assert.ok(fpIndex > -1);
+    assert.ok(faIndex > -1);
+    assert.ok(fbIndex > -1);
+    assert.ok(tstSummaryIndex > -1);
+    assert.ok(segmentIndex < fpIndex);
+    assert.ok(fpIndex < faIndex);
+    assert.ok(faIndex < fbIndex);
+    assert.ok(fbIndex < tstSummaryIndex);
   });
 
   it("XE rejects missing parameters", async () => {

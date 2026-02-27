@@ -807,6 +807,10 @@ function renderPNRLiveView(state, clock) {
         `${padL(n, 2)} FA ${ticket.ticketNumber} ${ticket.status || "ISSUED"}`
       );
       n++;
+      lines.push(
+        `${padL(n, 2)} FB TST${ticket.tstId || "-"} ${ticket.ticketNumber}`
+      );
+      n++;
       continue;
     }
     if (element.kind === "AP") {
