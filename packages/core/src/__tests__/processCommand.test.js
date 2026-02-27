@@ -1167,6 +1167,32 @@ describe("processCommand", () => {
     );
   });
 
+  it("QP places recorded locator into queue", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const locator = getRecordLocator(erLines);
+    assert.ok(locator);
+
+    const qpLines = await runCommand(state, "QP/12C1");
+    assert.ok(qpLines.includes("PLACED IN QUEUE 12C1"));
+    assert.deepEqual(state.queueStore["12C1"], [locator]);
+  });
+
+  it("QP without recorded PNR returns NO RECORDED PNR", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "QP/12C1");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "NO RECORDED PNR"
+      )
+    );
+  });
+
   it("ER/RT keeps full PNR content with ordered PNR elements", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");

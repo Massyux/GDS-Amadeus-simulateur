@@ -2054,6 +2054,23 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
+  if (c.startsWith("QP")) {
+    const match = c.match(/^QP\/?([A-Z0-9]{2,8})$/);
+    if (!match) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const queueId = normalizeQueueId(match[1]);
+    const recordLocator = resolveRecordedLocator(state);
+    if (!recordLocator) {
+      print("NO RECORDED PNR");
+      return { events, state };
+    }
+    state.queueStore = queueAdd(state.queueStore, queueId, recordLocator);
+    print(`PLACED IN QUEUE ${queueId}`);
+    return { events, state };
+  }
+
   if (c.startsWith("XI")) {
     // XI element-level cancellation is intentionally not supported here.
     // Use XE<n> / XE<n-m> for deterministic element cancellation.
