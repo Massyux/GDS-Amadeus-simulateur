@@ -623,7 +623,7 @@ describe("processCommand", () => {
     assert.deepEqual(rtAfterIr, rtAfterEr);
   });
 
-  it("XI cancels PNR immediately and removes it from the store", async () => {
+  it("XI clears active PNR but keeps recorded PNR in store", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
     await runCommand(state, "AP123456");
@@ -634,9 +634,10 @@ describe("processCommand", () => {
 
     const xiLines = await runCommand(state, "XI");
     assert.deepEqual(xiLines, ["OK", "PNR CANCELLED", "NO ACTIVE PNR"]);
+    assert.equal(state.activePNR, null);
 
     const irLines = await runCommand(state, `IR${recordLocator}`);
-    assert.deepEqual(irLines, ["PNR NOT FOUND"]);
+    assert.ok(irLines.includes("RETRIEVED"));
   });
 
   it("returns error for unsupported XI element syntax", async () => {
@@ -739,7 +740,9 @@ describe("processCommand", () => {
 
     const rtAfter = await runCommand(state, "RT");
     const segments = getRtSegmentLines(rtAfter);
-    assert.equal(segments.length, 1);
+    assert.equal(segments.length, 2);
+    const cancelledStatus = getSegmentStatus(segments[0]);
+    assert.ok(cancelledStatus === "HX" || cancelledStatus === "XX");
   });
 
   it("XE1 cancels first segment and keeps second active", async () => {
@@ -753,11 +756,13 @@ describe("processCommand", () => {
 
     const rtAfter = await runCommand(state, "RT");
     const segments = getRtSegmentLines(rtAfter);
-    assert.equal(segments.length, 1);
-    assert.equal(getSegmentStatus(segments[0]), "HK");
+    assert.equal(segments.length, 2);
+    const firstStatus = getSegmentStatus(segments[0]);
+    assert.ok(firstStatus === "HX" || firstStatus === "XX");
+    assert.equal(getSegmentStatus(segments[1]), "HK");
   });
 
-  it("XE1-2 removes both segments", async () => {
+  it("XE1-2 marks both segments as cancelled", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
     await runCommand(state, "SS1Y1");
@@ -769,10 +774,14 @@ describe("processCommand", () => {
 
     const rtAfter = await runCommand(state, "RT");
     const segments = getRtSegmentLines(rtAfter);
-    assert.equal(segments.length, 0);
+    assert.equal(segments.length, 2);
+    for (const segmentLine of segments) {
+      const status = getSegmentStatus(segmentLine);
+      assert.ok(status === "HX" || status === "XX");
+    }
   });
 
-  it("XEALL removes all segments", async () => {
+  it("XEALL marks all segments as cancelled", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
     await runCommand(state, "SS1Y1");
@@ -788,8 +797,11 @@ describe("processCommand", () => {
 
     const rtLines = await runCommand(state, "RT");
     const remainingSegments = getRtSegmentLines(rtLines);
-    assert.equal(remainingSegments.length, 0);
-    assert.equal(state.activePNR.itinerary.length, 0);
+    assert.equal(remainingSegments.length, segmentCount);
+    for (const segmentLine of remainingSegments) {
+      const status = getSegmentStatus(segmentLine);
+      assert.ok(status === "HX" || status === "XX");
+    }
   });
 
   it("XEALL returns error when no segment exists", async () => {
@@ -797,6 +809,20 @@ describe("processCommand", () => {
     await runCommand(state, "NM1DOE/JOHN MR");
     const xeAll = await runCommand(state, "XEALL");
     assert.deepEqual(xeAll, ["NO SEGMENTS"]);
+  });
+
+  it("XEALL returns error when all segments are already cancelled", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "SS2Y1");
+    await runCommand(state, "NM2DOE/JOHN SMITH/JANE");
+
+    const firstXeAll = await runCommand(state, "XEALL");
+    assert.equal(firstXeAll[0], "OK");
+
+    const secondXeAll = await runCommand(state, "XEALL");
+    assert.deepEqual(secondXeAll, ["NO SEGMENTS"]);
   });
 
   it("XE blocks cancellation when segment is linked to TST", async () => {
@@ -811,6 +837,7 @@ describe("processCommand", () => {
     const rtLines = await runCommand(state, "RT");
     const segments = getRtSegmentLines(rtLines);
     assert.equal(segments.length, 1);
+    assert.equal(getSegmentStatus(segments[0]), "HK");
   });
 
   it("XE blocks deleting the last segment when PNR has a single name", async () => {

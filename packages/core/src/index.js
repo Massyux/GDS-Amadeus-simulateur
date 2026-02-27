@@ -1113,6 +1113,21 @@ function buildSegmentDisplayIndexByItineraryIndex(pnr, clock) {
   return displayByIndex;
 }
 
+function isSegmentCancelledStatus(status) {
+  const normalized = String(status || "HK").toUpperCase();
+  return normalized === "HX" || normalized === "XX";
+}
+
+function filterActiveSegmentElements(state, segmentElements) {
+  const pnr = state.activePNR;
+  if (!pnr) return [];
+  return segmentElements.filter((element) => {
+    const segment = pnr.itinerary?.[element.index];
+    if (!segment) return false;
+    return !isSegmentCancelledStatus(segment.status);
+  });
+}
+
 function validateSegmentCancellation(state, segmentElements, clock) {
   const pnr = state.activePNR;
   if (!pnr) return { error: "NO ACTIVE PNR" };
@@ -1131,7 +1146,7 @@ function validateSegmentCancellation(state, segmentElements, clock) {
 
   const activeSegmentIndexes = (pnr.itinerary || [])
     .map((segment, index) => ({ segment, index }))
-    .filter((entry) => (entry.segment.status || "HK") !== "XX")
+    .filter((entry) => !isSegmentCancelledStatus(entry.segment.status))
     .map((entry) => entry.index);
 
   if ((pnr.passengers || []).length === 1) {
@@ -1149,14 +1164,13 @@ function validateSegmentCancellation(state, segmentElements, clock) {
   return { ok: true };
 }
 
-function removeSegmentElements(state, segmentElements) {
+function markSegmentElementsCancelled(state, segmentElements, cancelledStatus = "HX") {
   const pnr = state.activePNR;
   if (!pnr) return;
-  const indexes = Array.from(new Set(segmentElements.map((element) => element.index)))
-    .sort((a, b) => b - a);
+  const indexes = Array.from(new Set(segmentElements.map((element) => element.index)));
   for (const index of indexes) {
     if (index >= 0 && index < pnr.itinerary.length) {
-      pnr.itinerary.splice(index, 1);
+      pnr.itinerary[index].status = cancelledStatus;
     }
   }
 }
@@ -1181,9 +1195,11 @@ function handleXE(state, cmdUpper, clock) {
 
   if (cmdUpper === "XEALL") {
     if (segmentElements.length === 0) return { error: "NO SEGMENTS" };
-    const validation = validateSegmentCancellation(state, segmentElements, clock);
+    const activeSegmentElements = filterActiveSegmentElements(state, segmentElements);
+    if (activeSegmentElements.length === 0) return { error: "NO SEGMENTS" };
+    const validation = validateSegmentCancellation(state, activeSegmentElements, clock);
     if (validation.error) return { error: validation.error };
-    removeSegmentElements(state, segmentElements);
+    markSegmentElementsCancelled(state, activeSegmentElements);
     return {
       lines: ["OK", "ITINERARY CANCELLED", ...renderPNRLiveView(state, clock)],
     };
@@ -1195,9 +1211,15 @@ function handleXE(state, cmdUpper, clock) {
     if (n < 1 || n > elements.length) return { error: "ELEMENT NOT FOUND" };
     const element = elements[n - 1];
     if (element.kind === "SEG") {
-      const validation = validateSegmentCancellation(state, [element], clock);
+      const activeSegmentSelections = filterActiveSegmentElements(state, [element]);
+      if (activeSegmentSelections.length === 0) return { error: "NOTHING TO CANCEL" };
+      const validation = validateSegmentCancellation(
+        state,
+        activeSegmentSelections,
+        clock
+      );
       if (validation.error) return { error: validation.error };
-      removeSegmentElements(state, [element]);
+      markSegmentElementsCancelled(state, activeSegmentSelections);
       return {
         lines: ["OK", "SEGMENT CANCELLED", ...renderPNRLiveView(state, clock)],
       };
@@ -1227,26 +1249,39 @@ function handleXE(state, cmdUpper, clock) {
       return { error: "NOT ALLOWED" };
     }
     const segmentSelections = selected.filter((el) => el.kind === "SEG");
-    if (segmentSelections.length > 0) {
+    const activeSegmentSelections = filterActiveSegmentElements(
+      state,
+      segmentSelections
+    );
+    if (activeSegmentSelections.length > 0) {
       const validation = validateSegmentCancellation(
         state,
-        segmentSelections,
+        activeSegmentSelections,
         clock
       );
       if (validation.error) return { error: validation.error };
     }
+    let changed = false;
     const paxElements = selected
       .filter((el) => el.kind === "PAX")
       .sort((left, right) => right.ref.paxIndex - left.ref.paxIndex);
     for (const paxElement of paxElements) {
       const paxResult = cancelPaxElement(state, paxElement);
       if (paxResult && paxResult.error) return { error: paxResult.error };
+      changed = true;
     }
-    removeSegmentElements(state, segmentSelections);
+    if (activeSegmentSelections.length > 0) {
+      markSegmentElementsCancelled(state, activeSegmentSelections);
+      changed = true;
+    }
     const otherElements = selected.filter(
       (el) => el.kind !== "PAX" && el.kind !== "SEG"
     );
-    cancelElements(state, otherElements);
+    if (otherElements.length > 0) {
+      cancelElements(state, otherElements);
+      changed = true;
+    }
+    if (!changed) return { error: "NOTHING TO CANCEL" };
     return {
       lines: ["OK", "ELEMENTS CANCELLED", ...renderPNRLiveView(state, clock)],
     };
@@ -1400,7 +1435,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("XE1                 CANCEL SEGMENT");
     print("IG                  IGNORE PNR");
     print("IRXXXXXX            RETRIEVE PNR");
-    print("XI                  CANCEL PNR");
+    print("XI                  CANCEL ACTIVE PNR");
     print("DAC XXX             DECODE IATA (ex: DAC ALG)");
     print("DAN <TEXT>          ENCODE SEARCH (ex: DAN PARIS)");
     print("NM                  NAME (MR/MRS optional, CHD/INF)");
@@ -1509,18 +1544,10 @@ export async function processCommand(state, cmd, options = {}) {
       renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
-    const pnr = state.activePNR;
-    if (pnr.recordLocator && state.pnrStore) {
-      delete state.pnrStore[pnr.recordLocator];
-    }
-    if (
-      state.recordedSnapshot &&
-      state.recordedSnapshot.recordLocator === pnr.recordLocator
-    ) {
-      state.recordedSnapshot = null;
-    }
+    // Keep recorded store entries intact; XI only clears the active working PNR.
     state.activePNR = null;
     state.tsts = [];
+    state.recordedSnapshot = null;
     print("OK");
     print("PNR CANCELLED");
     renderPNRLiveView(state, deps.clock).forEach(print);
