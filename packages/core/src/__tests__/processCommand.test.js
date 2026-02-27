@@ -210,6 +210,31 @@ describe("processCommand", () => {
     );
   });
 
+  it("adds SSR and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const ssrLines = await runCommand(state, "SSR WCHR YY NEED WHEELCHAIR");
+    assert.deepEqual(state.activePNR.ssr, ["WCHR YY NEED WHEELCHAIR"]);
+    assert.ok(
+      ssrLines.some((line) => line.includes("SSR WCHR YY NEED WHEELCHAIR"))
+    );
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(
+      rtLines.some((line) => line.includes("SSR WCHR YY NEED WHEELCHAIR"))
+    );
+  });
+
+  it("returns error event for invalid SSR format", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "SSR WCHR YY");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("keeps the same record locator on repeated ER", async () => {
     const state = createInitialState();
 

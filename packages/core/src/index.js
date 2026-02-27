@@ -1351,7 +1351,7 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c.startsWith("SS")) {
+  if (c.startsWith("SS") && !c.startsWith("SSR")) {
     const result = handleSS(state, c, deps.clock);
     if (result.error) {
       print(result.error);
@@ -1416,6 +1416,26 @@ export async function processCommand(state, cmd, options = {}) {
     ensurePNR(state);
     const pnr = state.activePNR;
     pnr.contacts.push(c);
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("SSR")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const ssrMatch = c.match(/^SSR\s+([A-Z0-9]{2,4})\s+([A-Z0-9]{2})\s+(.+)$/);
+    if (!ssrMatch) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const code = ssrMatch[1];
+    const airline = ssrMatch[2];
+    const text = ssrMatch[3].trim();
+    if (!text) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    pnr.ssr.push(`${code} ${airline} ${text}`);
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
