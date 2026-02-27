@@ -572,6 +572,7 @@ function ensurePNR(state) {
       remarks: [],
       tktl: null,
       fp: null,
+      elements: [],
     };
   } else {
     state.activePNR.passengers ||= [];
@@ -582,6 +583,7 @@ function ensurePNR(state) {
     state.activePNR.remarks ||= [];
     state.activePNR.tktl ||= null;
     state.activePNR.fp ||= null;
+    state.activePNR.elements ||= [];
   }
 }
 
@@ -649,75 +651,131 @@ function segmentLineForPNR(s) {
   return `${airline} ${flightNo} ${cls} ${ddmmm} ${pair} ${dep} ${arr} ${st}${pax}`;
 }
 
+function rebuildPnrElements(pnr, clock) {
+  if (!pnr) return [];
+
+  pnr.passengers ||= [];
+  pnr.itinerary ||= [];
+  pnr.contacts ||= [];
+  pnr.ssr ||= [];
+  pnr.osi ||= [];
+  pnr.remarks ||= [];
+
+  const elements = [];
+
+  pnr.passengers.forEach((_, index) => {
+    elements.push({ kind: "PAX", index });
+  });
+
+  if (pnr.itinerary.length > 0) {
+    const decorated = pnr.itinerary.map((segment, index) => {
+      const dateObj = ddmmmToDate(segment.dateDDMMM, clock);
+      const timeValue = dateObj ? dateObj.getTime() : Number.POSITIVE_INFINITY;
+      return { index, timeValue };
+    });
+    decorated.sort((a, b) =>
+      a.timeValue !== b.timeValue ? a.timeValue - b.timeValue : a.index - b.index
+    );
+    decorated.forEach((item) => {
+      elements.push({ kind: "SEG", index: item.index });
+    });
+  }
+
+  pnr.ssr.forEach((_, index) => {
+    elements.push({ kind: "SSR", index });
+  });
+  pnr.osi.forEach((_, index) => {
+    elements.push({ kind: "OSI", index });
+  });
+  pnr.remarks.forEach((_, index) => {
+    elements.push({ kind: "RM", index });
+  });
+
+  if (pnr.tktl) elements.push({ kind: "TKTL" });
+  if (pnr.fp) elements.push({ kind: "FP" });
+
+  pnr.contacts.forEach((_, index) => {
+    elements.push({ kind: "AP", index });
+  });
+
+  if (pnr.rf) elements.push({ kind: "RF" });
+  if (pnr.recordLocator) elements.push({ kind: "RECLOC" });
+
+  pnr.elements = elements;
+  return elements;
+}
+
 function renderPNRLiveView(state, clock) {
   if (!state.activePNR) {
     return ["NO ACTIVE PNR"];
   }
 
+  const pnr = state.activePNR;
+  const orderedElements = rebuildPnrElements(pnr, clock);
   const lines = [];
   let n = 1;
-
-  if (state.activePNR.passengers.length > 0) {
-    let row = [];
-    for (const p of state.activePNR.passengers) {
-      row.push(`${n}. ${paxDisplay(p)}`);
+  for (const element of orderedElements) {
+    if (element.kind === "PAX") {
+      const pax = pnr.passengers[element.index];
+      if (!pax) continue;
+      lines.push(`${padL(n, 2)} ${paxDisplay(pax)}`);
       n++;
-      if (row.length === 3) {
-        lines.push(row.join("  "));
-        row = [];
-      }
+      continue;
     }
-    if (row.length) lines.push(row.join("  "));
-  }
-
-  if (state.activePNR.itinerary.length > 0) {
-    const decorated = state.activePNR.itinerary.map((s, idx) => {
-      const d = ddmmmToDate(s.dateDDMMM);
-      const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
-      return { s, idx, t };
-    });
-    decorated.sort((a, b) => (a.t !== b.t ? a.t - b.t : a.idx - b.idx));
-
-    for (const item of decorated) {
-      lines.push(`${padL(n, 2)} ${segmentLineForPNR(item.s)}`);
+    if (element.kind === "SEG") {
+      const segment = pnr.itinerary[element.index];
+      if (!segment) continue;
+      lines.push(`${padL(n, 2)} ${segmentLineForPNR(segment)}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "SSR") {
+      const ssr = pnr.ssr[element.index];
+      if (!ssr) continue;
+      lines.push(`${padL(n, 2)} SSR ${ssr}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "OSI") {
+      const osi = pnr.osi[element.index];
+      if (!osi) continue;
+      lines.push(`${padL(n, 2)} OSI ${osi}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "RM") {
+      const remark = pnr.remarks[element.index];
+      if (!remark) continue;
+      lines.push(`${padL(n, 2)} RM ${remark}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "TKTL" && pnr.tktl) {
+      lines.push(`${padL(n, 2)} TKTL/${pnr.tktl}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "FP" && pnr.fp) {
+      lines.push(`${padL(n, 2)} FP ${pnr.fp}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "AP") {
+      const ap = pnr.contacts[element.index];
+      if (!ap) continue;
+      lines.push(`${padL(n, 2)} ${ap}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "RF" && pnr.rf) {
+      lines.push(`${padL(n, 2)} RF ${pnr.rf}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "RECLOC" && pnr.recordLocator) {
+      lines.push(`${padL(n, 2)} REC LOC ${pnr.recordLocator}`);
       n++;
     }
-  }
-
-  for (const ap of state.activePNR.contacts) {
-    lines.push(`${padL(n, 2)} ${ap}`);
-    n++;
-  }
-
-  for (const x of state.activePNR.ssr) {
-    lines.push(`${padL(n, 2)} SSR ${x}`);
-    n++;
-  }
-  for (const x of state.activePNR.osi) {
-    lines.push(`${padL(n, 2)} OSI ${x}`);
-    n++;
-  }
-  for (const x of state.activePNR.remarks) {
-    lines.push(`${padL(n, 2)} RM ${x}`);
-    n++;
-  }
-  if (state.activePNR.tktl) {
-    lines.push(`${padL(n, 2)} TKTL/${state.activePNR.tktl}`);
-    n++;
-  }
-  if (state.activePNR.fp) {
-    lines.push(`${padL(n, 2)} FP ${state.activePNR.fp}`);
-    n++;
-  }
-
-  if (state.activePNR.rf) {
-    lines.push(`${padL(n, 2)} RF ${state.activePNR.rf}`);
-    n++;
-  }
-
-  if (state.activePNR.recordLocator) {
-    lines.push(`${padL(n, 2)} REC LOC ${state.activePNR.recordLocator}`);
-    n++;
   }
 
   if (state.tsts && state.tsts.length > 0) {
@@ -732,71 +790,50 @@ function renderPNRLiveView(state, clock) {
 function buildElementIndex(state, clock) {
   if (!state.activePNR) return [];
   const pnr = state.activePNR;
+  const orderedElements = rebuildPnrElements(pnr, clock);
   const elements = [];
   let elementNo = 1;
 
-  const passengers = pnr.passengers || [];
-  passengers.forEach((_, index) => {
-    elements.push({ elementNo, kind: "PAX", index, ref: { paxIndex: index } });
-    elementNo += 1;
-  });
-
-  const itinerary = pnr.itinerary || [];
-  if (itinerary.length > 0) {
-    const decorated = itinerary.map((s, idx) => {
-      const d = ddmmmToDate(s.dateDDMMM, clock);
-      const t = d ? d.getTime() : Number.POSITIVE_INFINITY;
-      return { s, idx, t };
-    });
-    decorated.sort((a, b) => (a.t !== b.t ? a.t - b.t : a.idx - b.idx));
-    for (const item of decorated) {
-      elements.push({ elementNo, kind: "SEG", ref: item.s });
+  for (const entry of orderedElements) {
+    if (entry.kind === "PAX") {
+      elements.push({
+        elementNo,
+        kind: "PAX",
+        index: entry.index,
+        ref: { paxIndex: entry.index },
+      });
+      elementNo += 1;
+      continue;
+    }
+    if (entry.kind === "SEG") {
+      elements.push({
+        elementNo,
+        kind: "SEG",
+        index: entry.index,
+        ref: pnr.itinerary[entry.index],
+      });
+      elementNo += 1;
+      continue;
+    }
+    if (
+      entry.kind === "AP" ||
+      entry.kind === "SSR" ||
+      entry.kind === "OSI" ||
+      entry.kind === "RM"
+    ) {
+      elements.push({ elementNo, kind: entry.kind, index: entry.index });
+      elementNo += 1;
+      continue;
+    }
+    if (
+      entry.kind === "TKTL" ||
+      entry.kind === "FP" ||
+      entry.kind === "RF" ||
+      entry.kind === "RECLOC"
+    ) {
+      elements.push({ elementNo, kind: entry.kind });
       elementNo += 1;
     }
-  }
-
-  const contacts = pnr.contacts || [];
-  contacts.forEach((_, index) => {
-    elements.push({ elementNo, kind: "AP", index });
-    elementNo += 1;
-  });
-
-  const ssr = pnr.ssr || [];
-  ssr.forEach((_, index) => {
-    elements.push({ elementNo, kind: "SSR", index });
-    elementNo += 1;
-  });
-
-  const osi = pnr.osi || [];
-  osi.forEach((_, index) => {
-    elements.push({ elementNo, kind: "OSI", index });
-    elementNo += 1;
-  });
-
-  const remarks = pnr.remarks || [];
-  remarks.forEach((_, index) => {
-    elements.push({ elementNo, kind: "RM", index });
-    elementNo += 1;
-  });
-
-  if (pnr.tktl) {
-    elements.push({ elementNo, kind: "TKTL" });
-    elementNo += 1;
-  }
-
-  if (pnr.fp) {
-    elements.push({ elementNo, kind: "FP" });
-    elementNo += 1;
-  }
-
-  if (pnr.rf) {
-    elements.push({ elementNo, kind: "RF" });
-    elementNo += 1;
-  }
-
-  if (pnr.recordLocator) {
-    elements.push({ elementNo, kind: "RECLOC" });
-    elementNo += 1;
   }
 
   if (state.tsts && state.tsts.length > 0) {
@@ -1064,8 +1101,27 @@ function handleXE(state, cmdUpper, clock) {
     return { error: "NO ACTIVE PNR" };
   }
   const elements = buildElementIndex(state, clock);
-  const cancellableKinds = new Set(["SEG", "AP", "SSR", "OSI", "RF", "PAX"]);
-  const cancellableAllKinds = new Set(["SEG", "AP", "SSR", "OSI", "RF"]);
+  const cancellableKinds = new Set([
+    "SEG",
+    "AP",
+    "SSR",
+    "OSI",
+    "RM",
+    "TKTL",
+    "FP",
+    "RF",
+    "PAX",
+  ]);
+  const cancellableAllKinds = new Set([
+    "SEG",
+    "AP",
+    "SSR",
+    "OSI",
+    "RM",
+    "TKTL",
+    "FP",
+    "RF",
+  ]);
   const totalCancellable = elements.filter((el) =>
     cancellableAllKinds.has(el.kind)
   ).length;
@@ -1547,6 +1603,7 @@ export async function processCommand(state, cmd, options = {}) {
         tst.status === "CREATED" ? { ...tst, status: "VALIDATED" } : tst
       );
     }
+    rebuildPnrElements(pnr, deps.clock);
     state.pnrStore ||= {};
     state.pnrStore[pnr.recordLocator] = {
       pnrSnapshot: deepCopy(pnr),

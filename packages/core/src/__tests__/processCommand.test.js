@@ -563,6 +563,56 @@ describe("processCommand", () => {
     assert.deepEqual(irLines, ["PNR NOT FOUND"]);
   });
 
+  it("ER/RT keeps full PNR content with ordered PNR elements", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "SSR WCHR YY NEED WHEELCHAIR");
+    await runCommand(state, "OSI YY VIP CUSTOMER");
+    await runCommand(state, "RM VIP REMARK");
+    await runCommand(state, "TKTL/26DEC");
+    await runCommand(state, "FP CASH");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const recordLocator = getRecordLocator(erLines);
+    assert.ok(recordLocator);
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes(`REC LOC ${recordLocator}`)));
+
+    const nmIndex = rtLines.findIndex((line) => line.includes("DOE/JOHN"));
+    const segIndex = rtLines.findIndex((line) =>
+      /^\s*\d+\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+[A-Z]{2}\d$/.test(
+        line
+      )
+    );
+    const ssrIndex = rtLines.findIndex((line) =>
+      line.includes("SSR WCHR YY NEED WHEELCHAIR")
+    );
+    const osiIndex = rtLines.findIndex((line) =>
+      line.includes("OSI YY VIP CUSTOMER")
+    );
+    const rmIndex = rtLines.findIndex((line) => line.includes("RM VIP REMARK"));
+    const tktlIndex = rtLines.findIndex((line) => line.includes("TKTL/26DEC"));
+    const fpIndex = rtLines.findIndex((line) => line.includes("FP CASH"));
+
+    assert.ok(nmIndex > -1);
+    assert.ok(segIndex > -1);
+    assert.ok(ssrIndex > -1);
+    assert.ok(osiIndex > -1);
+    assert.ok(rmIndex > -1);
+    assert.ok(tktlIndex > -1);
+    assert.ok(fpIndex > -1);
+    assert.ok(nmIndex < segIndex);
+    assert.ok(segIndex < ssrIndex);
+    assert.ok(ssrIndex < osiIndex);
+    assert.ok(osiIndex < rmIndex);
+    assert.ok(rmIndex < tktlIndex);
+    assert.ok(tktlIndex < fpIndex);
+  });
+
   it("XE rejects missing parameters", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
