@@ -259,6 +259,29 @@ describe("processCommand", () => {
     );
   });
 
+  it("adds OP option and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const opLines = await runCommand(state, "OP26DEC/CALL CUSTOMER");
+    assert.deepEqual(state.activePNR.options, [
+      { date: "26DEC", text: "CALL CUSTOMER" },
+    ]);
+    assert.ok(opLines.some((line) => line.includes("OP26DEC/CALL CUSTOMER")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("OP26DEC/CALL CUSTOMER")));
+  });
+
+  it("returns error event when OP date is invalid", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "OP31FEB/CALL CUSTOMER");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("adds OSI and shows it in RT", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");

@@ -605,6 +605,7 @@ function ensurePNR(state) {
       ssr: [],
       osi: [],
       remarks: [],
+      options: [],
       tktl: null,
       fp: null,
       tickets: [],
@@ -618,6 +619,7 @@ function ensurePNR(state) {
     state.activePNR.ssr ||= [];
     state.activePNR.osi ||= [];
     state.activePNR.remarks ||= [];
+    state.activePNR.options ||= [];
     state.activePNR.tktl ||= null;
     state.activePNR.fp ||= null;
     state.activePNR.tickets ||= [];
@@ -699,6 +701,7 @@ function rebuildPnrElements(pnr, clock) {
   pnr.ssr ||= [];
   pnr.osi ||= [];
   pnr.remarks ||= [];
+  pnr.options ||= [];
   pnr.tickets ||= [];
 
   const elements = [];
@@ -729,6 +732,9 @@ function rebuildPnrElements(pnr, clock) {
   });
   pnr.remarks.forEach((_, index) => {
     elements.push({ kind: "RM", index });
+  });
+  pnr.options.forEach((_, index) => {
+    elements.push({ kind: "OP", index });
   });
 
   if (pnr.tktl) elements.push({ kind: "TKTL" });
@@ -793,6 +799,14 @@ function renderPNRLiveView(state, clock) {
       const remark = pnr.remarks[element.index];
       if (!remark) continue;
       lines.push(`${padL(n, 2)} RM ${remark}`);
+      n++;
+      continue;
+    }
+    if (element.kind === "OP") {
+      const option = pnr.options[element.index];
+      if (!option || !option.text) continue;
+      const opDate = option.date ? option.date : "";
+      lines.push(`${padL(n, 2)} OP${opDate}/${option.text}`);
       n++;
       continue;
     }
@@ -886,7 +900,8 @@ function buildElementIndex(state, clock) {
       entry.kind === "APE" ||
       entry.kind === "SSR" ||
       entry.kind === "OSI" ||
-      entry.kind === "RM"
+      entry.kind === "RM" ||
+      entry.kind === "OP"
     ) {
       elements.push({ elementNo, kind: entry.kind, index: entry.index });
       elementNo += 1;
@@ -921,12 +936,14 @@ function cancelElements(state, elements) {
   pnr.ssr ||= [];
   pnr.osi ||= [];
   pnr.remarks ||= [];
+  pnr.options ||= [];
 
   const apIndexes = [];
   const apeIndexes = [];
   const ssrIndexes = [];
   const osiIndexes = [];
   const rmIndexes = [];
+  const opIndexes = [];
   let cancelRf = false;
   let cancelTktl = false;
   let cancelFp = false;
@@ -944,6 +961,8 @@ function cancelElements(state, elements) {
       osiIndexes.push(element.index);
     } else if (element.kind === "RM") {
       rmIndexes.push(element.index);
+    } else if (element.kind === "OP") {
+      opIndexes.push(element.index);
     } else if (element.kind === "TKTL") {
       cancelTktl = true;
     } else if (element.kind === "FP") {
@@ -967,6 +986,9 @@ function cancelElements(state, elements) {
   });
   rmIndexes.sort((a, b) => b - a).forEach((idx) => {
     if (idx >= 0 && idx < pnr.remarks.length) pnr.remarks.splice(idx, 1);
+  });
+  opIndexes.sort((a, b) => b - a).forEach((idx) => {
+    if (idx >= 0 && idx < pnr.options.length) pnr.options.splice(idx, 1);
   });
   if (cancelTktl) pnr.tktl = null;
   if (cancelFp) pnr.fp = null;
@@ -1461,6 +1483,7 @@ function handleXE(state, cmdUpper, clock) {
     "SSR",
     "OSI",
     "RM",
+    "OP",
     "TKTL",
     "FP",
     "RF",
@@ -2181,6 +2204,39 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     pnr.remarks.push(rmValue.toUpperCase());
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("OP")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    let optionDate = null;
+    let optionText = null;
+    const withDate = c.match(/^OP(\d{1,2}[A-Z]{3})\/(.+)$/);
+    if (withDate) {
+      const parsed = parseDDMMM(withDate[1], deps.clock);
+      if (!parsed) {
+        print("INVALID FORMAT");
+        return { events, state };
+      }
+      optionDate = formatDDMMM(parsed);
+      optionText = withDate[2].trim();
+    } else {
+      const withoutDate = c.match(/^OP\/\s*(.+)$/);
+      if (!withoutDate) {
+        print("INVALID FORMAT");
+        return { events, state };
+      }
+      optionText = withoutDate[1].trim();
+    }
+
+    if (!optionText) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+
+    pnr.options.push({ date: optionDate, text: optionText.toUpperCase() });
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
