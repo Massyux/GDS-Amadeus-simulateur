@@ -1193,6 +1193,33 @@ describe("processCommand", () => {
     );
   });
 
+  it("QD displays queue content with locator", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const locator = getRecordLocator(erLines);
+    assert.ok(locator);
+    await runCommand(state, "QP/12C1");
+
+    const qdLines = await runCommand(state, "QD/12C1");
+    assert.ok(qdLines.includes("QUEUE 12C1"));
+    assert.ok(qdLines.some((line) => line.includes(locator)));
+  });
+
+  it("QD on unknown queue returns QUEUE NOT FOUND", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "QD/99C9");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "QUEUE NOT FOUND"
+      )
+    );
+  });
+
   it("ER/RT keeps full PNR content with ordered PNR elements", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");

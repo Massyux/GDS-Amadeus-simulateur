@@ -1820,6 +1820,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NO EMAIL ADDRESS",
     "TICKET ALREADY ISSUED",
     "NO SEGMENTS",
+    "QUEUE NOT FOUND",
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
@@ -2068,6 +2069,40 @@ export async function processCommand(state, cmd, options = {}) {
     }
     state.queueStore = queueAdd(state.queueStore, queueId, recordLocator);
     print(`PLACED IN QUEUE ${queueId}`);
+    return { events, state };
+  }
+
+  if (c.startsWith("QD")) {
+    const match = c.match(/^QD\/?([A-Z0-9]{2,8})$/);
+    if (!match) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const queueId = normalizeQueueId(match[1]);
+    const queue = state.queueStore ? state.queueStore[queueId] : null;
+    if (!queue) {
+      print("QUEUE NOT FOUND");
+      return { events, state };
+    }
+    print(`QUEUE ${queueId}`);
+    if (queue.length === 0) {
+      print("QUEUE EMPTY");
+      return { events, state };
+    }
+    const pageSize = 5;
+    const totalPages = Math.ceil(queue.length / pageSize);
+    if (totalPages > 1) {
+      for (let page = 1; page <= totalPages; page++) {
+        print(`PAGE ${page}/${totalPages}`);
+        const start = (page - 1) * pageSize;
+        const end = Math.min(start + pageSize, queue.length);
+        for (let i = start; i < end; i++) {
+          print(`${i + 1} ${queue[i]}`);
+        }
+      }
+      return { events, state };
+    }
+    queue.forEach((recordLocator, index) => print(`${index + 1} ${recordLocator}`));
     return { events, state };
   }
 
