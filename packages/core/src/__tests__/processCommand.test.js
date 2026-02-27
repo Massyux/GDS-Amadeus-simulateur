@@ -741,6 +741,43 @@ describe("processCommand", () => {
     assert.deepEqual(totalsA, totalsB);
   });
 
+  it("FXP ignores cancelled segments and prices only active ones", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "SS2Y1");
+    await processCommand(state, "XE1");
+    const fxp = await processCommand(state, "FXP");
+    const fxpLines = fxp.events.map((event) => event.text);
+    assert.ok(fxpLines.some((line) => line.startsWith("FXP")));
+    assert.equal(state.tsts.length, 1);
+    assert.deepEqual(state.tsts[0].segments, [2]);
+  });
+
+  it("FXP returns NO ITINERARY when the only segment is cancelled with XE1", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM2DOE/JOHN SMITH/JANE");
+    const rtBeforeXe = await processCommand(state, "RT");
+    const rtLines = rtBeforeXe.events.map((event) => event.text);
+    const segmentElement = rtLines
+      .map((line) =>
+        line.match(
+          /^\s*(\d+)\s+[A-Z0-9]{2}\s+\d{4}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+[A-Z]{6}\s+\d{4}\s+\d{4}\s+[A-Z]{2}\d$/
+        )
+      )
+      .find(Boolean);
+    assert.ok(segmentElement);
+    await processCommand(state, `XE${segmentElement[1]}`);
+    const fxp = await processCommand(state, "FXP");
+    assert.ok(
+      fxp.events.some(
+        (event) => event.type === "error" && event.text === "NO ITINERARY"
+      )
+    );
+  });
+
   it("FXP returns error when no active segment remains", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
