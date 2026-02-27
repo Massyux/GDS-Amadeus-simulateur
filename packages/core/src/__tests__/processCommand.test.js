@@ -385,6 +385,26 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["NO AVAILABILITY"]);
   });
 
+  it("TN returns timetable lines and keeps results sellable", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "TN26DECALGPAR");
+    assert.ok(lines.some((line) => line.startsWith("TN26DECALGPAR")));
+    assert.ok(lines.some((line) => /^\d+\s+[A-Z0-9]{2}\s+\d{4}/.test(line)));
+
+    const ss = await runCommand(state, "SS1Y1");
+    assert.equal(ss[0], "OK");
+  });
+
+  it("TN rejects invalid date with error event", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "TN31FEBALGPAR");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("returns invalid format for a malformed AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "ANXYZ");
