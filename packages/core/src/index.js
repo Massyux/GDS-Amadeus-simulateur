@@ -569,6 +569,7 @@ function ensurePNR(state) {
       itinerary: [],
       ssr: [],
       osi: [],
+      remarks: [],
     };
   } else {
     state.activePNR.passengers ||= [];
@@ -576,6 +577,7 @@ function ensurePNR(state) {
     state.activePNR.itinerary ||= [];
     state.activePNR.ssr ||= [];
     state.activePNR.osi ||= [];
+    state.activePNR.remarks ||= [];
   }
 }
 
@@ -691,6 +693,10 @@ function renderPNRLiveView(state, clock) {
     lines.push(`${padL(n, 2)} OSI ${x}`);
     n++;
   }
+  for (const x of state.activePNR.remarks) {
+    lines.push(`${padL(n, 2)} RM ${x}`);
+    n++;
+  }
 
   if (state.activePNR.rf) {
     lines.push(`${padL(n, 2)} RF ${state.activePNR.rf}`);
@@ -755,6 +761,12 @@ function buildElementIndex(state, clock) {
     elementNo += 1;
   });
 
+  const remarks = pnr.remarks || [];
+  remarks.forEach((_, index) => {
+    elements.push({ elementNo, kind: "RM", index });
+    elementNo += 1;
+  });
+
   if (pnr.rf) {
     elements.push({ elementNo, kind: "RF" });
     elementNo += 1;
@@ -781,10 +793,12 @@ function cancelElements(state, elements) {
   pnr.contacts ||= [];
   pnr.ssr ||= [];
   pnr.osi ||= [];
+  pnr.remarks ||= [];
 
   const apIndexes = [];
   const ssrIndexes = [];
   const osiIndexes = [];
+  const rmIndexes = [];
   let cancelRf = false;
 
   for (const element of elements) {
@@ -796,6 +810,8 @@ function cancelElements(state, elements) {
       ssrIndexes.push(element.index);
     } else if (element.kind === "OSI") {
       osiIndexes.push(element.index);
+    } else if (element.kind === "RM") {
+      rmIndexes.push(element.index);
     } else if (element.kind === "RF") {
       cancelRf = true;
     }
@@ -809,6 +825,9 @@ function cancelElements(state, elements) {
   });
   osiIndexes.sort((a, b) => b - a).forEach((idx) => {
     if (idx >= 0 && idx < pnr.osi.length) pnr.osi.splice(idx, 1);
+  });
+  rmIndexes.sort((a, b) => b - a).forEach((idx) => {
+    if (idx >= 0 && idx < pnr.remarks.length) pnr.remarks.splice(idx, 1);
   });
   if (cancelRf) pnr.rf = null;
 }
@@ -1314,6 +1333,7 @@ export async function processCommand(state, cmd, options = {}) {
     pnr.contacts = [];
     pnr.ssr = [];
     pnr.osi = [];
+    pnr.remarks = [];
     pnr.rf = null;
     state.tsts = [];
     print("PNR CANCELLED - SIGN/ER REQUIRED");
@@ -1463,6 +1483,19 @@ export async function processCommand(state, cmd, options = {}) {
     };
     print("PNR RECORDED");
     print("RECORD LOCATOR " + pnr.recordLocator);
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("RM")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const rmValue = raw.slice(2).trim();
+    if (!rmValue) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    pnr.remarks.push(rmValue.toUpperCase());
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
