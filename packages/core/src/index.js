@@ -597,6 +597,7 @@ function ensurePNR(state) {
     state.activePNR = {
       passengers: [],
       contacts: [],
+      emails: [],
       rf: null,
       recordLocator: null,
       status: "ACTIVE",
@@ -612,6 +613,7 @@ function ensurePNR(state) {
   } else {
     state.activePNR.passengers ||= [];
     state.activePNR.contacts ||= [];
+    state.activePNR.emails ||= [];
     state.activePNR.itinerary ||= [];
     state.activePNR.ssr ||= [];
     state.activePNR.osi ||= [];
@@ -693,6 +695,7 @@ function rebuildPnrElements(pnr, clock) {
   pnr.passengers ||= [];
   pnr.itinerary ||= [];
   pnr.contacts ||= [];
+  pnr.emails ||= [];
   pnr.ssr ||= [];
   pnr.osi ||= [];
   pnr.remarks ||= [];
@@ -736,6 +739,9 @@ function rebuildPnrElements(pnr, clock) {
 
   pnr.contacts.forEach((_, index) => {
     elements.push({ kind: "AP", index });
+  });
+  pnr.emails.forEach((_, index) => {
+    elements.push({ kind: "APE", index });
   });
 
   if (pnr.rf) elements.push({ kind: "RF" });
@@ -820,6 +826,13 @@ function renderPNRLiveView(state, clock) {
       n++;
       continue;
     }
+    if (element.kind === "APE") {
+      const ape = pnr.emails[element.index];
+      if (!ape) continue;
+      lines.push(`${padL(n, 2)} APE ${ape}`);
+      n++;
+      continue;
+    }
     if (element.kind === "RF" && pnr.rf) {
       lines.push(`${padL(n, 2)} RF ${pnr.rf}`);
       n++;
@@ -870,6 +883,7 @@ function buildElementIndex(state, clock) {
     }
     if (
       entry.kind === "AP" ||
+      entry.kind === "APE" ||
       entry.kind === "SSR" ||
       entry.kind === "OSI" ||
       entry.kind === "RM"
@@ -903,11 +917,13 @@ function cancelElements(state, elements) {
   const pnr = state.activePNR;
   if (!pnr) return;
   pnr.contacts ||= [];
+  pnr.emails ||= [];
   pnr.ssr ||= [];
   pnr.osi ||= [];
   pnr.remarks ||= [];
 
   const apIndexes = [];
+  const apeIndexes = [];
   const ssrIndexes = [];
   const osiIndexes = [];
   const rmIndexes = [];
@@ -920,6 +936,8 @@ function cancelElements(state, elements) {
       element.ref.status = "XX";
     } else if (element.kind === "AP") {
       apIndexes.push(element.index);
+    } else if (element.kind === "APE") {
+      apeIndexes.push(element.index);
     } else if (element.kind === "SSR") {
       ssrIndexes.push(element.index);
     } else if (element.kind === "OSI") {
@@ -937,6 +955,9 @@ function cancelElements(state, elements) {
 
   apIndexes.sort((a, b) => b - a).forEach((idx) => {
     if (idx >= 0 && idx < pnr.contacts.length) pnr.contacts.splice(idx, 1);
+  });
+  apeIndexes.sort((a, b) => b - a).forEach((idx) => {
+    if (idx >= 0 && idx < pnr.emails.length) pnr.emails.splice(idx, 1);
   });
   ssrIndexes.sort((a, b) => b - a).forEach((idx) => {
     if (idx >= 0 && idx < pnr.ssr.length) pnr.ssr.splice(idx, 1);
@@ -1436,6 +1457,7 @@ function handleXE(state, cmdUpper, clock) {
   const cancellableKinds = new Set([
     "SEG",
     "AP",
+    "APE",
     "SSR",
     "OSI",
     "RM",
@@ -2023,7 +2045,7 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c.startsWith("AP")) {
+  if (c.startsWith("AP") && !c.startsWith("APE")) {
     ensurePNR(state);
     const pnr = state.activePNR;
     pnr.contacts.push(c);
@@ -2196,6 +2218,20 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     pnr.fp = fpValue;
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("APE")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const apeValue = raw.slice(3).replace(/^[\s-]+/, "").trim().toUpperCase();
+    const validEmail = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/.test(apeValue);
+    if (!apeValue || !validEmail) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    pnr.emails.push(apeValue);
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }

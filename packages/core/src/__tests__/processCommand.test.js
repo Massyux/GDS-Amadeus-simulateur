@@ -217,6 +217,27 @@ describe("processCommand", () => {
     );
   });
 
+  it("adds APE email and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const apeLines = await runCommand(state, "APE-john.doe@example.com");
+    assert.deepEqual(state.activePNR.emails, ["JOHN.DOE@EXAMPLE.COM"]);
+    assert.ok(apeLines.some((line) => line.includes("APE JOHN.DOE@EXAMPLE.COM")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("APE JOHN.DOE@EXAMPLE.COM")));
+  });
+
+  it("returns error event for invalid APE format", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "APE-not-an-email");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("adds RM remark and shows it in RT", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
