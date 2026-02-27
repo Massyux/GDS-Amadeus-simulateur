@@ -588,6 +588,10 @@ function createNormalizedTst({ id, pricing, status = "CREATED", currency = "EUR"
   };
 }
 
+function formatTicketNumber(sequence) {
+  return `172-${String(sequence).padStart(10, "0")}`;
+}
+
 function ensurePNR(state) {
   if (!state.activePNR) {
     state.activePNR = {
@@ -1494,6 +1498,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NO TST",
     "NO SEGMENTS",
     "NO RECORDED PNR",
+    "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
   ]);
   const events = [];
@@ -1538,6 +1543,8 @@ export async function processCommand(state, cmd, options = {}) {
     print("RF                  SIGNATURE (RFMM)");
     print("ER                  END PNR");
     print("RT                  DISPLAY PNR (same as live)");
+    print("ET / TTP            ISSUE TICKET");
+    print("VOID                VOID LAST ISSUED TICKET");
     return { events, state };
   }
 
@@ -2132,6 +2139,39 @@ export async function processCommand(state, cmd, options = {}) {
     const fareBasis = tst.fareBasis[index - 1] || tst.fareBasis[0];
     print(`FQN${index}`);
     buildFqnLines(fareBasis, `${fareBasis}${index}`).forEach(print);
+    return { events, state };
+  }
+
+  if (c === "ET" || c === "TTP") {
+    const pnr = state.activePNR;
+    if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
+      return { events, state };
+    }
+    if (!pnr.fp) {
+      print("NO FORM OF PAYMENT");
+      return { events, state };
+    }
+    const tst = state.tsts[state.tsts.length - 1];
+    const ticketSeq = ++state.lastTicketSeq;
+    const ticket = {
+      id: ticketSeq,
+      ticketNumber: formatTicketNumber(ticketSeq),
+      status: "ISSUED",
+      tstId: tst.id,
+      issuedAt: new Date(deps.clock.now()).toISOString(),
+    };
+    ensurePNR(state);
+    pnr.tickets.push(ticket);
+    tst.status = "TICKETED";
+    tst.pricingStatus = "TICKETED";
+    print(c);
+    print(`TICKET ISSUED ${ticket.ticketNumber}`);
+    renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
 

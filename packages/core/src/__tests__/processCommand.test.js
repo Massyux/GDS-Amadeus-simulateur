@@ -622,6 +622,52 @@ describe("processCommand", () => {
     );
   });
 
+  it("ET issues ticket and RT shows FA line", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+
+    const et = await processCommand(state, "ET");
+    const etLines = et.events.map((event) => event.text);
+    assert.ok(etLines.some((line) => line.includes("TICKET ISSUED")));
+    assert.equal(state.activePNR.tickets.length, 1);
+    assert.equal(state.activePNR.tickets[0].status, "ISSUED");
+    assert.equal(state.tsts[0].status, "TICKETED");
+
+    const rt = await processCommand(state, "RT");
+    const rtLines = rt.events.map((event) => event.text);
+    assert.ok(rtLines.some((line) => line.includes("FA 172-0000000001 ISSUED")));
+  });
+
+  it("ET without TST returns NO TST", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    const et = await processCommand(state, "ET");
+    assert.ok(
+      et.events.some((event) => event.type === "error" && event.text === "NO TST")
+    );
+  });
+
+  it("TTP without FP returns NO FORM OF PAYMENT", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FXP");
+    const ttp = await processCommand(state, "TTP");
+    assert.ok(
+      ttp.events.some(
+        (event) => event.type === "error" && event.text === "NO FORM OF PAYMENT"
+      )
+    );
+  });
+
   it("FXP creates deterministic normalized TST totals for same inputs", async () => {
     const createTstTotals = async () => {
       const state = createInitialState();
