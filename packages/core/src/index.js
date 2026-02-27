@@ -571,6 +571,7 @@ function ensurePNR(state) {
       osi: [],
       remarks: [],
       tktl: null,
+      fp: null,
     };
   } else {
     state.activePNR.passengers ||= [];
@@ -580,6 +581,7 @@ function ensurePNR(state) {
     state.activePNR.osi ||= [];
     state.activePNR.remarks ||= [];
     state.activePNR.tktl ||= null;
+    state.activePNR.fp ||= null;
   }
 }
 
@@ -703,6 +705,10 @@ function renderPNRLiveView(state, clock) {
     lines.push(`${padL(n, 2)} TKTL/${state.activePNR.tktl}`);
     n++;
   }
+  if (state.activePNR.fp) {
+    lines.push(`${padL(n, 2)} FP ${state.activePNR.fp}`);
+    n++;
+  }
 
   if (state.activePNR.rf) {
     lines.push(`${padL(n, 2)} RF ${state.activePNR.rf}`);
@@ -778,6 +784,11 @@ function buildElementIndex(state, clock) {
     elementNo += 1;
   }
 
+  if (pnr.fp) {
+    elements.push({ elementNo, kind: "FP" });
+    elementNo += 1;
+  }
+
   if (pnr.rf) {
     elements.push({ elementNo, kind: "RF" });
     elementNo += 1;
@@ -812,6 +823,7 @@ function cancelElements(state, elements) {
   const rmIndexes = [];
   let cancelRf = false;
   let cancelTktl = false;
+  let cancelFp = false;
 
   for (const element of elements) {
     if (element.kind === "SEG" && element.ref) {
@@ -826,6 +838,8 @@ function cancelElements(state, elements) {
       rmIndexes.push(element.index);
     } else if (element.kind === "TKTL") {
       cancelTktl = true;
+    } else if (element.kind === "FP") {
+      cancelFp = true;
     } else if (element.kind === "RF") {
       cancelRf = true;
     }
@@ -844,6 +858,7 @@ function cancelElements(state, elements) {
     if (idx >= 0 && idx < pnr.remarks.length) pnr.remarks.splice(idx, 1);
   });
   if (cancelTktl) pnr.tktl = null;
+  if (cancelFp) pnr.fp = null;
   if (cancelRf) pnr.rf = null;
 }
 
@@ -1350,6 +1365,7 @@ export async function processCommand(state, cmd, options = {}) {
     pnr.osi = [];
     pnr.remarks = [];
     pnr.tktl = null;
+    pnr.fp = null;
     pnr.rf = null;
     state.tsts = [];
     print("PNR CANCELLED - SIGN/ER REQUIRED");
@@ -1569,6 +1585,25 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     pnr.tktl = formatDDMMM(parsed);
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("FP")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const fpValue = raw.slice(2).trim().toUpperCase();
+    if (!fpValue) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const valid =
+      fpValue === "CASH" || /^CCVI[0-9X]{12,19}\/\d{4}$/.test(fpValue);
+    if (!valid) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    pnr.fp = fpValue;
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }

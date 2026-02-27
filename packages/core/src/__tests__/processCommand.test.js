@@ -256,6 +256,27 @@ describe("processCommand", () => {
     );
   });
 
+  it("sets FP CASH and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const fpLines = await runCommand(state, "FP CASH");
+    assert.equal(state.activePNR.fp, "CASH");
+    assert.ok(fpLines.some((line) => line.includes("FP CASH")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("FP CASH")));
+  });
+
+  it("returns error event when FP is empty", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "FP");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("keeps the same record locator on repeated ER", async () => {
     const state = createInitialState();
 
