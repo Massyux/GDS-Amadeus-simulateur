@@ -1965,35 +1965,23 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    const activeSegments = getActiveSortedItinerary(pnr, deps.clock);
-    if (activeSegments.length === 0) {
-      print("NO ITINERARY");
+    if (!state.tsts || state.tsts.length === 0) {
+      print("NO TST");
       return { events, state };
     }
-    const pricing = deps.pricing.price({
-      pnr,
-      mode: "FXX",
-      segmentsOverride: activeSegments,
-      clock: deps.clock,
-    });
-    const currentTst = state.tsts && state.tsts.length > 0 ? state.tsts[0] : null;
-    const id = currentTst ? currentTst.id : ++state.lastTstId;
-    const tst = createNormalizedTst({ id, pricing, status: "STORED" });
-    state.tsts = [tst];
+    const tst = state.tsts[state.tsts.length - 1];
+    tst.status = "STORED";
+    tst.pricingStatus = "STORED";
 
     print("FXX");
-    print("QUOTE - FXX (BOOKED RBD)");
-    print(`TST ${currentTst ? "UPDATED" : "CREATED"}  ${id}  STATUS: STORED`);
-    print(`VALIDATING CARRIER: ${pricing.validatingCarrier}`);
-    print(
-      `SEGMENTS: ${formatSegmentsRange(
-        pricing.segments.map((s) => s.displayIndex)
-      )}`
-    );
+    print("QUOTE - FXX (BOOKED RBD) - TST STORED");
+    print(`TST STORED  ${tst.id}  STATUS: STORED`);
+    print(`VALIDATING CARRIER: ${tst.validatingCarrier}`);
+    print(`SEGMENTS: ${formatSegmentsRange(tst.segments)}`);
     print("");
-    print(`FARE     EUR ${formatMoney(pricing.baseFare)}`);
-    print(`TAX      EUR ${formatMoney(pricing.taxTotal)}`);
-    print(`TOTAL    EUR ${formatMoney(pricing.total)}`);
+    print(`FARE     ${tst.currency} ${formatMoney(tst.baseFare)}`);
+    print(`TAX      ${tst.currency} ${formatMoney(tst.taxTotal)}`);
+    print(`TOTAL    ${tst.currency} ${formatMoney(tst.total)}`);
     return { events, state };
   }
 

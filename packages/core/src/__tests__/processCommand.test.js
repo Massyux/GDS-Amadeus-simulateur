@@ -459,14 +459,15 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("STATUS VALIDATED")));
   });
 
-  it("FXX creates or updates TST as STORED", async () => {
+  it("FXX stores existing TST as STORED", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
     await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FXP");
     const fxx = await processCommand(state, "FXX");
     const fxxLines = fxx.events.map((event) => event.text);
-    assert.ok(fxxLines.some((line) => line.includes("STATUS: STORED")));
+    assert.ok(fxxLines.some((line) => line.includes("TST STORED")));
     assert.equal(state.tsts.length, 1);
     assert.equal(state.tsts[0].status, "STORED");
     assert.equal(state.tsts[0].pricingStatus, "STORED");
@@ -480,12 +481,24 @@ describe("processCommand", () => {
     await processCommand(state, "AP123456");
     await processCommand(state, "RFTEST");
     await processCommand(state, "ER");
+    await processCommand(state, "FXP");
 
     const fxx = await processCommand(state, "FXX");
     const fxxLines = fxx.events.map((event) => event.text);
-    assert.ok(fxxLines.some((line) => line.includes("STATUS: STORED")));
+    assert.ok(fxxLines.some((line) => line.includes("TST STORED")));
     assert.equal(state.tsts.length, 1);
     assert.equal(state.tsts[0].status, "STORED");
+  });
+
+  it("FXX without TST returns NO TST", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    const fxx = await processCommand(state, "FXX");
+    assert.ok(
+      fxx.events.some((event) => event.type === "error" && event.text === "NO TST")
+    );
   });
 
   it("FXR reprices and keeps TST linked to segments without rebook", async () => {
