@@ -1219,15 +1219,33 @@ async function handleTN(state, cmdUpper, deps) {
   const lines = [];
   lines.push(`TN${ddmmm}${from}${to}`);
   lines.push(`** AMADEUS TIMETABLE - TN ** ${from}-${to}`);
-  normalized.forEach((item) => {
-    lines.push(
-      `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
-        String(item.flightNo),
-        4,
-        "0"
-      )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
-    );
-  });
+  const pageSize = 5;
+  const totalPages = Math.ceil(normalized.length / pageSize);
+  if (totalPages > 1) {
+    for (let page = 1; page <= totalPages; page++) {
+      lines.push(`PAGE ${page}/${totalPages}`);
+      const pageItems = normalized.slice((page - 1) * pageSize, page * pageSize);
+      pageItems.forEach((item) => {
+        lines.push(
+          `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
+            String(item.flightNo),
+            4,
+            "0"
+          )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
+        );
+      });
+    }
+  } else {
+    normalized.forEach((item) => {
+      lines.push(
+        `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
+          String(item.flightNo),
+          4,
+          "0"
+        )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
+      );
+    });
+  }
   return { lines };
 }
 
@@ -1301,15 +1319,33 @@ async function handleSN(state, cmdUpper, deps) {
   const lines = [];
   lines.push(`SN${ddmmm}${from}${to}`);
   lines.push(`** AMADEUS SCHEDULE - SN ** ${from}-${to}`);
-  normalized.forEach((item) => {
-    lines.push(
-      `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
-        String(item.flightNo),
-        4,
-        "0"
-      )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
-    );
-  });
+  const pageSize = 5;
+  const totalPages = Math.ceil(normalized.length / pageSize);
+  if (totalPages > 1) {
+    for (let page = 1; page <= totalPages; page++) {
+      lines.push(`PAGE ${page}/${totalPages}`);
+      const pageItems = normalized.slice((page - 1) * pageSize, page * pageSize);
+      pageItems.forEach((item) => {
+        lines.push(
+          `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
+            String(item.flightNo),
+            4,
+            "0"
+          )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
+        );
+      });
+    }
+  } else {
+    normalized.forEach((item) => {
+      lines.push(
+        `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
+          String(item.flightNo),
+          4,
+          "0"
+        )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
+      );
+    });
+  }
   return { lines };
 }
 

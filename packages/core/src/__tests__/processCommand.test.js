@@ -422,6 +422,13 @@ describe("processCommand", () => {
     );
   });
 
+  it("TN shows pagination when results exceed one page", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "TN26DECALGPAR");
+    assert.ok(lines.some((line) => line.startsWith("PAGE 1/")));
+    assert.ok(lines.some((line) => line.startsWith("PAGE 2/")));
+  });
+
   it("returns invalid format for a malformed AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "ANXYZ");
