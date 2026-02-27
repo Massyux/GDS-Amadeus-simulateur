@@ -525,17 +525,18 @@ describe("processCommand", () => {
     assert.deepEqual(fxlBadLines, ["FXL", "FUNCTION NOT APPLICABLE"]);
   });
 
-  it("IG clears the active PNR", async () => {
+  it("returns error for IG when no recorded PNR is available", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
     await runCommand(state, "AP123456");
     await runCommand(state, "RFTEST");
 
-    const igLines = await runCommand(state, "IG");
-    assert.ok(igLines.includes("IGNORED"));
-
-    const rtLines = await runCommand(state, "RT");
-    assert.deepEqual(rtLines, ["NO ACTIVE PNR"]);
+    const result = await processCommand(state, "IG");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "NO RECORDED PNR"
+      )
+    );
   });
 
   it("IR retrieves a recorded PNR", async () => {
@@ -623,6 +624,48 @@ describe("processCommand", () => {
     assert.deepEqual(rtAfterIr, rtAfterEr);
   });
 
+  it("IG restores exact recorded state and removes unrecorded OSI", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "RM BASE REMARK");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "ER");
+    const rtAfterEr = await runCommand(state, "RT");
+
+    await runCommand(state, "OSI YY TEMP CHANGE");
+    const rtWithOsi = await runCommand(state, "RT");
+    assert.ok(rtWithOsi.some((line) => line.includes("OSI YY TEMP CHANGE")));
+
+    await runCommand(state, "IG");
+    const rtAfterIg = await runCommand(state, "RT");
+    assert.ok(!rtAfterIg.some((line) => line.includes("OSI YY TEMP CHANGE")));
+    assert.deepEqual(rtAfterIg, rtAfterEr);
+  });
+
+  it("IR restores exact recorded state and removes unrecorded OSI", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "RM BASE REMARK");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "ER");
+    const rtAfterEr = await runCommand(state, "RT");
+
+    await runCommand(state, "OSI YY TEMP CHANGE");
+    const rtWithOsi = await runCommand(state, "RT");
+    assert.ok(rtWithOsi.some((line) => line.includes("OSI YY TEMP CHANGE")));
+
+    await runCommand(state, "IR");
+    const rtAfterIr = await runCommand(state, "RT");
+    assert.ok(!rtAfterIr.some((line) => line.includes("OSI YY TEMP CHANGE")));
+    assert.deepEqual(rtAfterIr, rtAfterEr);
+  });
+
   it("XI clears active PNR but keeps recorded PNR in store", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
@@ -646,6 +689,16 @@ describe("processCommand", () => {
     assert.ok(
       result.events.some(
         (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
+  it("returns error for IR when no recorded PNR is available", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "IR");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "NO RECORDED PNR"
       )
     );
   });

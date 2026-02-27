@@ -1298,6 +1298,7 @@ export function createInitialState() {
     lastTstId: 0,
     pnrStore: {},
     recordedSnapshot: null,
+    lastRecordedLocator: null,
   };
 }
 
@@ -1371,6 +1372,52 @@ function resolveDeps(options = {}) {
   };
 }
 
+function resolveRecordedLocator(state, preferredLocator = null) {
+  if (preferredLocator) return String(preferredLocator).toUpperCase();
+  if (state.activePNR && state.activePNR.recordLocator) {
+    return state.activePNR.recordLocator;
+  }
+  if (state.recordedSnapshot && state.recordedSnapshot.recordLocator) {
+    return state.recordedSnapshot.recordLocator;
+  }
+  if (state.lastRecordedLocator) {
+    return state.lastRecordedLocator;
+  }
+  return null;
+}
+
+function restoreRecordedState(state, locator) {
+  if (!locator) return false;
+  state.pnrStore ||= {};
+  const stored = state.pnrStore[locator];
+  let pnrSnapshot = null;
+  let tstsSnapshot = [];
+
+  // Source of truth: store by record locator. Snapshot is fallback only.
+  if (stored) {
+    pnrSnapshot = stored.pnrSnapshot;
+    tstsSnapshot = stored.tstsSnapshot || [];
+  } else if (
+    state.recordedSnapshot &&
+    state.recordedSnapshot.recordLocator === locator
+  ) {
+    pnrSnapshot = state.recordedSnapshot.pnrSnapshot;
+    tstsSnapshot = state.recordedSnapshot.tstsSnapshot || [];
+  } else {
+    return false;
+  }
+
+  state.activePNR = deepCopy(pnrSnapshot);
+  state.tsts = deepCopy(tstsSnapshot) || [];
+  state.recordedSnapshot = {
+    recordLocator: locator,
+    pnrSnapshot: deepCopy(pnrSnapshot),
+    tstsSnapshot: deepCopy(tstsSnapshot) || [],
+  };
+  state.lastRecordedLocator = locator;
+  return true;
+}
+
 export async function processCommand(state, cmd, options = {}) {
   /*
    * deps contract (in options.deps):
@@ -1399,6 +1446,7 @@ export async function processCommand(state, cmd, options = {}) {
     "FUNCTION NOT APPLICABLE",
     "NO TST",
     "NO SEGMENTS",
+    "NO RECORDED PNR",
     "LOCATION PROVIDER NOT CONFIGURED",
   ]);
   const events = [];
@@ -1489,25 +1537,15 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c === "IG") {
-    if (!state.activePNR) {
-      renderPNRLiveView(state, deps.clock).forEach(print);
+    const recordLocator = resolveRecordedLocator(state);
+    if (!recordLocator) {
+      print("NO RECORDED PNR");
       return { events, state };
     }
-    const recordLocator = state.activePNR.recordLocator;
-    const stored =
-      recordLocator && state.pnrStore ? state.pnrStore[recordLocator] : null;
-    if (stored) {
-      state.activePNR = deepCopy(stored.pnrSnapshot);
-      state.tsts = deepCopy(stored.tstsSnapshot) || [];
-      state.recordedSnapshot = {
-        recordLocator,
-        pnrSnapshot: deepCopy(stored.pnrSnapshot),
-        tstsSnapshot: deepCopy(stored.tstsSnapshot) || [],
-      };
-    } else {
-      state.activePNR = null;
-      state.tsts = [];
-      state.recordedSnapshot = null;
+    const restored = restoreRecordedState(state, recordLocator);
+    if (!restored) {
+      print("NO RECORDED PNR");
+      return { events, state };
     }
     print("IGNORED");
     renderPNRLiveView(state, deps.clock).forEach(print);
@@ -1515,25 +1553,24 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c.startsWith("IR")) {
-    const match = raw.toUpperCase().match(/^IR\s*([A-Z]{6})$/);
-    if (!match) {
+    const matchWithLocator = raw.toUpperCase().match(/^IR\s*([A-Z]{6})$/);
+    if (!matchWithLocator && c !== "IR") {
       print("INVALID FORMAT");
       return { events, state };
     }
-    const recordLocator = match[1];
-    state.pnrStore ||= {};
-    const stored = state.pnrStore[recordLocator];
-    if (!stored) {
-      print("PNR NOT FOUND");
+    const recordLocator = resolveRecordedLocator(
+      state,
+      matchWithLocator ? matchWithLocator[1] : null
+    );
+    if (!recordLocator) {
+      print("NO RECORDED PNR");
       return { events, state };
     }
-    state.activePNR = deepCopy(stored.pnrSnapshot);
-    state.tsts = deepCopy(stored.tstsSnapshot) || [];
-    state.recordedSnapshot = {
-      recordLocator,
-      pnrSnapshot: deepCopy(stored.pnrSnapshot),
-      tstsSnapshot: deepCopy(stored.tstsSnapshot) || [],
-    };
+    const restored = restoreRecordedState(state, recordLocator);
+    if (!restored) {
+      print(matchWithLocator ? "PNR NOT FOUND" : "NO RECORDED PNR");
+      return { events, state };
+    }
     print("RETRIEVED");
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
@@ -1752,6 +1789,7 @@ export async function processCommand(state, cmd, options = {}) {
       pnrSnapshot: deepCopy(pnr),
       tstsSnapshot: deepCopy(state.tsts),
     };
+    state.lastRecordedLocator = pnr.recordLocator;
     print("PNR RECORDED");
     print("RECORD LOCATOR " + pnr.recordLocator);
     renderPNRLiveView(state, deps.clock).forEach(print);
