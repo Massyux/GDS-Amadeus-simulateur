@@ -582,6 +582,21 @@ describe("processCommand", () => {
     );
   });
 
+  it("TQT displays detailed TST view after FXP", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FXP");
+
+    const tqt = await processCommand(state, "TQT");
+    const lines = tqt.events.map((event) => event.text);
+    assert.ok(lines.some((line) => line.startsWith("TQT1")));
+    assert.ok(lines.includes("SEGMENTS:"));
+    assert.ok(lines.includes("FARE BASIS:"));
+    assert.ok(lines.some((line) => line.startsWith("TOTAL    EUR ")));
+  });
+
   it("FXP creates deterministic normalized TST totals for same inputs", async () => {
     const createTstTotals = async () => {
       const state = createInitialState();
