@@ -1496,6 +1496,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NOTHING TO CANCEL",
     "FUNCTION NOT APPLICABLE",
     "NO TST",
+    "NO TICKET",
     "NO SEGMENTS",
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
@@ -2171,6 +2172,33 @@ export async function processCommand(state, cmd, options = {}) {
     tst.pricingStatus = "TICKETED";
     print(c);
     print(`TICKET ISSUED ${ticket.ticketNumber}`);
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("VOID")) {
+    const pnr = state.activePNR;
+    if (!pnr || !Array.isArray(pnr.tickets) || pnr.tickets.length === 0) {
+      print("NO TICKET");
+      return { events, state };
+    }
+    const match = c.match(/^VOID(?:\s+([0-9]{3}-[0-9]{10}))?$/);
+    if (!match) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const requestedNumber = match[1] || null;
+    const ticket = requestedNumber
+      ? pnr.tickets.find((item) => item.ticketNumber === requestedNumber)
+      : [...pnr.tickets].reverse().find((item) => item.status !== "VOID");
+    if (!ticket) {
+      print("NO TICKET");
+      return { events, state };
+    }
+    ticket.status = "VOID";
+    ticket.voidedAt = new Date(deps.clock.now()).toISOString();
+    print("VOID");
+    print(`TICKET VOIDED ${ticket.ticketNumber}`);
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }

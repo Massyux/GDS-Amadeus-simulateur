@@ -668,6 +668,35 @@ describe("processCommand", () => {
     );
   });
 
+  it("VOID marks ticket as void and RT reflects it", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+    await processCommand(state, "ET");
+
+    const voidResult = await processCommand(state, "VOID");
+    const voidLines = voidResult.events.map((event) => event.text);
+    assert.ok(voidLines.some((line) => line.includes("TICKET VOIDED")));
+    assert.equal(state.activePNR.tickets[0].status, "VOID");
+
+    const rt = await processCommand(state, "RT");
+    const rtLines = rt.events.map((event) => event.text);
+    assert.ok(rtLines.some((line) => line.includes("FA 172-0000000001 VOID")));
+  });
+
+  it("VOID without ticket returns NO TICKET", async () => {
+    const state = createInitialState();
+    const voidResult = await processCommand(state, "VOID");
+    assert.ok(
+      voidResult.events.some(
+        (event) => event.type === "error" && event.text === "NO TICKET"
+      )
+    );
+  });
+
   it("FXP creates deterministic normalized TST totals for same inputs", async () => {
     const createTstTotals = async () => {
       const state = createInitialState();
