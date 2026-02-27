@@ -235,6 +235,27 @@ describe("processCommand", () => {
     );
   });
 
+  it("sets TKTL with a valid date and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const tktlLines = await runCommand(state, "TKTL/26DEC");
+    assert.equal(state.activePNR.tktl, "26DEC");
+    assert.ok(tktlLines.some((line) => line.includes("TKTL/26DEC")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("TKTL/26DEC")));
+  });
+
+  it("returns error event when TKTL date is invalid", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "TKTL31FEB");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("keeps the same record locator on repeated ER", async () => {
     const state = createInitialState();
 

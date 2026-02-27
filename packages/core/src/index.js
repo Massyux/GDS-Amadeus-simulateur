@@ -570,6 +570,7 @@ function ensurePNR(state) {
       ssr: [],
       osi: [],
       remarks: [],
+      tktl: null,
     };
   } else {
     state.activePNR.passengers ||= [];
@@ -578,6 +579,7 @@ function ensurePNR(state) {
     state.activePNR.ssr ||= [];
     state.activePNR.osi ||= [];
     state.activePNR.remarks ||= [];
+    state.activePNR.tktl ||= null;
   }
 }
 
@@ -697,6 +699,10 @@ function renderPNRLiveView(state, clock) {
     lines.push(`${padL(n, 2)} RM ${x}`);
     n++;
   }
+  if (state.activePNR.tktl) {
+    lines.push(`${padL(n, 2)} TKTL/${state.activePNR.tktl}`);
+    n++;
+  }
 
   if (state.activePNR.rf) {
     lines.push(`${padL(n, 2)} RF ${state.activePNR.rf}`);
@@ -767,6 +773,11 @@ function buildElementIndex(state, clock) {
     elementNo += 1;
   });
 
+  if (pnr.tktl) {
+    elements.push({ elementNo, kind: "TKTL" });
+    elementNo += 1;
+  }
+
   if (pnr.rf) {
     elements.push({ elementNo, kind: "RF" });
     elementNo += 1;
@@ -800,6 +811,7 @@ function cancelElements(state, elements) {
   const osiIndexes = [];
   const rmIndexes = [];
   let cancelRf = false;
+  let cancelTktl = false;
 
   for (const element of elements) {
     if (element.kind === "SEG" && element.ref) {
@@ -812,6 +824,8 @@ function cancelElements(state, elements) {
       osiIndexes.push(element.index);
     } else if (element.kind === "RM") {
       rmIndexes.push(element.index);
+    } else if (element.kind === "TKTL") {
+      cancelTktl = true;
     } else if (element.kind === "RF") {
       cancelRf = true;
     }
@@ -829,6 +843,7 @@ function cancelElements(state, elements) {
   rmIndexes.sort((a, b) => b - a).forEach((idx) => {
     if (idx >= 0 && idx < pnr.remarks.length) pnr.remarks.splice(idx, 1);
   });
+  if (cancelTktl) pnr.tktl = null;
   if (cancelRf) pnr.rf = null;
 }
 
@@ -1334,6 +1349,7 @@ export async function processCommand(state, cmd, options = {}) {
     pnr.ssr = [];
     pnr.osi = [];
     pnr.remarks = [];
+    pnr.tktl = null;
     pnr.rf = null;
     state.tsts = [];
     print("PNR CANCELLED - SIGN/ER REQUIRED");
@@ -1535,6 +1551,24 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     pnr.remarks.push(rmValue.toUpperCase());
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("TKTL")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const tktlMatch = c.match(/^TKTL\/?(\d{1,2}[A-Z]{3})$/);
+    if (!tktlMatch) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const parsed = parseDDMMM(tktlMatch[1], deps.clock);
+    if (!parsed) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    pnr.tktl = formatDDMMM(parsed);
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
