@@ -2189,6 +2189,17 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
+  if (c.startsWith("QS")) {
+    if (c !== "QS") {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    state.activeQueue = null;
+    state.currentQueueItem = null;
+    print("QUEUE CLOSED");
+    return { events, state };
+  }
+
   if (c.startsWith("XI")) {
     // XI element-level cancellation is intentionally not supported here.
     // Use XE<n> / XE<n-m> for deterministic element cancellation.

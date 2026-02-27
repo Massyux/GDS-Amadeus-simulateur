@@ -1278,6 +1278,23 @@ describe("processCommand", () => {
     assert.ok(!qdLines.some((line) => line.includes(locator)));
   });
 
+  it("QS closes queue context", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "ER");
+    await runCommand(state, "QP/12C1");
+    await runCommand(state, "QE/12C1");
+
+    const qsLines = await runCommand(state, "QS");
+    assert.ok(qsLines.includes("QUEUE CLOSED"));
+    assert.equal(state.activeQueue, null);
+    assert.equal(state.currentQueueItem, null);
+  });
+
   it("ER/RT keeps full PNR content with ordered PNR elements", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
