@@ -545,6 +545,20 @@ describe("processCommand", () => {
     assert.deepEqual(totalsA, totalsB);
   });
 
+  it("FXP returns error when no active segment remains", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM2DOE/JOHN SMITH/JANE");
+    await processCommand(state, "XEALL");
+    const fxp = await processCommand(state, "FXP");
+    assert.ok(
+      fxp.events.some(
+        (event) => event.type === "error" && event.text === "NO ITINERARY"
+      )
+    );
+  });
+
   it("returns error for IG when no recorded PNR is available", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");

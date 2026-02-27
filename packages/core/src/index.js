@@ -291,6 +291,12 @@ function getSortedItinerary(pnr, clock) {
   }));
 }
 
+function getActiveSortedItinerary(pnr, clock) {
+  return getSortedItinerary(pnr, clock).filter(
+    (segment) => !isSegmentCancelledStatus(segment.status)
+  );
+}
+
 function getPaxCounts(pnr) {
   const counts = { ADT: 0, CHD: 0, INF: 0 };
   for (const p of pnr.passengers || []) {
@@ -1881,19 +1887,26 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
+    const activeSegments = getActiveSortedItinerary(pnr, deps.clock);
+    if (activeSegments.length === 0) {
+      print("NO ITINERARY");
+      return { events, state };
+    }
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXP",
+      segmentsOverride: activeSegments,
       clock: deps.clock,
     });
-    const id = ++state.lastTstId;
+    const currentTst = state.tsts && state.tsts.length > 0 ? state.tsts[0] : null;
+    const id = currentTst ? currentTst.id : ++state.lastTstId;
     const tst = createNormalizedTst({ id, pricing, status: "CREATED" });
     state.tsts = [tst];
 
     print("FXP");
     print("PRICING - FXP (BOOKED RBD)");
     print(
-      `TST CREATED  ${id}  PAX ${formatPaxSummary(
+      `TST ${currentTst ? "UPDATED" : "CREATED"}  ${id}  PAX ${formatPaxSummary(
         pricing.paxCounts
       )}   STATUS: CREATED`
     );
