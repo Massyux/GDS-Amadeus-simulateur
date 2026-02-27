@@ -1255,6 +1255,29 @@ describe("processCommand", () => {
     assert.equal(state.activePNR.recordLocator, locator);
   });
 
+  it("QR removes current queue item from queue", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const locator = getRecordLocator(erLines);
+    assert.ok(locator);
+    await runCommand(state, "QP/12C1");
+    await runCommand(state, "QE/12C1");
+    await runCommand(state, "QN");
+
+    const qrLines = await runCommand(state, "QR");
+    assert.ok(qrLines.includes(`REMOVED FROM QUEUE 12C1 ${locator}`));
+    assert.equal(state.currentQueueItem, null);
+
+    const qdLines = await runCommand(state, "QD/12C1");
+    assert.ok(qdLines.includes("QUEUE EMPTY"));
+    assert.ok(!qdLines.some((line) => line.includes(locator)));
+  });
+
   it("ER/RT keeps full PNR content with ordered PNR elements", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");

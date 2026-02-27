@@ -1824,6 +1824,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NO SEGMENTS",
     "QUEUE NOT FOUND",
     "NO ACTIVE QUEUE",
+    "NO CURRENT QUEUE ITEM",
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
@@ -2160,6 +2161,31 @@ export async function processCommand(state, cmd, options = {}) {
     }
     state.currentQueueItem = nextRecordLocator;
     print(`PNR FROM QUEUE ${state.activeQueue} ${nextRecordLocator}`);
+    return { events, state };
+  }
+
+  if (c.startsWith("QR")) {
+    if (c !== "QR") {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    if (!state.activeQueue) {
+      print("NO ACTIVE QUEUE");
+      return { events, state };
+    }
+    if (!state.currentQueueItem) {
+      print("NO CURRENT QUEUE ITEM");
+      return { events, state };
+    }
+    const queue = state.queueStore ? state.queueStore[state.activeQueue] : null;
+    if (!queue) {
+      print("QUEUE NOT FOUND");
+      return { events, state };
+    }
+    const current = state.currentQueueItem;
+    state.queueStore = queueRemove(state.queueStore, state.activeQueue, current);
+    state.currentQueueItem = null;
+    print(`REMOVED FROM QUEUE ${state.activeQueue} ${current}`);
     return { events, state };
   }
 
