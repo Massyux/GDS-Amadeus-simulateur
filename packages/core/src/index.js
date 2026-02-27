@@ -1420,6 +1420,25 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
+  if (c.startsWith("OSI")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const osiMatch = c.match(/^OSI\s+([A-Z0-9]{2})\s+(.+)$/);
+    if (!osiMatch) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const airline = osiMatch[1];
+    const text = osiMatch[2].trim();
+    if (!text) {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    pnr.osi.push(`${airline} ${text}`);
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
   if (c.startsWith("RF")) {
     ensurePNR(state);
     const pnr = state.activePNR;

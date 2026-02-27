@@ -189,6 +189,27 @@ describe("processCommand", () => {
     );
   });
 
+  it("adds OSI and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const osiLines = await runCommand(state, "OSI YY VIP CUSTOMER");
+    assert.deepEqual(state.activePNR.osi, ["YY VIP CUSTOMER"]);
+    assert.ok(osiLines.some((line) => line.includes("OSI YY VIP CUSTOMER")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("OSI YY VIP CUSTOMER")));
+  });
+
+  it("returns error event for invalid OSI format", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "OSI YY");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("keeps the same record locator on repeated ER", async () => {
     const state = createInitialState();
 
