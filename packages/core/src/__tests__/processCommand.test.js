@@ -591,6 +591,38 @@ describe("processCommand", () => {
     assert.ok(rtAfterIg.some((line) => line.includes("REC LOC")));
   });
 
+  it("IG returns RT exactly to last recorded view", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "ER");
+    const rtAfterEr = await runCommand(state, "RT");
+
+    await runCommand(state, "RM CHANGED AFTER ER");
+    await runCommand(state, "IG");
+    const rtAfterIg = await runCommand(state, "RT");
+
+    assert.deepEqual(rtAfterIg, rtAfterEr);
+  });
+
+  it("IR returns RT exactly to last recorded view", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const recordLocator = getRecordLocator(erLines);
+    assert.ok(recordLocator);
+    const rtAfterEr = await runCommand(state, "RT");
+
+    await runCommand(state, "RM CHANGED AFTER ER");
+    await runCommand(state, `IR${recordLocator}`);
+    const rtAfterIr = await runCommand(state, "RT");
+
+    assert.deepEqual(rtAfterIr, rtAfterEr);
+  });
+
   it("XI cancels PNR on ER and removes it from the store", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
