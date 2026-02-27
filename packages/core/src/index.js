@@ -181,6 +181,52 @@ function timeFromMinutes(totalMinutes) {
   return `${pad2(h)}${pad2(m)}`;
 }
 
+function normalizeQueueId(queueId) {
+  return String(queueId || "").trim().toUpperCase();
+}
+
+function ensureQueueStore(store) {
+  return store && typeof store === "object" ? store : {};
+}
+
+function queueAdd(store, queueId, recordLocator) {
+  const normalizedId = normalizeQueueId(queueId);
+  const normalizedRl = String(recordLocator || "").trim().toUpperCase();
+  if (!normalizedId || !normalizedRl) return ensureQueueStore(store);
+  const next = ensureQueueStore(store);
+  next[normalizedId] ||= [];
+  if (!next[normalizedId].includes(normalizedRl)) {
+    next[normalizedId].push(normalizedRl);
+  }
+  return next;
+}
+
+function queueRemove(store, queueId, recordLocator) {
+  const normalizedId = normalizeQueueId(queueId);
+  const normalizedRl = String(recordLocator || "").trim().toUpperCase();
+  const next = ensureQueueStore(store);
+  if (!normalizedId || !next[normalizedId]) return next;
+  next[normalizedId] = next[normalizedId].filter((rl) => rl !== normalizedRl);
+  return next;
+}
+
+function queuePeek(store, queueId) {
+  const normalizedId = normalizeQueueId(queueId);
+  const next = ensureQueueStore(store);
+  if (!normalizedId || !next[normalizedId] || next[normalizedId].length === 0) {
+    return null;
+  }
+  return next[normalizedId][0];
+}
+
+export const __queueStoreUtils = {
+  normalizeQueueId,
+  ensureQueueStore,
+  queueAdd,
+  queueRemove,
+  queuePeek,
+};
+
 function buildOfflineAvailability({ from, to, ddmmm, dow }) {
   const rand = createSeededRandom(`${from}${to}${ddmmm}`);
   const randInt = (max) => Math.floor(rand() * max);
@@ -1614,6 +1660,7 @@ export function createInitialState() {
     pnrStore: {},
     recordedSnapshot: null,
     lastRecordedLocator: null,
+    queueStore: {},
   };
 }
 
