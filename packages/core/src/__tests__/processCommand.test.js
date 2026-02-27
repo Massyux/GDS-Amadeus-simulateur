@@ -126,6 +126,27 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("REC LOC")));
   });
 
+  it("supports NM2 with two adult passengers", async () => {
+    const state = createInitialState();
+    const nmLines = await runCommand(state, "NM2DOE/JOHN SMITH/JANE");
+    assert.ok(nmLines.some((line) => line.includes("DOE/JOHN")));
+    assert.ok(nmLines.some((line) => line.includes("SMITH/JANE")));
+
+    const rtLines = await runCommand(state, "RT");
+    assert.ok(rtLines.some((line) => line.includes("DOE/JOHN")));
+    assert.ok(rtLines.some((line) => line.includes("SMITH/JANE")));
+  });
+
+  it("returns error event for invalid NM format", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "NM1DOE");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "INVALID FORMAT"
+      )
+    );
+  });
+
   it("keeps the same record locator on repeated ER", async () => {
     const state = createInitialState();
 

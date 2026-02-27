@@ -589,6 +589,47 @@ function paxDisplay(p) {
   return `${p.lastName}/${p.firstName}`;
 }
 
+function parseNmAdultEntries(cmdUpper) {
+  const match = cmdUpper.match(/^NM(\d+)(.+)$/);
+  if (!match) return null;
+
+  const requestedCount = parseInt(match[1], 10);
+  if (!Number.isInteger(requestedCount) || requestedCount < 1) return null;
+
+  const payload = match[2].trim();
+  if (!payload || payload.includes("(")) return null;
+
+  const tokens = payload.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+
+  let singleTitle = "";
+  if (
+    requestedCount === 1 &&
+    tokens.length >= 2 &&
+    /^(MR|MRS)$/.test(tokens[tokens.length - 1])
+  ) {
+    singleTitle = tokens.pop();
+  }
+
+  const adults = [];
+  for (const token of tokens) {
+    const nameMatch = token.match(/^([A-Z]+)\/([A-Z]+)$/);
+    if (!nameMatch) return null;
+    adults.push({
+      lastName: nameMatch[1],
+      firstName: nameMatch[2],
+      type: "ADT",
+      title: "",
+    });
+  }
+
+  if (adults.length !== requestedCount) return null;
+  if (adults.length === 1) {
+    adults[0].title = singleTitle;
+  }
+  return adults;
+}
+
 function segmentLineForPNR(s) {
   const airline = padR(s.airline || "XX", 2);
   const flightNo = padL(String(s.flightNo || "0"), 4, "0");
@@ -1318,7 +1359,6 @@ export async function processCommand(state, cmd, options = {}) {
       /^NM\d+([A-Z]+)\/([A-Z]+)\s*\((CHD)(?:\/(\d{1,2}))?\)$/
     );
     const infMatch = c.match(/^NM\d+([A-Z]+)\/([A-Z]+)\s*\((INF)\)$/);
-    const adultMatch = c.match(/^NM\d+([A-Z]+)\/([A-Z]+)(?:\s+(MR|MRS))?$/);
 
     if (chdMatch) {
       pnr.passengers.push({
@@ -1341,13 +1381,9 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
 
-    if (adultMatch) {
-      pnr.passengers.push({
-        lastName: adultMatch[1],
-        firstName: adultMatch[2],
-        type: "ADT",
-        title: adultMatch[3] || "",
-      });
+    const adults = parseNmAdultEntries(c);
+    if (adults && adults.length > 0) {
+      pnr.passengers.push(...adults);
       renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
