@@ -543,6 +543,41 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("DOE/JOHN")));
   });
 
+  it("IR restores the recorded snapshot and drops unrecorded RM changes", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const recordLocator = getRecordLocator(erLines);
+    assert.ok(recordLocator);
+
+    await runCommand(state, "RM TEMP CHANGE");
+    const rtWithChange = await runCommand(state, "RT");
+    assert.ok(rtWithChange.some((line) => line.includes("RM TEMP CHANGE")));
+
+    await runCommand(state, `IR${recordLocator}`);
+    const rtAfterIr = await runCommand(state, "RT");
+    assert.ok(!rtAfterIr.some((line) => line.includes("RM TEMP CHANGE")));
+  });
+
+  it("IG restores the recorded snapshot when PNR was already recorded", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "ER");
+
+    await runCommand(state, "RM TEMP CHANGE");
+    const rtWithChange = await runCommand(state, "RT");
+    assert.ok(rtWithChange.some((line) => line.includes("RM TEMP CHANGE")));
+
+    await runCommand(state, "IG");
+    const rtAfterIg = await runCommand(state, "RT");
+    assert.ok(!rtAfterIg.some((line) => line.includes("RM TEMP CHANGE")));
+    assert.ok(rtAfterIg.some((line) => line.includes("REC LOC")));
+  });
+
   it("XI cancels PNR on ER and removes it from the store", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");

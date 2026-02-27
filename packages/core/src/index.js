@@ -1188,6 +1188,7 @@ export function createInitialState() {
     tsts: [],
     lastTstId: 0,
     pnrStore: {},
+    recordedSnapshot: null,
   };
 }
 
@@ -1380,8 +1381,22 @@ export async function processCommand(state, cmd, options = {}) {
       renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
-    state.activePNR = null;
-    state.tsts = [];
+    const recordLocator = state.activePNR.recordLocator;
+    const stored =
+      recordLocator && state.pnrStore ? state.pnrStore[recordLocator] : null;
+    if (stored) {
+      state.activePNR = deepCopy(stored.pnrSnapshot);
+      state.tsts = deepCopy(stored.tstsSnapshot) || [];
+      state.recordedSnapshot = {
+        recordLocator,
+        pnrSnapshot: deepCopy(stored.pnrSnapshot),
+        tstsSnapshot: deepCopy(stored.tstsSnapshot) || [],
+      };
+    } else {
+      state.activePNR = null;
+      state.tsts = [];
+      state.recordedSnapshot = null;
+    }
     print("IGNORED");
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
@@ -1402,6 +1417,11 @@ export async function processCommand(state, cmd, options = {}) {
     }
     state.activePNR = deepCopy(stored.pnrSnapshot);
     state.tsts = deepCopy(stored.tstsSnapshot) || [];
+    state.recordedSnapshot = {
+      recordLocator,
+      pnrSnapshot: deepCopy(stored.pnrSnapshot),
+      tstsSnapshot: deepCopy(stored.tstsSnapshot) || [],
+    };
     print("RETRIEVED");
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
@@ -1574,6 +1594,12 @@ export async function processCommand(state, cmd, options = {}) {
       if (pnr.recordLocator && state.pnrStore) {
         delete state.pnrStore[pnr.recordLocator];
       }
+      if (
+        state.recordedSnapshot &&
+        state.recordedSnapshot.recordLocator === pnr.recordLocator
+      ) {
+        state.recordedSnapshot = null;
+      }
       state.activePNR = null;
       state.tsts = [];
       print("OK");
@@ -1606,6 +1632,11 @@ export async function processCommand(state, cmd, options = {}) {
     rebuildPnrElements(pnr, deps.clock);
     state.pnrStore ||= {};
     state.pnrStore[pnr.recordLocator] = {
+      pnrSnapshot: deepCopy(pnr),
+      tstsSnapshot: deepCopy(state.tsts),
+    };
+    state.recordedSnapshot = {
+      recordLocator: pnr.recordLocator,
       pnrSnapshot: deepCopy(pnr),
       tstsSnapshot: deepCopy(state.tsts),
     };
