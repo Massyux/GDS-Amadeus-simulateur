@@ -1505,6 +1505,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
+    "HELP NOT FOUND",
   ]);
   const events = [];
   const error = (text) => events.push({ type: "error", text: String(text) });
@@ -1532,7 +1533,67 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c === "HELP" || c === "HE") {
+  if (c === "HE" || c.startsWith("HE ")) {
+    const subject = raw.slice(2).trim().toUpperCase();
+    if (!subject) {
+      print("HELP - AVAILABLE COMMANDS");
+      print("AN/TN/SN            AVAILABILITY AND SCHEDULE");
+      print("SS / XE             SELL OR CANCEL SEGMENTS");
+      print("NM AP APE RF ER RT  PNR BUILD AND DISPLAY");
+      print("FXP FXX FXR FXB     PRICING");
+      print("ET TTP VOID         TICKETING");
+      print("HE <COMMAND>        COMMAND HELP (ex: HE AN)");
+      return { events, state };
+    }
+    if (subject === "AN") {
+      print("HE AN");
+      print("ANddMMMXXXYYY       AVAILABILITY");
+      print("ANXXXYYY/ddMMM      AVAILABILITY");
+      print("EX: AN26DECALGPAR");
+      return { events, state };
+    }
+    if (subject === "SS") {
+      print("HE SS");
+      print("SSnCn[pax]          SELL FROM LAST AN");
+      print("EX: SS1Y1");
+      return { events, state };
+    }
+    if (subject === "NM") {
+      print("HE NM");
+      print("NM1NAME/FIRST MR    ADD PASSENGER");
+      print("NM2NAME1/FIRST1 NAME2/FIRST2");
+      return { events, state };
+    }
+    if (subject === "ER" || subject === "RT") {
+      print(`HE ${subject}`);
+      print(subject === "ER" ? "ER                  END AND RECORD PNR" : "RT                  DISPLAY ACTIVE PNR");
+      return { events, state };
+    }
+    if (subject === "FXP" || subject === "TTP" || subject === "ET") {
+      print(`HE ${subject}`);
+      if (subject === "FXP") print("FXP                 CREATE OR UPDATE TST");
+      if (subject === "TTP" || subject === "ET") {
+        print("TTP / ET            ISSUE TICKET FROM TST");
+      }
+      return { events, state };
+    }
+    if (subject === "TN" || subject === "SN") {
+      print(`HE ${subject}`);
+      print(`${subject}ddMMMXXXYYY       TIMETABLE/SCHEDULE`);
+      print(`EX: ${subject}26DECALGPAR`);
+      return { events, state };
+    }
+    if (subject === "APE" || subject === "OP") {
+      print(`HE ${subject}`);
+      if (subject === "APE") print("APE-EMAIL@DOMAIN.TLD ADD EMAIL CONTACT");
+      if (subject === "OP") print("OPddMMM/TEXT        ADD OPTION REMINDER");
+      return { events, state };
+    }
+    print("HELP NOT FOUND");
+    return { events, state };
+  }
+
+  if (c === "HELP") {
     print("AVAILABLE COMMANDS");
     print("ANddMMMXXXYYY       AVAILABILITY (ex: AN26DECALGPAR)");
     print("ANXXXYYY/ddMMM      AVAILABILITY (ex: ANALGPAR/26DEC)");

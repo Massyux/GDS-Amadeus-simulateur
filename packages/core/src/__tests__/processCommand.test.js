@@ -42,6 +42,30 @@ describe("processCommand", () => {
     assert.ok(lines.includes("RT                  DISPLAY PNR (same as live)"));
   });
 
+  it("HE returns generic help", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "HE");
+    assert.ok(lines.length > 0);
+    assert.equal(lines[0], "HELP - AVAILABLE COMMANDS");
+  });
+
+  it("HE AN returns command specific help", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "HE AN");
+    assert.ok(lines.includes("HE AN"));
+    assert.ok(lines.some((line) => line.includes("ANddMMMXXXYYY")));
+  });
+
+  it("HE unknown command returns HELP NOT FOUND error", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "HE FOOBAR");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "HELP NOT FOUND"
+      )
+    );
+  });
+
   it("emits error event for an invalid command", async () => {
     const state = createInitialState();
     const result = await processCommand(state, "ZZZ");
