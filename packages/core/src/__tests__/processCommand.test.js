@@ -730,10 +730,16 @@ describe("processCommand", () => {
     const voidLines = voidResult.events.map((event) => event.text);
     assert.ok(voidLines.some((line) => line.includes("TICKET VOIDED")));
     assert.equal(state.activePNR.tickets[0].status, "VOID");
+    assert.equal(state.tsts[0].status, "VOID");
 
     const rt = await processCommand(state, "RT");
     const rtLines = rt.events.map((event) => event.text);
     assert.ok(rtLines.some((line) => line.includes("FA 172-0000000001 VOID")));
+    assert.ok(
+      rtLines.some(
+        (line) => line.includes("TST 1") && line.includes("STATUS VOID")
+      )
+    );
   });
 
   it("VOID without ticket returns NO TICKET", async () => {

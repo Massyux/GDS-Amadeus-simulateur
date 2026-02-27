@@ -2196,6 +2196,18 @@ export async function processCommand(state, cmd, options = {}) {
     }
     ticket.status = "VOID";
     ticket.voidedAt = new Date(deps.clock.now()).toISOString();
+    if (ticket.tstId && Array.isArray(state.tsts)) {
+      const hasIssuedTicketOnSameTst = (pnr.tickets || []).some(
+        (item) => item.tstId === ticket.tstId && item.status !== "VOID"
+      );
+      if (!hasIssuedTicketOnSameTst) {
+        const linkedTst = state.tsts.find((item) => item.id === ticket.tstId);
+        if (linkedTst) {
+          linkedTst.status = "VOID";
+          linkedTst.pricingStatus = "VOID";
+        }
+      }
+    }
     print("VOID");
     print(`TICKET VOIDED ${ticket.ticketNumber}`);
     renderPNRLiveView(state, deps.clock).forEach(print);
