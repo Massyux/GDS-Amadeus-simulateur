@@ -876,6 +876,54 @@ describe("processCommand", () => {
     );
   });
 
+  it("ITR-EML sends itinerary receipt and adds receipt element in RT", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+    await processCommand(state, "FXX");
+    await processCommand(state, "ET");
+    await processCommand(state, "APE-john.doe@example.com");
+
+    const itr = await processCommand(state, "ITR-EML");
+    const itrLines = itr.events.map((event) => event.text);
+    assert.ok(itrLines.includes("ITINERARY RECEIPT SENT"));
+    assert.equal(state.activePNR.receipts.length, 1);
+    assert.equal(state.activePNR.receipts[0].type, "ITR-EML");
+
+    const rt = await processCommand(state, "RT");
+    const rtLines = rt.events.map((event) => event.text);
+    assert.ok(rtLines.some((line) => line.includes("ITR-EML JOHN.DOE@EXAMPLE.COM")));
+  });
+
+  it("ITR-EML without ticket returns NO TICKET", async () => {
+    const state = createInitialState();
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "APE-john.doe@example.com");
+    const itr = await processCommand(state, "ITR-EML");
+    assert.ok(
+      itr.events.some((event) => event.type === "error" && event.text === "NO TICKET")
+    );
+  });
+
+  it("ITR-EML without email returns NO EMAIL ADDRESS", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+    await processCommand(state, "ET");
+    const itr = await processCommand(state, "ITR-EML");
+    assert.ok(
+      itr.events.some(
+        (event) => event.type === "error" && event.text === "NO EMAIL ADDRESS"
+      )
+    );
+  });
+
   it("FXP creates deterministic normalized TST totals for same inputs", async () => {
     const createTstTotals = async () => {
       const state = createInitialState();

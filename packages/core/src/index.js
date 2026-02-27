@@ -609,6 +609,7 @@ function ensurePNR(state) {
       tktl: null,
       fp: null,
       tickets: [],
+      receipts: [],
       elements: [],
     };
   } else {
@@ -623,6 +624,7 @@ function ensurePNR(state) {
     state.activePNR.tktl ||= null;
     state.activePNR.fp ||= null;
     state.activePNR.tickets ||= [];
+    state.activePNR.receipts ||= [];
     state.activePNR.elements ||= [];
   }
 }
@@ -703,6 +705,7 @@ function rebuildPnrElements(pnr, clock) {
   pnr.remarks ||= [];
   pnr.options ||= [];
   pnr.tickets ||= [];
+  pnr.receipts ||= [];
 
   const elements = [];
 
@@ -741,6 +744,9 @@ function rebuildPnrElements(pnr, clock) {
   if (pnr.fp) elements.push({ kind: "FP" });
   pnr.tickets.forEach((_, index) => {
     elements.push({ kind: "TKT", index });
+  });
+  pnr.receipts.forEach((_, index) => {
+    elements.push({ kind: "ITR", index });
   });
 
   pnr.contacts.forEach((_, index) => {
@@ -833,6 +839,15 @@ function renderPNRLiveView(state, clock) {
       n++;
       continue;
     }
+    if (element.kind === "ITR") {
+      const receipt = pnr.receipts[element.index];
+      if (!receipt) continue;
+      lines.push(
+        `${padL(n, 2)} ITR-EML ${receipt.email} TKT ${receipt.ticketNumber}`
+      );
+      n++;
+      continue;
+    }
     if (element.kind === "AP") {
       const ap = pnr.contacts[element.index];
       if (!ap) continue;
@@ -897,6 +912,7 @@ function buildElementIndex(state, clock) {
     }
     if (
       entry.kind === "AP" ||
+      entry.kind === "ITR" ||
       entry.kind === "APE" ||
       entry.kind === "SSR" ||
       entry.kind === "OSI" ||
@@ -1754,6 +1770,7 @@ export async function processCommand(state, cmd, options = {}) {
     "FUNCTION NOT APPLICABLE",
     "NO TST",
     "NO TICKET",
+    "NO EMAIL ADDRESS",
     "TICKET ALREADY ISSUED",
     "NO SEGMENTS",
     "NO RECORDED PNR",
@@ -2597,6 +2614,47 @@ export async function processCommand(state, cmd, options = {}) {
     }
     print("VOID");
     print(`TICKET VOIDED ${ticket.ticketNumber}`);
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("ITR")) {
+    if (c !== "ITR-EML") {
+      print("INVALID FORMAT");
+      return { events, state };
+    }
+    const pnr = state.activePNR;
+    if (!pnr || !Array.isArray(pnr.tickets) || pnr.tickets.length === 0) {
+      print("NO TICKET");
+      return { events, state };
+    }
+    if (!Array.isArray(pnr.emails) || pnr.emails.length === 0) {
+      print("NO EMAIL ADDRESS");
+      return { events, state };
+    }
+
+    const activeTicket =
+      [...pnr.tickets].reverse().find((item) => item.status !== "VOID") ||
+      pnr.tickets[pnr.tickets.length - 1];
+    const paxName =
+      (pnr.passengers && pnr.passengers[0] && paxDisplay(pnr.passengers[0])) ||
+      "UNKNOWN PAX";
+    const segments = getActiveSortedItinerary(pnr, deps.clock).map(
+      (seg) => `${seg.from}-${seg.to} ${seg.dateDDMMM}`
+    );
+    const sentAtIso = new Date(deps.clock.now()).toISOString();
+    pnr.receipts ||= [];
+    pnr.receipts.push({
+      type: "ITR-EML",
+      email: pnr.emails[0],
+      ticketNumber: activeTicket.ticketNumber,
+      passengerName: paxName,
+      segments,
+      sentAt: sentAtIso,
+      message: `ITR-EML ${paxName} ${activeTicket.ticketNumber} ${segments.join(" | ")} ${sentAtIso}`,
+    });
+
+    print("ITINERARY RECEIPT SENT");
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }
