@@ -11,6 +11,7 @@
     "build:web": "npm --prefix apps/web run build",
     "test": "npm --prefix packages/core run test",
     "test:core": "npm --prefix packages/core run test",
-    "test:data": "npm --prefix packages/data run test"
+    "test:data": "npm --prefix packages/data run test",
+    "test:web": "npm --prefix apps/web run test"
   }
 }
