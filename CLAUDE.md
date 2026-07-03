@@ -61,12 +61,27 @@ close, ou lors de l'ajout des tests UI en Phase 0.5.
   `copilot/lot-2-datastore-clean`, `ux/amadeus-terminal-scroll-anselect-history-alt`,
   `ux/an-filter-and-class-selection`) — non demandé dans cette session, à traiter séparément
 
-**Phase 0.5 — Outillage** (avant d'écrire la moindre nouvelle fonctionnalité — voir section
-"Outillage recommandé" ci-dessous pour le détail)
-- Tests UI (Vitest + React Testing Library) sur `apps/web`
-- `// @ts-check` + JSDoc sur `packages/core` (typage léger sans migration TS complète)
-- Husky + lint-staged (bloque un commit si lint/tests échouent)
-- CI GitHub Actions (lint + tests à chaque push/PR)
+**Phase 0.5 — Outillage** ✅ fait le 03/07/2026
+- [x] Tests UI (Vitest + React Testing Library) sur `apps/web` (`Terminal.test.jsx`, 6 tests)
+- [x] `// @ts-check` + JSDoc sur `packages/core` (`tsconfig.json`, `npm run typecheck`, 0 erreur)
+- [x] Husky + lint-staged (`.husky/pre-commit` : lint-staged puis les 3 suites de tests, bloque
+  le commit si l'un échoue — validé sur de vrais commits de cette session)
+- [x] CI GitHub Actions (`.github/workflows/ci.yml` : lint, typecheck, tests, e2e — vert sur
+  `ubuntu-latest`). A immédiatement attrapé un vrai bug (`react-hooks/set-state-in-effect` sur
+  `Terminal.jsx`, invisible en local faute de `package-lock.json` committé — voir note ci-dessous)
+- [x] Playwright (`apps/web/e2e/terminal.spec.js`, 6 scénarios : banner, AN + sélection clavier,
+  filtre compagnie, Enter→SS, séquence complète AN→SS→NM→AP→RF→ER→RT, auto-scroll) — a permis de
+  vérifier visuellement dans un vrai Chromium ce qui n'avait pas pu être testé manuellement en
+  Phase 0 faute d'outil de pilotage navigateur
+
+⚠️ **Point de vigilance découvert pendant cette phase :** `package-lock.json` est gitignored
+(convention déjà en place avant cette session). Conséquence concrète : `npm install` en CI et en
+local peuvent résoudre des versions différentes des mêmes dépendances (caret ranges), donc un
+lint qui passe en local peut échouer en CI (et vice-versa) sans qu'aucun fichier n'ait changé.
+C'est exactement ce qui s'est produit avec `eslint-plugin-react-hooks` (7.0.1 en local vs 7.1.1
+résolu par CI, nouvelle règle entre les deux). Pas corrigé dans cette session (choix délibéré
+existant, pas remis en cause sans en discuter avec Massy) — mais si ça recommence, envisager de
+committer le lock file.
 - Playwright pour les scénarios bout-en-bout du terminal (scroll, sélection AN, séquences complètes)
 
 **Phase 1 — Stabilisation du cœur**
@@ -119,17 +134,14 @@ avant qu'elles arrivent sur main. D'où cette liste :
 **Déjà en place**
 - ESLint (`apps/web`) — lancer `npm run lint` régulièrement
 - `node --test` sur `packages/core` et `packages/data` — tests golden/invariant
+- Vitest + React Testing Library sur `apps/web` (`npm run test:web`)
+- `// @ts-check` + JSDoc sur `packages/core` (`npm --prefix packages/core run typecheck`)
+- Husky + lint-staged (`.husky/pre-commit`)
+- CI GitHub Actions (`.github/workflows/ci.yml`)
+- Playwright (`npm run test:e2e`)
 
-**À ajouter, dans cet ordre (Phase 0.5)**
-1. **Tests UI** — Vitest + React Testing Library sur `apps/web` (aucun test n'existe aujourd'hui
-   sur `Terminal.jsx` lui-même ; la majorité des bugs passés étaient des bugs d'UI/interaction)
-2. **Typage léger** — `// @ts-check` + JSDoc sur `packages/core`, pas de migration TypeScript
-   complète nécessaire ; attrape des erreurs de type avant l'exécution pour un coût quasi nul
-3. **Husky + lint-staged** — hook Git qui bloque un commit si lint ou tests échouent
-4. **CI GitHub Actions** (`.github/workflows/ci.yml`) — lint + tests à chaque push/PR. C'est ce
-   qui aurait évité que les PR #2/#6 dorment 6 mois sans qu'on sache si elles étaient valides
-5. **Playwright** — tests bout-en-bout du terminal dans un vrai navigateur (scroll, sélection AN,
-   séquences complètes de commandes)
+Tout ce qui était listé "à ajouter (Phase 0.5)" est fait (voir détail dans la section Phase 0.5
+de la roadmap ci-dessus, y compris le point de vigilance sur `package-lock.json`).
 
 **Côté Claude Code (VS Code)**
 - Un hook Claude Code qui relance `npm test` automatiquement après chaque édition de fichier, pour

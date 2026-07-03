@@ -215,20 +215,31 @@ Interdit :
   moteur original conservé) — plus fidèle au vrai Amadeus et évite un décalage entre le numéro
   affiché et le numéro attendu par `SS` en cas de saisie manuelle après filtrage.
 - Logique de parsing validée par script Node contre `processCommand` réel ; sélection
-  clavier/scroll/curseur **pas encore vérifiés visuellement dans un navigateur** (pas d'outil de
-  pilotage navigateur dans cet environnement) — à faire avant de clore complètement la Phase 0.
+  clavier/scroll/curseur vérifiés a posteriori via les tests Playwright de la Phase 0.5 (voir
+  ci-dessous) — tout fonctionne dans un vrai Chromium.
 - Reste en Phase 0 : trancher les autres branches non mergées qui traînent (voir CLAUDE.md).
+
+### 03/07/2026 — Phase 0.5 (outillage)
+- Vitest + RTL, `@ts-check`+JSDoc sur `packages/core`, Husky+lint-staged, CI GitHub Actions,
+  Playwright : tout en place et vert (détail dans CLAUDE.md).
+- La CI a immédiatement attrapé un vrai bug (`react-hooks/set-state-in-effect` sur deux
+  `useEffect` de `Terminal.jsx`) invisible en local à cause de `package-lock.json` non committé
+  (résolution de version différente entre local et CI). Corrigé en remplaçant les effets par le
+  pattern React "ajustement d'état pendant le rendu" + valeurs dérivées — pas juste désactivé le
+  lint. Point de vigilance noté dans CLAUDE.md : ce risque de dérive peut se reproduire tant que
+  le lock file n'est pas committé.
+- Les tests Playwright ont confirmé visuellement que le portage de la PR #6 (Phase 0) fonctionne
+  bien dans un vrai navigateur (sélection clavier AN, scroll auto, séquence complète).
 
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-1) Stabiliser une base UI terminal simple (sans anomalies)
-2) Définir clairement l’UX “Selling Platform-like” visée (ligne active stable, historique consultable)
-3) Implémenter 1 amélioration à la fois (et valider visuellement) :
-   - caret fidèle
-   - scroll stable
-   - mode live/history
-4) Ajouter/renforcer les tests scénarios pour éviter les régressions
+Phase 0 (nettoyage PR) et Phase 0.5 (outillage) sont faites (03/07/2026, voir CLAUDE.md et §9).
+Prochaine étape : **Phase 1 — Stabilisation du cœur**
+1) Figer et documenter le scope des commandes "niveau 1-2" garanties sans bug
+2) Tests golden/invariant au vert à 100% (déjà le cas : 120/120 sur `packages/core`)
+3) Zéro régression UX connue
+Ne pas démarrer les phases 5-8 avant que la Phase 1 soit 100% stable (règle explicite CLAUDE.md).
 
 ---
 
