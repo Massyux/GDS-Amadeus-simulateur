@@ -207,6 +207,18 @@ Interdit :
 - Objectif UX visé : Selling Platform-like (ligne active stable) mais pas finalisé.
 - Si besoin : revert complet des expérimentations cursor/scroll et reprise incrémentale.
 
+### 03/07/2026 — Phase 0 (nettoyage)
+- PR #2 fermée sans merge (redondante avec `packages/data` déjà sur main).
+- PR #6 : 6 apports portés dans `Terminal.jsx` de main (filtre compagnie AN/XX, wrap multi-lignes,
+  groupage `anGroupId`, message NO FLIGHTS, `defaultTokenIndex`, scroll via `bottomAnchorRef`).
+- Écart assumé vs PR #6 : pas de renumérotation des lignes AN après filtrage compagnie (numéro
+  moteur original conservé) — plus fidèle au vrai Amadeus et évite un décalage entre le numéro
+  affiché et le numéro attendu par `SS` en cas de saisie manuelle après filtrage.
+- Logique de parsing validée par script Node contre `processCommand` réel ; sélection
+  clavier/scroll/curseur **pas encore vérifiés visuellement dans un navigateur** (pas d'outil de
+  pilotage navigateur dans cet environnement) — à faire avant de clore complètement la Phase 0.
+- Reste en Phase 0 : trancher les autres branches non mergées qui traînent (voir CLAUDE.md).
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
