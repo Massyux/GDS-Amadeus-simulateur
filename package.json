@@ -13,6 +13,7 @@
     "test:core": "npm --prefix packages/core run test",
     "test:data": "npm --prefix packages/data run test",
     "test:web": "npm --prefix apps/web run test",
+    "test:e2e": "npm --prefix apps/web run test:e2e",
     "prepare": "husky"
   },
   "devDependencies": {

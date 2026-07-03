@@ -22,5 +22,12 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.js"],
     // the default "forks" pool hangs on Windows with this workspace setup
     pool: "threads",
+    // e2e/ holds Playwright specs, not Vitest specs -- keep them apart
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.{idea,git,cache,output,temp}/**",
+      "e2e/**",
+    ],
   },
 });
