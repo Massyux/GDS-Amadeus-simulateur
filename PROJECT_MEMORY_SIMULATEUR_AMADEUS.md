@@ -139,22 +139,46 @@ activePNR = {
 
 ---
 
-## 5) Commandes implémentées / support
-- HELP / HE
-- JD
-- AN (offline déterministe)
-- NM (MR/MRS + ADT/CHD/INF)
-- AP
-- RF (format RFMM sans +)
-- ER
-- RT
+## 5) Commandes implémentées / support — scope figé "niveau 1-2" (Phase 1, 03/07/2026)
 
-Pricing / TST :
+Liste établie par audit du dispatcher (`processCommand` dans `packages/core/src/index.js`), toutes
+couvertes par au moins un test dans `packages/core/src/__tests__/` (120 tests golden/invariant +
+unitaires, 100% verts). Toute commande retirée ou modifiée ici doit rester couverte par un test
+avant merge (voir méthode de travail).
+
+**Aide / info**
+- HE, HELP, JD
+
+**Décodage / recherche lieux** (nécessite `deps.locations`)
+- DAC (décode IATA), DAN (recherche texte)
+
+**Disponibilité / horaires**
+- AN (offline déterministe, filtre compagnie côté UI `AN.../XX`)
+- TN (timetable, pagination), SN (schedule)
+
+**Vente / annulation segments**
+- SS (vente depuis dernier AN), XE / XE1 / XE1-2 / XEALL (annulation d'éléments/segments)
+
+**PNR (build)**
+- NM (MR/MRS + ADT/CHD/INF, NM2+), AP, APE (email), SSR, OSI, RM, OP, RF (format RFMM sans +),
+  TKTL, FP
+- ER (end & record — exige ≥1 NM, ≥1 AP, ≥1 RF), RT (affichage PNR actif)
+- IG / IR (ignore/retrieve), XI (clear PNR actif)
+- QP / QD / QE / QN / QR / QS (queue)
+
+**Pricing / TST**
 - FXP : garde RBD, crée TST
 - FXB : rebook + TST
 - FXR : reprice low fare sans TST
 - FXL : low fare info only (erreur si indisponible)
 - FXX : devis sans TST
+- TQT (détail TST), FQN (low fare quote nombre)
+
+**Ticketing**
+- ET / TTP (émission), VOID (annulation billet émis), ITR-EML (envoi reçu itinéraire)
+
+Hors scope niveau 1-2 (pas encore implémenté / pas dans ce périmètre figé) : toute commande non
+listée ci-dessus.
 
 ---
 

@@ -84,10 +84,14 @@ existant, pas remis en cause sans en discuter avec Massy) — mais si ça recomm
 committer le lock file.
 - Playwright pour les scénarios bout-en-bout du terminal (scroll, sélection AN, séquences complètes)
 
-**Phase 1 — Stabilisation du cœur**
-- Scope figé et documenté des commandes "niveau 1-2" garanties sans bug
-- Tests golden/invariant au vert à 100%
-- Zéro régression UX connue
+**Phase 1 — Stabilisation du cœur** ✅ fait le 03/07/2026
+- [x] Scope figé et documenté des commandes "niveau 1-2" garanties sans bug (voir
+  PROJECT_MEMORY §5 — audit complet du dispatcher `processCommand`, chaque commande listée est
+  couverte par au moins un test)
+- [x] Tests golden/invariant au vert à 100% (120 `packages/core` + 2 `packages/data` + 6 `apps/web`
+  Vitest + 6 `apps/web` Playwright e2e — tout vert, plus `typecheck` propre)
+- [x] Zéro régression UX connue (pas de TODO/FIXME en suspens dans le code, rien de signalé dans
+  la mémoire court terme au-delà de ce qui a été traité en Phase 0)
 
 **Phase 2 — Packaging**
 - Build de prod (`npm run build:web`)
