@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # No package-lock.json is committed (see .gitignore), so there is no
+      # lockfile to key an npm cache off of or to run `npm ci` against.
+      - run: npm install
+
+      - name: Lint (apps/web)
+        run: npm --prefix apps/web run lint
+
+      - name: Typecheck (packages/core)
+        run: npm --prefix packages/core run typecheck
+
+      - name: Test (packages/core)
+        run: npm run test:core
+
+      - name: Test (packages/data)
+        run: npm run test:data
+
+      - name: Test (apps/web)
+        run: npm run test:web
