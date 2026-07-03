@@ -158,6 +158,7 @@ export default function Terminal() {
   const [activeAnGroupId, setActiveAnGroupId] = useState(null);
   const [selectedAvailIndex, setSelectedAvailIndex] = useState(-1);
   const [selectedTokenIndex, setSelectedTokenIndex] = useState(0);
+  const [prevAnGroupId, setPrevAnGroupId] = useState(activeAnGroupId);
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
   const bottomAnchorRef = useRef(null);
@@ -179,6 +180,34 @@ export default function Terminal() {
       (entry) => entry.type === "anRow" && entry.anGroupId === activeAnGroupId
     );
   }, [entries, activeAnGroupId]);
+
+  // Nouveau lot AN : on repart sur la première ligne dès ce rendu (pattern
+  // "adjust state during rendering" de React, pas un effet -- évite un
+  // rendu de plus avec l'ancienne sélection avant que l'effet ne se déclenche).
+  let nextAvailIndex = selectedAvailIndex;
+  let nextTokenIndex = selectedTokenIndex;
+  if (activeAnGroupId !== prevAnGroupId) {
+    setPrevAnGroupId(activeAnGroupId);
+    nextAvailIndex = availRows.length > 0 ? 0 : -1;
+    nextTokenIndex = availRows.length > 0 ? defaultTokenIndex(availRows[0]) : 0;
+    setSelectedAvailIndex(nextAvailIndex);
+    setSelectedTokenIndex(nextTokenIndex);
+  }
+
+  // Sélection "effective" dérivée à chaque rendu (bornée à la plage
+  // courante, token recalculé s'il est sorti des clous) : pas besoin d'un
+  // effet pour la maintenir synchronisée avec availRows.
+  const effectiveAvailIndex =
+    availRows.length === 0
+      ? -1
+      : Math.min(Math.max(nextAvailIndex, 0), availRows.length - 1);
+  const effectiveRow =
+    effectiveAvailIndex >= 0 ? availRows[effectiveAvailIndex] : null;
+  const effectiveTokenIndex = effectiveRow
+    ? nextTokenIndex >= 0 && nextTokenIndex < effectiveRow.tokens.length
+      ? nextTokenIndex
+      : defaultTokenIndex(effectiveRow)
+    : 0;
 
   async function executeCommand(cmd, displayText = cmd, anFilter = null) {
     const trimmedCmd = cmd.trim();
@@ -265,34 +294,6 @@ export default function Terminal() {
     storeRef.current.loadFromUrl?.().catch(() => {});
   }, []);
 
-  // Nouveau lot AN : on repart sur la première ligne avec le premier token
-  // disponible, indépendamment de la sélection laissée par le lot précédent.
-  useEffect(() => {
-    if (!activeAnGroupId || availRows.length === 0) return;
-    setSelectedAvailIndex(0);
-    setSelectedTokenIndex(defaultTokenIndex(availRows[0]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeAnGroupId]);
-
-  useEffect(() => {
-    if (availRows.length === 0) {
-      if (selectedAvailIndex !== -1) setSelectedAvailIndex(-1);
-      if (selectedTokenIndex !== 0) setSelectedTokenIndex(0);
-      return;
-    }
-    if (selectedAvailIndex < 0) return;
-    if (selectedAvailIndex >= availRows.length) {
-      const nextIndex = availRows.length - 1;
-      setSelectedAvailIndex(nextIndex);
-      setSelectedTokenIndex(defaultTokenIndex(availRows[nextIndex]));
-      return;
-    }
-    const row = availRows[selectedAvailIndex];
-    if (selectedTokenIndex < 0 || selectedTokenIndex >= row.tokens.length) {
-      setSelectedTokenIndex(defaultTokenIndex(row));
-    }
-  }, [availRows, selectedAvailIndex, selectedTokenIndex]);
-
   useEffect(() => {
     if (!autoFollow) return;
     bottomAnchorRef.current?.scrollIntoView({ block: "end" });
@@ -307,22 +308,21 @@ export default function Terminal() {
 
   function moveAvailSelection(delta) {
     if (availRows.length === 0) return;
-    setSelectedAvailIndex((prev) => {
-      const base = prev < 0 ? 0 : prev;
-      const next = Math.max(0, Math.min(availRows.length - 1, base + delta));
-      const row = availRows[next];
-      if (row) setSelectedTokenIndex(defaultTokenIndex(row));
-      return next;
-    });
+    const next = Math.max(
+      0,
+      Math.min(availRows.length - 1, effectiveAvailIndex + delta)
+    );
+    setSelectedAvailIndex(next);
+    setSelectedTokenIndex(defaultTokenIndex(availRows[next]));
   }
 
   function moveTokenSelection(delta) {
-    if (selectedAvailIndex < 0) return;
-    const row = availRows[selectedAvailIndex];
-    if (!row || row.tokens.length === 0) return;
-    setSelectedTokenIndex((prev) =>
-      Math.max(0, Math.min(row.tokens.length - 1, prev + delta))
+    if (!effectiveRow || effectiveRow.tokens.length === 0) return;
+    const next = Math.max(
+      0,
+      Math.min(effectiveRow.tokens.length - 1, effectiveTokenIndex + delta)
     );
+    setSelectedTokenIndex(next);
   }
 
   function moveHistory(delta) {
@@ -378,7 +378,7 @@ export default function Terminal() {
           if (entry.type === "anRow") {
             const isSelectedRow =
               entry.anGroupId === activeAnGroupId &&
-              entry.rowIndex === selectedAvailIndex;
+              entry.rowIndex === effectiveAvailIndex;
             return (
               <div key={`an-${i}`}>
                 {entry.lineSegments.map((segments, lineIdx) => (
@@ -387,7 +387,7 @@ export default function Terminal() {
                       if (segment.type === "token") {
                         const isSelectedToken =
                           isSelectedRow &&
-                          segment.tokenIndex === selectedTokenIndex;
+                          segment.tokenIndex === effectiveTokenIndex;
                         return (
                           <span
                             key={`token-${i}-${lineIdx}-${segIndex}`}
@@ -445,7 +445,7 @@ export default function Terminal() {
                   !e.altKey &&
                   e.key === "ArrowLeft" &&
                   availRows.length > 0 &&
-                  selectedAvailIndex >= 0 &&
+                  effectiveAvailIndex >= 0 &&
                   value.length === 0
                 ) {
                   e.preventDefault();
@@ -456,7 +456,7 @@ export default function Terminal() {
                   !e.altKey &&
                   e.key === "ArrowRight" &&
                   availRows.length > 0 &&
-                  selectedAvailIndex >= 0 &&
+                  effectiveAvailIndex >= 0 &&
                   value.length === 0
                 ) {
                   e.preventDefault();
@@ -479,17 +479,14 @@ export default function Terminal() {
                   return;
                 }
                 if (e.key === "Enter") {
-                  if (
-                    selectedAvailIndex >= 0 &&
-                    availRows[selectedAvailIndex] &&
-                    value.trim() === ""
-                  ) {
-                    const row = availRows[selectedAvailIndex];
+                  if (effectiveRow && value.trim() === "") {
                     const token =
-                      row.tokens[selectedTokenIndex] ?? row.tokens[0] ?? null;
+                      effectiveRow.tokens[effectiveTokenIndex] ??
+                      effectiveRow.tokens[0] ??
+                      null;
                     if (token) {
                       e.preventDefault();
-                      const nextValue = `SS${row.lineNo}${token.code}1`;
+                      const nextValue = `SS${effectiveRow.lineNo}${token.code}1`;
                       executeCommand(nextValue);
                       return;
                     }
