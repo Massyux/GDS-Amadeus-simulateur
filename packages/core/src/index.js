@@ -1,3 +1,4 @@
+// @ts-check
 import { createSimAvailabilityProvider } from "./providers/availability/sim.js";
 import { createSimPricingProvider } from "./providers/pricing/sim.js";
 
@@ -753,6 +754,7 @@ function rebuildPnrElements(pnr, clock) {
   pnr.tickets ||= [];
   pnr.receipts ||= [];
 
+  /** @type {Array<{ kind: string, index?: number }>} */
   const elements = [];
 
   pnr.passengers.forEach((_, index) => {

@@ -1,3 +1,4 @@
+// @ts-check
 let loaded = false;
 const byIata = new Map();
 

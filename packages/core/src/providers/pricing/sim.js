@@ -1,3 +1,4 @@
+// @ts-check
 export function createSimPricingProvider({ buildPricingData }) {
   return {
     price: ({ pnr, mode, segmentsOverride, clock }) =>
