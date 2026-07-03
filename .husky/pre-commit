@@ -1,0 +1,4 @@
+npx lint-staged &&
+npm run test:core &&
+npm run test:data &&
+npm run test:web

@@ -12,9 +12,12 @@
     "test": "npm --prefix packages/core run test",
     "test:core": "npm --prefix packages/core run test",
     "test:data": "npm --prefix packages/data run test",
-    "test:web": "npm --prefix apps/web run test"
+    "test:web": "npm --prefix apps/web run test",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "typescript": "^6.0.3"
   }
 }
