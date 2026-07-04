@@ -72,4 +72,22 @@ describe("Terminal", () => {
     await user.keyboard("{Enter}");
     expect(await screen.findByText(/^> SS\d+[A-Z]\d+$/)).toBeInTheDocument();
   });
+
+  it("keeps the visual caret in sync with the input's cursor position", async () => {
+    const user = userEvent.setup();
+    render(<Terminal />);
+    const input = screen.getByRole("textbox");
+    await user.click(input);
+    await user.type(input, "ABCDE");
+
+    // After typing, the caret sits at the end: nothing after it.
+    let caret = document.querySelector(".prompt-ghost .caret-block");
+    expect(caret.previousSibling.textContent).toBe("ABCDE");
+    expect(caret.nextSibling).toBeNull();
+
+    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    caret = document.querySelector(".prompt-ghost .caret-block");
+    expect(caret.previousSibling.textContent).toBe("ABC");
+    expect(caret.nextSibling.textContent).toBe("DE");
+  });
 });

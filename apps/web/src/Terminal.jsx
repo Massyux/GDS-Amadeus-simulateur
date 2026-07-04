@@ -159,6 +159,7 @@ export default function Terminal() {
   const [selectedAvailIndex, setSelectedAvailIndex] = useState(-1);
   const [selectedTokenIndex, setSelectedTokenIndex] = useState(0);
   const [prevAnGroupId, setPrevAnGroupId] = useState(activeAnGroupId);
+  const [caretPos, setCaretPos] = useState(0);
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
   const bottomAnchorRef = useRef(null);
@@ -282,6 +283,7 @@ export default function Terminal() {
   async function onEnter() {
     const cmd = value.trim();
     setValue("");
+    setCaretPos(0);
     const { baseCmd, filter } = splitANFilter(cmd);
     await executeCommand(baseCmd, cmd, filter);
   }
@@ -354,12 +356,18 @@ export default function Terminal() {
   }
 
   function moveCaretToEnd(nextValue) {
+    const len = nextValue.length;
+    setCaretPos(len);
     requestAnimationFrame(() => {
       const input = inputRef.current;
       if (!input) return;
-      const len = nextValue.length;
       input.setSelectionRange(len, len);
     });
+  }
+
+  function syncCaretPos(e) {
+    const input = e.target;
+    setCaretPos(input.selectionStart ?? input.value.length);
   }
 
   return (
@@ -420,8 +428,9 @@ export default function Terminal() {
           <span className="prompt-char">&gt;</span>{" "}
           <span className="prompt-field">
             <span className="prompt-ghost">
-              {value}
+              {value.slice(0, Math.min(caretPos, value.length))}
               <span className="caret-block" />
+              {value.slice(Math.min(caretPos, value.length))}
             </span>
             <input
               ref={inputRef}
@@ -429,7 +438,11 @@ export default function Terminal() {
               onChange={(e) => {
                 setValue(e.target.value);
                 if (historyPos !== -1) setHistoryPos(-1);
+                syncCaretPos(e);
               }}
+              onSelect={syncCaretPos}
+              onKeyUp={syncCaretPos}
+              onClick={syncCaretPos}
               onKeyDown={(e) => {
                 if (e.altKey && e.key === "ArrowUp") {
                   e.preventDefault();
