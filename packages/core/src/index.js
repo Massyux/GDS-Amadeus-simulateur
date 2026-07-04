@@ -2020,17 +2020,26 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c === "IG") {
     const recordLocator = resolveRecordedLocator(state);
-    if (!recordLocator) {
-      print("NO RECORDED PNR");
+    if (recordLocator) {
+      const restored = restoreRecordedState(state, recordLocator);
+      if (restored) {
+        print("IGNORED");
+        renderPNRLiveView(state, deps.clock).forEach(print);
+        return { events, state };
+      }
+    }
+    // No recorded snapshot to fall back to: if a PNR is still only "in
+    // memory" (never went through ER), IG discards it outright instead of
+    // requiring a Record Locator that was never created.
+    if (state.activePNR) {
+      state.activePNR = null;
+      state.tsts = [];
+      state.recordedSnapshot = null;
+      print("IGNORED");
+      renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
-    const restored = restoreRecordedState(state, recordLocator);
-    if (!restored) {
-      print("NO RECORDED PNR");
-      return { events, state };
-    }
-    print("IGNORED");
-    renderPNRLiveView(state, deps.clock).forEach(print);
+    print("NO RECORDED PNR");
     return { events, state };
   }
 

@@ -1004,12 +1004,22 @@ describe("processCommand", () => {
     );
   });
 
-  it("returns error for IG when no recorded PNR is available", async () => {
+  it("clears an in-memory PNR on IG when it was never recorded (ER)", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
     await runCommand(state, "AP123456");
     await runCommand(state, "RFTEST");
 
+    // Matches the existing XI convention (see "XI clears active PNR..."
+    // below): clearing activePNR makes the trailing renderPNRLiveView
+    // report NO ACTIVE PNR, same as XI already does.
+    const igLines = await runCommand(state, "IG");
+    assert.deepEqual(igLines, ["IGNORED", "NO ACTIVE PNR"]);
+    assert.equal(state.activePNR, null);
+  });
+
+  it("returns error for IG when there is no PNR at all", async () => {
+    const state = createInitialState();
     const result = await processCommand(state, "IG");
     assert.ok(
       result.events.some(
