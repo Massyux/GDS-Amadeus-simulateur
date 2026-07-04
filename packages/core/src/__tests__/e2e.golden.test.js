@@ -407,10 +407,10 @@ describe("global golden/invariant suite", () => {
     assert.ok(getStep(sn.steps, "SN26DECALGPAR").prints.length > 0);
 
     const badTn = await runScenario(["TN31FEBALGPAR"]);
-    assert.ok(badTn.steps[0].errors.includes("INVALID FORMAT"));
+    assert.ok(badTn.steps[0].errors.includes("CHECK DATE"));
 
     const badSn = await runScenario(["SNBADINPUT"]);
-    assert.ok(badSn.steps[0].errors.includes("INVALID FORMAT"));
+    assert.ok(badSn.steps[0].errors.includes("CHECK FORMAT"));
   });
 
   it("TESTSET 9 - HE/HELP", async () => {

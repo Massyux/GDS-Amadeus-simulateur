@@ -255,6 +255,22 @@ Interdit :
 - Les tests Playwright ont confirmé visuellement que le portage de la PR #6 (Phase 0) fonctionne
   bien dans un vrai navigateur (sélection clavier AN, scroll auto, séquence complète).
 
+### 04/07/2026 — Phase 5, Étape 1 (différenciation des messages `INVALID FORMAT`)
+- Nouveau document de référence : `FIDELITE_AMADEUS_COMPARAISON.md` à la racine (comparaison
+  simulateur vs vrai Amadeus, doc publique + à valider par l'expérience terrain de Massy).
+  Attention : le fichier existe sur disque sous le nom littéral `FIDELI~1.MD` (nom court Windows
+  8.3, pas juste un alias d'affichage) — probablement un accident d'outil/copie, à renommer si
+  besoin, non corrigé de ma propre initiative.
+- `packages/core/src/index.js` : `INVALID FORMAT` entièrement retiré, remplacé par `CHECK FORMAT`
+  / `CHECK DATE` / `CHECK CLASS OF SERVICE` / `NOT IN TABLE` selon la cause déjà présente dans le
+  code (détail complet dans `FIDELITE_AMADEUS_COMPARAISON.md`, section Étape 1). Aucune nouvelle
+  logique de détection ajoutée. `CHECK CITY CODE`/`CHECK FLIGHT NUMBER` non utilisés (pas de cause
+  distincte détectable sans toucher à d'autres fichiers).
+- Suite complète au vert (122 core + 2 data + 8 web + 8 e2e), 2 tests golden ajoutés pour des
+  branches SS jamais testées avant (ligne AN inexistante, classe non proposée sur le vol).
+- Étape 2 (format d'en-tête/codes de statut AN) et Étape 3 (RF→historique après ER, nécessite
+  validation de Massy avant de coder) pas commencées dans cette session, comme demandé.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)

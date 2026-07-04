@@ -1123,8 +1123,11 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
     }
   }
 
-  if (!dateObj || !from || !to) {
-    return { error: "INVALID FORMAT" };
+  if (!m) {
+    return { error: "CHECK FORMAT" };
+  }
+  if (!dateObj) {
+    return { error: "CHECK DATE" };
   }
 
   const ddmmm = formatDDMMM(dateObj);
@@ -1157,7 +1160,7 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
           Array.isArray(item.bookingClasses)
       );
     if (!valid) {
-      return { error: "INVALID FORMAT" };
+      return { error: "CHECK FORMAT" };
     }
     results = external;
   } else if (options.availability && typeof options.availability.search === "function") {
@@ -1178,7 +1181,7 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
           Array.isArray(item.bookingClasses)
       );
     if (!valid) {
-      return { error: "INVALID FORMAT" };
+      return { error: "CHECK FORMAT" };
     }
     results = external;
   } else {
@@ -1222,7 +1225,7 @@ function handleSS(state, cmdUpper, clock) {
 
   const m = cmdUpper.match(/^SS(\d{1,2})([A-Z])(\d{0,2})$/);
   if (!m) {
-    return { error: "INVALID FORMAT" };
+    return { error: "CHECK FORMAT" };
   }
 
   const lineNo = parseInt(m[1], 10);
@@ -1230,10 +1233,10 @@ function handleSS(state, cmdUpper, clock) {
   const paxCount = m[3] ? parseInt(m[3], 10) : 1;
 
   const item = state.lastAN.results.find((x) => x.lineNo === lineNo);
-  if (!item) return { error: "INVALID FORMAT" };
+  if (!item) return { error: "NOT IN TABLE" };
 
   const cls = item.bookingClasses.find((x) => x.code === classCode);
-  if (!cls) return { error: "INVALID FORMAT" };
+  if (!cls) return { error: "CHECK CLASS OF SERVICE" };
   if (cls.seats <= 0) return { error: "NO SEATS" };
   if (paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
 
@@ -1275,8 +1278,11 @@ async function handleTN(state, cmdUpper, deps) {
     }
   }
 
-  if (!dateObj || !from || !to) {
-    return { error: "INVALID FORMAT" };
+  if (!m) {
+    return { error: "CHECK FORMAT" };
+  }
+  if (!dateObj) {
+    return { error: "CHECK DATE" };
   }
 
   const ddmmm = formatDDMMM(dateObj);
@@ -1310,7 +1316,7 @@ async function handleTN(state, cmdUpper, deps) {
         Array.isArray(item.bookingClasses)
     );
   if (!valid) {
-    return { error: "INVALID FORMAT" };
+    return { error: "CHECK FORMAT" };
   }
 
   const normalized = [...results]
@@ -1375,8 +1381,11 @@ async function handleSN(state, cmdUpper, deps) {
     }
   }
 
-  if (!dateObj || !from || !to) {
-    return { error: "INVALID FORMAT" };
+  if (!m) {
+    return { error: "CHECK FORMAT" };
+  }
+  if (!dateObj) {
+    return { error: "CHECK DATE" };
   }
 
   const ddmmm = formatDDMMM(dateObj);
@@ -1410,7 +1419,7 @@ async function handleSN(state, cmdUpper, deps) {
         Array.isArray(item.bookingClasses)
     );
   if (!valid) {
-    return { error: "INVALID FORMAT" };
+    return { error: "CHECK FORMAT" };
   }
 
   const normalized = [...results]
@@ -1649,7 +1658,7 @@ function handleXE(state, cmdUpper, clock) {
     };
   }
 
-  return { error: "INVALID FORMAT" };
+  return { error: "CHECK FORMAT" };
 }
 
 export function createInitialState() {
@@ -1802,7 +1811,10 @@ export async function processCommand(state, cmd, options = {}) {
    */
   const deps = resolveDeps(options);
   const ERROR_EVENT_TEXTS = new Set([
-    "INVALID FORMAT",
+    "CHECK FORMAT",
+    "CHECK DATE",
+    "CHECK CLASS OF SERVICE",
+    "NOT IN TABLE",
     "NO ACTIVE PNR",
     "NO ITINERARY",
     "NO AVAILABILITY",
@@ -1947,7 +1959,7 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("DAC")) {
     const m = c.match(/^DAC\s*([A-Z]{3})$/);
     if (!m) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     if (!deps.locations) {
@@ -1957,12 +1969,12 @@ export async function processCommand(state, cmd, options = {}) {
     try {
       const lines = await deps.locations.decodeIata(m[1]);
       if (!Array.isArray(lines)) {
-        print("INVALID FORMAT");
+        print("CHECK FORMAT");
         return { events, state };
       }
       lines.forEach(print);
     } catch (e) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
     }
     return { events, state };
   }
@@ -1976,12 +1988,12 @@ export async function processCommand(state, cmd, options = {}) {
     try {
       const lines = await deps.locations.searchByText(text);
       if (!Array.isArray(lines)) {
-        print("INVALID FORMAT");
+        print("CHECK FORMAT");
         return { events, state };
       }
       lines.forEach(print);
     } catch (e) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
     }
     return { events, state };
   }
@@ -2025,7 +2037,7 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("IR")) {
     const matchWithLocator = raw.toUpperCase().match(/^IR\s*([A-Z]{6})$/);
     if (!matchWithLocator && c !== "IR") {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const recordLocator = resolveRecordedLocator(
@@ -2064,7 +2076,7 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("QP")) {
     const match = c.match(/^QP\/?([A-Z0-9]{2,8})$/);
     if (!match) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const queueId = normalizeQueueId(match[1]);
@@ -2081,7 +2093,7 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("QD")) {
     const match = c.match(/^QD\/?([A-Z0-9]{2,8})$/);
     if (!match) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const queueId = normalizeQueueId(match[1]);
@@ -2115,7 +2127,7 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("QE")) {
     const match = c.match(/^QE\/?([A-Z0-9]{2,8})$/);
     if (!match) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const queueId = normalizeQueueId(match[1]);
@@ -2132,7 +2144,7 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("QN")) {
     if (c !== "QN") {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     if (!state.activeQueue) {
@@ -2168,7 +2180,7 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("QR")) {
     if (c !== "QR") {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     if (!state.activeQueue) {
@@ -2193,7 +2205,7 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("QS")) {
     if (c !== "QS") {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     state.activeQueue = null;
@@ -2205,7 +2217,7 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("XI")) {
     // XI element-level cancellation is intentionally not supported here.
     // Use XE<n> / XE<n-m> for deterministic element cancellation.
-    print("INVALID FORMAT");
+    print("CHECK FORMAT");
     return { events, state };
   }
 
@@ -2276,7 +2288,7 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
 
-    print("INVALID FORMAT");
+    print("CHECK FORMAT");
     return { events, state };
   }
 
@@ -2293,14 +2305,14 @@ export async function processCommand(state, cmd, options = {}) {
     const pnr = state.activePNR;
     const ssrMatch = c.match(/^SSR\s+([A-Z0-9]{2,4})\s+([A-Z0-9]{2})\s+(.+)$/);
     if (!ssrMatch) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const code = ssrMatch[1];
     const airline = ssrMatch[2];
     const text = ssrMatch[3].trim();
     if (!text) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     pnr.ssr.push(`${code} ${airline} ${text}`);
@@ -2313,13 +2325,13 @@ export async function processCommand(state, cmd, options = {}) {
     const pnr = state.activePNR;
     const osiMatch = c.match(/^OSI\s+([A-Z0-9]{2})\s+(.+)$/);
     if (!osiMatch) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const airline = osiMatch[1];
     const text = osiMatch[2].trim();
     if (!text) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     pnr.osi.push(`${airline} ${text}`);
@@ -2331,12 +2343,12 @@ export async function processCommand(state, cmd, options = {}) {
     ensurePNR(state);
     const pnr = state.activePNR;
     if (c.startsWith("RF+")) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const rfValue = c.substring(2).trim();
     if (!rfValue) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     pnr.rf = rfValue;
@@ -2412,7 +2424,7 @@ export async function processCommand(state, cmd, options = {}) {
     const pnr = state.activePNR;
     const rmValue = raw.slice(2).trim();
     if (!rmValue) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     pnr.remarks.push(rmValue.toUpperCase());
@@ -2429,7 +2441,7 @@ export async function processCommand(state, cmd, options = {}) {
     if (withDate) {
       const parsed = parseDDMMM(withDate[1], deps.clock);
       if (!parsed) {
-        print("INVALID FORMAT");
+        print("CHECK DATE");
         return { events, state };
       }
       optionDate = formatDDMMM(parsed);
@@ -2437,14 +2449,14 @@ export async function processCommand(state, cmd, options = {}) {
     } else {
       const withoutDate = c.match(/^OP\/\s*(.+)$/);
       if (!withoutDate) {
-        print("INVALID FORMAT");
+        print("CHECK FORMAT");
         return { events, state };
       }
       optionText = withoutDate[1].trim();
     }
 
     if (!optionText) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
 
@@ -2458,12 +2470,12 @@ export async function processCommand(state, cmd, options = {}) {
     const pnr = state.activePNR;
     const tktlMatch = c.match(/^TKTL\/?(\d{1,2}[A-Z]{3})$/);
     if (!tktlMatch) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const parsed = parseDDMMM(tktlMatch[1], deps.clock);
     if (!parsed) {
-      print("INVALID FORMAT");
+      print("CHECK DATE");
       return { events, state };
     }
     pnr.tktl = formatDDMMM(parsed);
@@ -2476,13 +2488,13 @@ export async function processCommand(state, cmd, options = {}) {
     const pnr = state.activePNR;
     const fpValue = raw.slice(2).trim().toUpperCase();
     if (!fpValue) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const valid =
       fpValue === "CASH" || /^CCVI[0-9X]{12,19}\/\d{4}$/.test(fpValue);
     if (!valid) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     pnr.fp = fpValue;
@@ -2496,7 +2508,7 @@ export async function processCommand(state, cmd, options = {}) {
     const apeValue = raw.slice(3).replace(/^[\s-]+/, "").trim().toUpperCase();
     const validEmail = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/.test(apeValue);
     if (!apeValue || !validEmail) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     pnr.emails.push(apeValue);
@@ -2703,7 +2715,7 @@ export async function processCommand(state, cmd, options = {}) {
     }
     const m = c.match(/^TQT(\d+)?$/);
     if (!m) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const id = m[1] ? parseInt(m[1], 10) : state.tsts[state.tsts.length - 1].id;
@@ -2723,7 +2735,7 @@ export async function processCommand(state, cmd, options = {}) {
     }
     const m = c.match(/^FQN(\d+)?$/);
     if (!m) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const index = m[1] ? parseInt(m[1], 10) : 1;
@@ -2782,7 +2794,7 @@ export async function processCommand(state, cmd, options = {}) {
     }
     const match = c.match(/^VOID(?:\s+([0-9]{3}-[0-9]{10}))?$/);
     if (!match) {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const requestedNumber = match[1] || null;
@@ -2815,7 +2827,7 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("ITR")) {
     if (c !== "ITR-EML") {
-      print("INVALID FORMAT");
+      print("CHECK FORMAT");
       return { events, state };
     }
     const pnr = state.activePNR;
@@ -2854,7 +2866,7 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  print("INVALID FORMAT");
+  print("CHECK FORMAT");
   return { events, state };
 }
 
