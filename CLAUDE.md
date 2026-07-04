@@ -93,10 +93,14 @@ committer le lock file.
 - [x] Zéro régression UX connue (pas de TODO/FIXME en suspens dans le code, rien de signalé dans
   la mémoire court terme au-delà de ce qui a été traité en Phase 0)
 
-**Phase 2 — Packaging**
-- Build de prod (`npm run build:web`)
-- Déploiement public (Vercel/Netlify — statique, adapté à Vite/React)
-- Page d'accueil/onboarding minimale pour un nouvel utilisateur
+**Phase 2 — Packaging** — en cours (03-04/07/2026)
+- [x] Build de prod vérifié (`npm run build:web` → 244 KB / 75 KB gzip, aucune erreur)
+- [x] Page d'accueil/onboarding minimale (`apps/web/src/Onboarding.jsx`) : présentation du
+  projet, disclaimer de non-affiliation Amadeus, 3 commandes d'exemple, bouton d'entrée, choix
+  mémorisé en `localStorage`. Testé Vitest (`App.test.jsx`) + Playwright (`e2e/onboarding.spec.js`)
+- [ ] Déploiement public (Vercel/Netlify) — **volontairement pas fait dans cette session** : Massy
+  a choisi de s'en occuper lui-même (ou de me guider étape par étape) car ça implique son propre
+  compte d'hébergement/domaine. Ne pas déployer sans qu'il le redemande explicitement.
 
 **Phase 3 — Offre commerciale v1**
 - Produit vendu = bundle "Formation Amadeus + accès simulateur" (pas le simulateur seul)
