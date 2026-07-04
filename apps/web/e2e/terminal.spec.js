@@ -7,6 +7,14 @@ async function runCommand(page, cmd) {
 }
 
 test.describe("Terminal", () => {
+  test.beforeEach(async ({ page }) => {
+    // Skip the onboarding screen: these tests target the terminal itself,
+    // the onboarding flow has its own spec.
+    await page.addInitScript(() => {
+      localStorage.setItem("simulateur-amadeus:skip-onboarding", "1");
+    });
+  });
+
   test("shows the initial banner", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText("AMADEUS SELLING PLATFORM")).toBeVisible();
