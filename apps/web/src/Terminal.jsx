@@ -137,13 +137,21 @@ function defaultTokenIndex(row) {
   return firstAvailable === -1 ? 0 : firstAvailable;
 }
 
-function isNearBottom(scrollEl, thresholdPx = NEAR_BOTTOM_THRESHOLD_PX) {
-  return (
-    scrollEl.scrollHeight -
-      scrollEl.scrollTop -
-      scrollEl.clientHeight <
-    thresholdPx
-  );
+// Auto-follow now centers the prompt line (see the bottomAnchorRef effect
+// below) instead of pinning it to the bottom, so "still following" means
+// "the anchor sits near the vertical middle of the viewport", not "near the
+// bottom of the scrollable area".
+function isNearAutoFollowPosition(
+  scrollEl,
+  anchorEl,
+  thresholdPx = NEAR_BOTTOM_THRESHOLD_PX
+) {
+  if (!anchorEl) return true;
+  const scrollRect = scrollEl.getBoundingClientRect();
+  const anchorRect = anchorEl.getBoundingClientRect();
+  const anchorMidFromTop = anchorRect.top - scrollRect.top;
+  const idealMidFromTop = scrollRect.height / 2;
+  return Math.abs(anchorMidFromTop - idealMidFromTop) < thresholdPx;
 }
 
 export default function Terminal() {
@@ -298,14 +306,17 @@ export default function Terminal() {
 
   useEffect(() => {
     if (!autoFollow) return;
-    bottomAnchorRef.current?.scrollIntoView({ block: "end" });
+    bottomAnchorRef.current?.scrollIntoView({ block: "center" });
   }, [autoFollow, entries]);
 
   function handleScroll() {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return;
-    const nearBottom = isNearBottom(scrollEl);
-    setAutoFollow(nearBottom);
+    const stillFollowing = isNearAutoFollowPosition(
+      scrollEl,
+      bottomAnchorRef.current
+    );
+    setAutoFollow(stillFollowing);
   }
 
   function moveAvailSelection(delta) {
@@ -488,7 +499,7 @@ export default function Terminal() {
                 }
                 if (e.key === "End") {
                   setAutoFollow(true);
-                  bottomAnchorRef.current?.scrollIntoView({ block: "end" });
+                  bottomAnchorRef.current?.scrollIntoView({ block: "center" });
                   return;
                 }
                 if (e.key === "Enter") {
@@ -525,7 +536,12 @@ export default function Terminal() {
             />
           </span>
         </div>
-        <div ref={bottomAnchorRef} />
+        <div ref={bottomAnchorRef} className="bottom-anchor" />
+        {/* Reserves scroll room below the prompt line -- without it the
+            browser can't scroll the last line past the bottom of the
+            viewport, so scrollIntoView({block:"center"}) has nothing to
+            center it against and it stays pinned to the bottom instead. */}
+        <div className="scroll-spacer" aria-hidden="true" />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Terminal from "./Terminal.jsx";
@@ -89,5 +89,18 @@ describe("Terminal", () => {
     caret = document.querySelector(".prompt-ghost .caret-block");
     expect(caret.previousSibling.textContent).toBe("ABC");
     expect(caret.nextSibling.textContent).toBe("DE");
+  });
+
+  it("keeps the prompt line centered in the viewport instead of pinned to the bottom", async () => {
+    const scrollIntoViewSpy = vi.spyOn(Element.prototype, "scrollIntoView");
+    const user = userEvent.setup();
+    render(<Terminal />);
+    const input = screen.getByRole("textbox");
+    await typeCommand(user, input, "AN15DECALGPAR");
+    await screen.findByText(/AMADEUS AVAILABILITY - AN/);
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: "center" });
+    expect(scrollIntoViewSpy).not.toHaveBeenCalledWith({ block: "end" });
+    scrollIntoViewSpy.mockRestore();
   });
 });

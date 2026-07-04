@@ -67,7 +67,7 @@ test.describe("Terminal", () => {
     await expect(page.getByText(/DOE\/JOHN MR/)).toBeVisible();
   });
 
-  test("auto-follows scroll to the bottom as output grows", async ({ page }) => {
+  test("keeps the prompt line centered in the viewport as output grows", async ({ page }) => {
     await page.goto("/");
     for (let i = 0; i < 20; i++) {
       await runCommand(page, "HE");
@@ -75,12 +75,18 @@ test.describe("Terminal", () => {
 
     const screen = page.locator(".screen");
     await expect(async () => {
-      const { scrollTop, scrollHeight, clientHeight } = await screen.evaluate((el) => ({
-        scrollTop: el.scrollTop,
-        scrollHeight: el.scrollHeight,
-        clientHeight: el.clientHeight,
-      }));
-      expect(scrollHeight - clientHeight - scrollTop).toBeLessThan(40);
+      const { anchorMid, viewportMid } = await screen.evaluate((el) => {
+        const anchor = el.querySelector(".bottom-anchor");
+        const anchorRect = anchor.getBoundingClientRect();
+        const screenRect = el.getBoundingClientRect();
+        return {
+          anchorMid: anchorRect.top - screenRect.top,
+          viewportMid: screenRect.height / 2,
+        };
+      });
+      // The bottom anchor (right after the prompt line) should sit near the
+      // vertical middle of the visible area, not pinned to the bottom.
+      expect(Math.abs(anchorMid - viewportMid)).toBeLessThan(40);
     }).toPass();
   });
 });
