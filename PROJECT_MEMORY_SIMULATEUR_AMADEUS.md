@@ -320,14 +320,29 @@ Interdit :
     (voir `TASKS.md` Backlog). Le simulateur ne crée aujourd'hui que des segments statut `HK`.
 - Suite core : 131 → 137 tests, 100% verts après chaque fix.
 
+### 05/07/2026 — Mission 04 (fidélité visuelle du terminal)
+- `docs/FIDELITE-VISUELLE.md` créé : Massy a comparé le terminal au vrai Amadeus (expérience
+  terrain réelle) → **aucun écart visuel signalé**. Aucune modification cosmétique nécessaire.
+- **Bug critique trouvé et corrigé pendant la vérification** (non-visuel, hors périmètre mission
+  mais corrigé immédiatement — CONSTITUTION §5) : dans `Terminal.jsx`, `splitANFilter()` (filtre
+  compagnie `AN.../XX`) était appliqué à **toutes** les commandes soumises, pas seulement AN.
+  Toute commande contenant un `/` dont les 2 derniers caractères formaient un motif de 2 lettres
+  se faisait tronquer silencieusement avant d'atteindre `processCommand`. Cassait `NM1<nom>/
+  <prénom>` (signalé par Massy — le nom est une variable, le bug ne dépendait d'aucun nom
+  particulier), `OP<date>/<texte>`, `TKTL/<date>`. Corrigé : le split ne s'applique que si la
+  commande commence par `AN`.
+- Un test Playwright existant passait par accident depuis le début (vérifiait la ligne échouée
+  affichée à l'écran, jamais le contenu réel du PNR) — corrigé pour vérifier le Record Locator.
+- Suite web : 10 → 11 tests Vitest, 8 Playwright inchangés, tout vert après le fix.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01, 02 et 03 sont closes (05/07/2026 — voir §9 et `TASKS.md`).
-Prochaine étape : **Mission 04 — Fidélité visuelle du terminal** (trade dress à la main). Voir
-`missions/MISSION-04.md` et `missions/README.md` pour la séquence complète (05 dès que Massy est
-disponible). Point notable en Backlog pour une mission future dédiée : SS liste d'attente HL/UC
-(confirmé par Massy, chantier business plus large qu'un correctif de message).
+Missions 01 à 04 sont closes (05/07/2026 — voir §9 et `TASKS.md`).
+Prochaine étape : **Mission 05 — Déploiement public** (avec Massy, son compte hébergeur), puis
+missions 06+ (offre commerciale, pilote, etc. — voir `missions/README.md`). Point notable en
+Backlog pour une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, chantier
+business plus large qu'un correctif de message).
 
 ---
 

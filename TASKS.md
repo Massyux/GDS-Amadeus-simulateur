@@ -6,9 +6,25 @@
 
 ## En cours
 
-_(aucune — Mission 03 close, voir ci-dessous)_
+_(aucune — Mission 04 close, voir ci-dessous)_
 
 ## Fait (par session, datée)
+
+### 05/07/2026 — Mission 04 (fidélité visuelle du terminal)
+- `docs/FIDELITE-VISUELLE.md` créé : Massy a comparé le terminal au vrai Amadeus (expérience
+  terrain) → **aucun écart visuel signalé**. Aucune modification cosmétique nécessaire.
+- **Bug critique trouvé et corrigé pendant la vérification** (hors périmètre visuel, corrigé
+  immédiatement — CONSTITUTION §5) : `splitANFilter()` (filtre compagnie `AN.../XX`) était
+  appliqué à **toutes** les commandes dans `Terminal.jsx`, pas seulement AN. Toute commande
+  contenant un `/` dont les 2 derniers caractères formaient un motif de 2 lettres se faisait
+  tronquer avant d'atteindre le moteur. Cassait silencieusement `NM1<nom>/<prénom>` (signalé par
+  Massy — "le nom est une variable", le bug ne dépendait d'aucun nom précis), `OP<date>/<texte>`,
+  `TKTL/<date>`. Corrigé : le split ne s'applique que si la commande commence par `AN`.
+- Un test Playwright existant ("full happy path") passait par accident depuis le début (il ne
+  vérifiait que la ligne échouée affichée, jamais le contenu réel du PNR) — corrigé pour vérifier
+  le Record Locator. Tests de non-régression ajoutés (Vitest + Playwright) pour NM/OP/TKTL avec
+  un `/`.
+- Suite web passée à 11 tests Vitest (+1), 8 Playwright inchangés, tout vert après le fix.
 
 ### 05/07/2026 — Mission 03 (messages d'erreur fidèles Amadeus)
 - `docs/ERREURS-AMADEUS.md` créé : inventaire exhaustif des 30 messages d'erreur de

@@ -25,7 +25,7 @@
 | 01 | Hygiène & remise à plat du dépôt | reliquats Phases 0/0.5 | fait (05/07/2026) |
 | 02 | Audit métier commande par commande (grille constitution) | pré-requis Phase 5 | fait (05/07/2026) |
 | 03 | Messages d'erreur fidèles Amadeus (suite de l'Étape 1 committée) | Phase 5 | fait (05/07/2026) |
-| 04 | Fidélité visuelle du terminal (trade dress à la main) | Phase 5 | à faire |
+| 04 | Fidélité visuelle du terminal (trade dress à la main) | Phase 5 | fait (05/07/2026) |
 | 05 | Déploiement public — **avec Massy** (son compte hébergeur) | Phase 2 (fin) | à faire |
 | 06 | Accès v1 par clé/lien privé (offre commerciale) | Phase 3 | esquisse |
 | 07 | Lancement pilote + traitement des retours | Phase 4 | esquisse |

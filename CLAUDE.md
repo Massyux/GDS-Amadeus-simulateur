@@ -147,6 +147,9 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   DATA-1 corrigé (codes ville AN/TN/SN validés), FXR/FXP/FXB alignés sur le vrai comportement NM
   (confirmé par Massy). Reste : mission dédiée future pour SS liste d'attente HL/UC (confirmé
   comme un vrai écart business, voir `TASKS.md` Backlog)
+- [x] Fidélité visuelle (Mission 04, 05/07/2026) : Massy a comparé au vrai logiciel, **aucun écart
+  visuel** (`docs/FIDELITE-VISUELLE.md`). A révélé un bug critique non-visuel corrigé au passage :
+  le filtre compagnie AN tronquait silencieusement NM/OP/TKTL dès qu'ils contenaient un `/`
 - Design, terminal, look, logique de travail, codes d'erreur et algorithme métier aussi proches
   que possible du vrai logiciel
 - ⚠️ Recréer l'apparence "à la main" (pas de captures d'écran ni d'assets réels Amadeus copiés),
