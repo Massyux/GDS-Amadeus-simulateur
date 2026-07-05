@@ -2307,6 +2307,11 @@ export async function processCommand(state, cmd, options = {}) {
   if (c.startsWith("AP") && !c.startsWith("APE")) {
     ensurePNR(state);
     const pnr = state.activePNR;
+    const apValue = raw.slice(2).trim();
+    if (!apValue) {
+      print("CHECK FORMAT");
+      return { events, state };
+    }
     pnr.contacts.push(c);
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };

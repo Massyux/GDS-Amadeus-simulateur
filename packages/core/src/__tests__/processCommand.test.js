@@ -238,6 +238,25 @@ describe("processCommand", () => {
     );
   });
 
+  it("adds AP contact and shows it in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const apLines = await runCommand(state, "AP ALG 123456");
+    assert.deepEqual(state.activePNR.contacts, ["AP ALG 123456"]);
+    assert.ok(apLines.some((line) => line.includes("AP ALG 123456")));
+  });
+
+  it("returns error event when AP is empty", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "AP");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "CHECK FORMAT"
+      )
+    );
+    assert.deepEqual(state.activePNR.contacts, []);
+  });
+
   it("adds RM remark and shows it in RT", async () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
