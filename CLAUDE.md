@@ -15,6 +15,23 @@ philosophie qualité, règle d'or des familles de bugs, classification des obser
 (bug critique / incohérence / amélioration / idée), périmètre v1.0, règles de finalisation.
 Intégrée le 05/07/2026 à la demande de Massy.
 
+## Missions exécutables (05/07/2026)
+
+Le plan d'exécution mission par mission vit dans `missions/` (voir `missions/README.md` : mode
+d'emploi, séquence 01→11, règles de clôture). Une session Claude Code = une mission. La roadmap
+produit ci-dessous reste la référence ; les missions en sont la déclinaison opérationnelle,
+rédigées et auditées par l'architecte (Claude Cowork).
+
+## Décisions produit (Massy, 05/07/2026)
+
+- **Distribution v1** : web hébergé + accès par clé/lien privé (pas d'app à télécharger en v1)
+- **Référence fidélité Amadeus** : pas d'accès live — souvenirs de Massy + manuels/docs publics ;
+  tout message/détail incertain est marqué « à vérifier » et arbitré par Massy, jamais inventé
+- **Langues de l'enveloppe pédagogique** : français + anglais (le terminal reste en anglais
+  Amadeus authentique)
+- **Périmètre v1.0 vendable** : commandes niveau 1-2 actuelles (cycle réservation complet) ;
+  tarification complète et billetterie = v1.x après lancement
+
 ## Contexte de reprise (03/07/2026)
 
 Le projet a été audité à distance (lecture du repo public via GitHub, sans clone local, faute
