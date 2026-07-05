@@ -186,6 +186,25 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("SMITH/JANE")));
   });
 
+  it("accepts names with an apostrophe or a hyphen", async () => {
+    const state = createInitialState();
+    const nmLines = await runCommand(state, "NM1O'BRIEN/JOHN MR");
+    assert.ok(nmLines.some((line) => line.includes("O'BRIEN/JOHN")));
+
+    const state2 = createInitialState();
+    const nmLines2 = await runCommand(
+      state2,
+      "NM1SAINT-JEAN/MARIE-CLAIRE MRS"
+    );
+    assert.ok(
+      nmLines2.some((line) => line.includes("SAINT-JEAN/MARIE-CLAIRE"))
+    );
+
+    const state3 = createInitialState();
+    const nmLines3 = await runCommand(state3, "NM1MARTIN/JEAN-PIERRE(CHD/8)");
+    assert.ok(nmLines3.some((line) => line.includes("MARTIN/JEAN-PIERRE")));
+  });
+
   it("returns error event for invalid NM format", async () => {
     const state = createInitialState();
     const result = await processCommand(state, "NM1DOE");

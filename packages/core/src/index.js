@@ -710,7 +710,7 @@ function parseNmAdultEntries(cmdUpper) {
 
   const adults = [];
   for (const token of tokens) {
-    const nameMatch = token.match(/^([A-Z]+)\/([A-Z]+)$/);
+    const nameMatch = token.match(/^([A-Z'-]+)\/([A-Z'-]+)$/);
     if (!nameMatch) return null;
     adults.push({
       lastName: nameMatch[1],
@@ -2268,9 +2268,9 @@ export async function processCommand(state, cmd, options = {}) {
     const pnr = state.activePNR;
 
     const chdMatch = c.match(
-      /^NM\d+([A-Z]+)\/([A-Z]+)\s*\((CHD)(?:\/(\d{1,2}))?\)$/
+      /^NM\d+([A-Z'-]+)\/([A-Z'-]+)\s*\((CHD)(?:\/(\d{1,2}))?\)$/
     );
-    const infMatch = c.match(/^NM\d+([A-Z]+)\/([A-Z]+)\s*\((INF)\)$/);
+    const infMatch = c.match(/^NM\d+([A-Z'-]+)\/([A-Z'-]+)\s*\((INF)\)$/);
 
     if (chdMatch) {
       pnr.passengers.push({

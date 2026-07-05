@@ -6,9 +6,29 @@
 
 ## En cours
 
-_(aucune — Mission 01 close, voir ci-dessous)_
+- Mission 02 — Audit métier commande par commande (voir `missions/MISSION-02.md` et
+  `AUDIT-COMMANDES.md`) : grille complète faite, 5 familles de bugs corrigées + testées et
+  committées. Reste : rituel de clôture.
 
 ## Fait (par session, datée)
+
+### 05/07/2026 — Mission 02 (en cours de clôture)
+- `AUDIT-COMMANDES.md` créé : grille CONSTITUTION §2 pour les ~35 commandes du dispatcher.
+- 5 bugs trouvés, corrigés et testés (1 commit par famille) :
+  - **SS ne décrémentait jamais l'inventaire de sièges** (`state.lastAN`) → survente/duplication
+    de segments illimitée sur la même ligne/classe. C'est l'exemple même cité par
+    CONSTITUTION §3. Corrigé : décrément de `paxCount` à chaque vente réussie.
+  - **FXP/FXR/FXB tarifaient sans aucun NM dans le PNR** (repris de la session précédente,
+    "Bug 5", jamais terminé). Nouvelle erreur `NO NAME`.
+  - **AP acceptait un payload vide** sans validation (seule commande PNR sans garde-fou).
+    Alignée sur RM/OP/RF/etc. : `CHECK FORMAT` si vide.
+  - **VOID re-validait silencieusement un billet déjà void** si son numéro exact était fourni.
+    Retourne maintenant `NOTHING TO CANCEL`.
+  - **NM-1** : noms avec apostrophe/tiret rejetés (`O'BRIEN`, `JEAN-PIERRE`) — repris de l'ancien
+    "Bug 4", confirmé par Massy dans cette mission. Classe de caractères étendue à `[A-Z'-]+`.
+- 1 point identifié mais **non corrigé**, documenté dans `AUDIT-COMMANDES.md` et ci-dessous
+  (DATA-1 : AN/TN/SN sans validation de code ville — hors périmètre d'un correctif contenu).
+- Suite core passée de 123 à 131 tests (8 tests golden ajoutés), toutes vertes après chaque fix.
 
 ### 05/07/2026 — Mission 01 (close)
 - Déblocage Git : verrous `HEAD.lock`/`index.lock` orphelins supprimés (aucun process git actif),
@@ -51,3 +71,8 @@ _(aucune — Mission 01 close, voir ci-dessous)_
 - **Amélioration recommandée** : espacement fixe de 12ch après le `>` du prompt (`.prompt-gap`),
   vu dans la branche supprimée `ux/an-filter-and-class-selection`. Cosmétique, non implémenté —
   à valider avec Massy si jugé utile (pas indispensable à la fidélité Amadeus).
+- **Amélioration recommandée (DATA-1)** : AN/TN/SN génèrent de faux vols déterministes pour
+  n'importe quel code ville à 3 lettres, même inexistant (aucune consultation de
+  `packages/data`). Le vrai Amadeus renverrait `NOT IN TABLE`/`CHECK CITY CODE`. Nécessite de
+  coupler `packages/core` à `packages/data` (`deps.locations`) — hors périmètre d'un correctif
+  à un seul fichier, proposé comme mission dédiée future. Détail dans `AUDIT-COMMANDES.md`.

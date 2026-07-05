@@ -17,10 +17,10 @@
 | DAC / DAN | ✅ | ✅ (pur) | ✅ (provider absent) | ✅ (format), 🟡 (voir note DATA-1) | ⬜ | ⬜ |
 | AN | ✅ | ✅ (nouvelle recherche remplace `lastAN`) | ⬜ | ✅ format/date, 🟡 (note DATA-1 : accepte tout code 3 lettres) | ⬜ | ✅ (alimente SS) |
 | TN / SN | ✅ | ✅ (pur) | ⬜ | ✅ format/date | ⬜ | ⬜ |
-| SS | ✅ | ❌1 **jamais de décrément de sièges → survente/duplication illimitée** | ✅ (NO AVAILABILITY sans AN) | ✅ ligne/classe inconnue (NOT IN TABLE/CHECK CLASS OF SERVICE) | ⬜ | ✅ crée PNR si besoin |
+| SS | ✅ | ❌1 **corrigé** : décrément de sièges ajouté (survente/duplication) | ✅ (NO AVAILABILITY sans AN) | ✅ ligne/classe inconnue (NOT IN TABLE/CHECK CLASS OF SERVICE) | ⬜ | ✅ crée PNR si besoin |
 | XE / XE1 / XE1-2 / XEALL | ✅ | ✅ (déjà annulé → erreur dédiée) | ✅ (NO ACTIVE PNR) | ✅ (index hors bornes) | ✅ | ✅ (bloqué si TST/dernier segment/dernier ADT/INF associé) |
-| NM | ✅ | ✅ (multi-pax autorisé, cohérent) | ⬜ (auto-crée le PNR) | 🟡 **note NM-1 : noms avec apostrophe/tiret rejetés** (ex. O'BRIEN, JEAN-PIERRE) | ⬜ | ⬜ |
-| AP | ✅ | ✅ (additif, normal) | ⬜ | ❌2 **aucune validation de format (seule commande PNR sans garde-fou)** | ⬜ | ⬜ |
+| NM | ✅ | ✅ (multi-pax autorisé, cohérent) | ⬜ (auto-crée le PNR) | ✅ **NM-1 corrigé** (confirmé par Massy) : apostrophe/tiret acceptés (`O'BRIEN`, `JEAN-PIERRE`) | ⬜ | ⬜ |
+| AP | ✅ | ✅ (additif, normal) | ⬜ | ❌2 **corrigé** : payload vide rejeté (CHECK FORMAT), aligné sur RM/OP/etc. | ⬜ | ⬜ |
 | APE | ✅ | ✅ | ⬜ | ✅ (regex email) | ⬜ | ⬜ |
 | SSR | ✅ | ✅ | ⬜ | ✅ (format) | ⬜ | ⬜ |
 | OSI | ✅ | ✅ | ⬜ | ✅ (format) | ⬜ | ⬜ |
@@ -43,7 +43,7 @@
 | TQT | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (id inconnu → NO TST) | ⬜ | ⬜ |
 | FQN | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (index hors bornes → fallback 1er) | ⬜ | ⬜ |
 | ET / TTP | ✅ | ✅ (TICKET ALREADY ISSUED) | ✅ (NO ITINERARY/NO TST/NO FORM OF PAYMENT) | ⬜ | ⬜ | ✅ (dépend TST+FP) |
-| VOID | ✅ | ❌4 **re-VOID d'un billet déjà void quand le numéro est explicitement fourni ne renvoie pas d'erreur** | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ✅ (dévalide le TST lié si plus aucun billet actif dessus) |
+| VOID | ✅ | ❌4 **corrigé** : re-VOID d'un billet déjà void par numéro exact → `NOTHING TO CANCEL` | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ✅ (dévalide le TST lié si plus aucun billet actif dessus) |
 | ITR-EML | ✅ | ✅ (renvoi multiple = cas réel légitime) | ✅ (NO TICKET/NO EMAIL ADDRESS) | ✅ (`ITR-EML` strict) | ⬜ | ⬜ |
 
 ## Notes détaillées
@@ -76,18 +76,13 @@ précis est déjà `VOID`, la commande le "revoid" silencieusement et réaffiche
 comme si une action venait d'avoir lieu. **Corrigé** : billet déjà void + numéro explicite →
 `NOTHING TO CANCEL`.
 
-### 🟡 NM-1 — Noms avec apostrophe/tiret rejetés (à confirmer avant correction)
-`parseNmAdultEntries` utilise `^([A-Z]+)\/([A-Z]+)$` pour nom/prénom : n'accepte ni apostrophe ni
-tiret. Exemples concrets qui échouent aujourd'hui avec `CHECK FORMAT` alors qu'ils semblent valides
-en usage réel :
-- `NM1O'BRIEN/JOHN MR` (apostrophe dans le nom)
-- `NM1JEAN-PIERRE/MARTIN MR` (tiret dans le prénom)
-- `NM1SAINT-JEAN/MARIE-CLAIRE MRS` (tiret des deux côtés)
+### ✅ NM-1 — Noms avec apostrophe/tiret rejetés (corrigé, confirmé par Massy)
+`parseNmAdultEntries` utilisait `^([A-Z]+)\/([A-Z]+)$` pour nom/prénom : n'acceptait ni apostrophe
+ni tiret. Exemples qui échouaient avec `CHECK FORMAT` alors que ce sont des cas valides en usage
+réel : `NM1O'BRIEN/JOHN MR`, `NM1JEAN-PIERRE/MARTIN MR`, `NM1SAINT-JEAN/MARIE-CLAIRE MRS`.
 
-Repris ici de la session précédente (Bug 4, jamais tranché — la correction avait été explicitement
-soumise à validation de Massy avant d'être appliquée). **Non corrigé dans cette mission**, en
-attente de confirmation. Si validé : étendre la classe de caractères à `[A-Z'\-]+` (et faire de
-même dans `chdMatch`/`infMatch`).
+Repris de la session précédente (Bug 4, jamais tranché). Confirmé par Massy dans cette mission —
+classe de caractères étendue à `[A-Z'-]+` dans `parseNmAdultEntries`, `chdMatch` et `infMatch`.
 
 ### 🟡 DATA-1 — AN/TN/SN acceptent n'importe quel code ville à 3 lettres
 Aucune commande de disponibilité ne consulte `deps.locations` (la vraie table de lieux) : un code
