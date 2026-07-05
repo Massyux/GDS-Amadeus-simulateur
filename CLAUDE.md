@@ -6,6 +6,15 @@
 > la roadmap de commercialisation et la méthode de travail. Claude Code lit ce fichier
 > automatiquement au démarrage d'une session dans ce dossier.
 
+## Constitution du projet (à lire et appliquer en premier)
+
+@CONSTITUTION.md
+
+Gouvernance commune à tous les assistants IA du projet (Claude Code, Claude Cowork) : rôles,
+philosophie qualité, règle d'or des familles de bugs, classification des observations
+(bug critique / incohérence / amélioration / idée), périmètre v1.0, règles de finalisation.
+Intégrée le 05/07/2026 à la demande de Massy.
+
 ## Contexte de reprise (03/07/2026)
 
 Le projet a été audité à distance (lecture du repo public via GitHub, sans clone local, faute
