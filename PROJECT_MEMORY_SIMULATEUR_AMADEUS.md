@@ -142,9 +142,9 @@ activePNR = {
 ## 5) Commandes implémentées / support — scope figé "niveau 1-2" (Phase 1, 03/07/2026)
 
 Liste établie par audit du dispatcher (`processCommand` dans `packages/core/src/index.js`), toutes
-couvertes par au moins un test dans `packages/core/src/__tests__/` (120 tests golden/invariant +
-unitaires, 100% verts). Toute commande retirée ou modifiée ici doit rester couverte par un test
-avant merge (voir méthode de travail).
+couvertes par au moins un test dans `packages/core/src/__tests__/` (131 tests golden/invariant +
+unitaires depuis l'audit métier Mission 02 du 05/07/2026, 100% verts). Toute commande retirée ou
+modifiée ici doit rester couverte par un test avant merge (voir méthode de travail).
 
 **Aide / info**
 - HE, HELP, JD
@@ -173,6 +173,8 @@ avant merge (voir méthode de travail).
 - FXL : low fare info only (erreur si indisponible)
 - FXX : devis sans TST
 - TQT (détail TST), FQN (low fare quote nombre)
+- FXP/FXR/FXB exigent ≥1 NM dans le PNR actif (erreur `NO NAME` sinon, depuis Mission 02
+  05/07/2026 — avant cela, tarifiait sans aucun passager)
 
 **Ticketing**
 - ET / TTP (émission), VOID (annulation billet émis), ITR-EML (envoi reçu itinéraire)
@@ -285,13 +287,27 @@ Interdit :
 - `package-lock.json` : décision prise avec Massy → committé (retiré du `.gitignore`), CI passée
   de `npm install` à `npm ci` + cache npm. Résout le point de vigilance du 03/07/2026 (Phase 0.5).
 
+### 05/07/2026 — Mission 02 (audit métier commande par commande)
+- `AUDIT-COMMANDES.md` créé : grille CONSTITUTION §2 (nominal/réexéc./mauvais état/limites/
+  IG-ER/croisés) déroulée sur les ~35 commandes du dispatcher `processCommand`.
+- 5 bugs trouvés, corrigés, testés, un commit par famille (détail dans `TASKS.md`) :
+  SS ne décrémentait jamais l'inventaire de sièges (survente/duplication illimitée — l'exemple
+  même de CONSTITUTION §3), FXP/FXR/FXB tarifiaient sans NM (repris de l'ancien "Bug 5", jamais
+  terminé), AP acceptait un payload vide (seule commande PNR sans garde-fou), VOID revalidait
+  silencieusement un billet déjà void par numéro exact, NM rejetait les noms avec apostrophe/tiret
+  (repris de l'ancien "Bug 4" — confirmé par Massy dans cette mission avant correction).
+- 1 point non corrigé, documenté en Backlog `TASKS.md` : DATA-1 (AN/TN/SN acceptent tout code
+  ville à 3 lettres sans consulter `packages/data` — nécessite un couplage cross-package, hors
+  périmètre d'un correctif contenu à `packages/core/src/index.js`).
+- Suite core : 123 → 131 tests, 100% verts après chaque fix.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Phase 0 est maintenant intégralement close (05/07/2026, Mission 01 — voir §9 et `TASKS.md`).
-Prochaine étape : **Mission 02 — Audit métier commande par commande** (grille constitution),
-pré-requis à la Phase 5 (fidélité Amadeus). Voir `missions/MISSION-02.md` et `missions/README.md`
-pour la séquence complète (02 → 03 → 04, puis 05 dès que Massy est disponible).
+Mission 01 et Mission 02 sont closes (05/07/2026 — voir §9 et `TASKS.md`).
+Prochaine étape : **Mission 03 — Messages d'erreur fidèles Amadeus** (suite de l'Étape 1 Phase 5
+committée le 04/07/2026), puis Mission 04 (fidélité visuelle). Voir `missions/MISSION-03.md` et
+`missions/README.md` pour la séquence complète (05 dès que Massy est disponible).
 
 ---
 
