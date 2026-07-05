@@ -22,7 +22,7 @@
 
 | # | Mission | Phase (CLAUDE.md) | Statut |
 |---|---------|-------------------|--------|
-| 01 | Hygiène & remise à plat du dépôt | reliquats Phases 0/0.5 | à faire |
+| 01 | Hygiène & remise à plat du dépôt | reliquats Phases 0/0.5 | fait (05/07/2026) |
 | 02 | Audit métier commande par commande (grille constitution) | pré-requis Phase 5 | à faire |
 | 03 | Messages d'erreur fidèles Amadeus (suite de l'Étape 1 committée) | Phase 5 | à faire |
 | 04 | Fidélité visuelle du terminal (trade dress à la main) | Phase 5 | à faire |
@@ -33,6 +33,7 @@
 | 09 | Quiz, notation, progression | Phase 6 | esquisse |
 | 10 | Assistant IA pédagogique intégré | Phase 7 | esquisse |
 | 11 | Site de vente + licences par poste | Phase 8 | esquisse |
+| 12 | Mode « données réelles » AN/SN via API Amadeus (provider + proxy serverless) | v1.x | esquisse |
 
 **Ordre imposé** : 01 → 02 → 03 → 04. La mission 05 peut s'intercaler dès que Massy est
 disponible. Les missions 06+ ne démarrent pas avant que 01-04 soient closes (règle CLAUDE.md :

@@ -271,15 +271,27 @@ Interdit :
 - Étape 2 (format d'en-tête/codes de statut AN) et Étape 3 (RF→historique après ER, nécessite
   validation de Massy avant de coder) pas commencées dans cette session, comme demandé.
 
+### 05/07/2026 — Mission 01 (hygiène & remise à plat du dépôt)
+- Projet déplacé de `C:\Users\MASSI\Desktop\` vers `D:\cowork\GDS-Amadeus-simulateur` (fait par
+  l'architecte) ; moteur vérifié sain après déplacement.
+- Méthode de travail passée en mode "missions" : plan d'exécution dans `missions/` (rédigé par
+  l'architecte Claude Cowork), une mission = une session Claude Code, tracker vivant `TASKS.md`
+  créé à la racine. Voir `missions/README.md`.
+- Git débloqué (verrous orphelins supprimés, `fsck` propre), 6 suites vertes (123 core + 2 data +
+  10 web Vitest + 8 e2e Playwright + lint + typecheck), `npm audit fix` → 0 vulnérabilité.
+- `FIDELI~1.MD` renommé en `FIDELITE_AMADEUS_COMPARAISON.md` (résout la note du 04/07/2026 au-dessus).
+- Triage complet des branches distantes : PR #6 fermée, 11 branches dormantes supprimées (toutes
+  mergées ou obsolètes, aucun apport perdu — détail dans `TASKS.md`). `git branch -r` = `origin/main`.
+- `package-lock.json` : décision prise avec Massy → committé (retiré du `.gitignore`), CI passée
+  de `npm install` à `npm ci` + cache npm. Résout le point de vigilance du 03/07/2026 (Phase 0.5).
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Phase 0 (nettoyage PR) et Phase 0.5 (outillage) sont faites (03/07/2026, voir CLAUDE.md et §9).
-Prochaine étape : **Phase 1 — Stabilisation du cœur**
-1) Figer et documenter le scope des commandes "niveau 1-2" garanties sans bug
-2) Tests golden/invariant au vert à 100% (déjà le cas : 120/120 sur `packages/core`)
-3) Zéro régression UX connue
-Ne pas démarrer les phases 5-8 avant que la Phase 1 soit 100% stable (règle explicite CLAUDE.md).
+Phase 0 est maintenant intégralement close (05/07/2026, Mission 01 — voir §9 et `TASKS.md`).
+Prochaine étape : **Mission 02 — Audit métier commande par commande** (grille constitution),
+pré-requis à la Phase 5 (fidélité Amadeus). Voir `missions/MISSION-02.md` et `missions/README.md`
+pour la séquence complète (02 → 03 → 04, puis 05 dès que Massy est disponible).
 
 ---
 

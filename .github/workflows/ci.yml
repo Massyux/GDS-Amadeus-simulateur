@@ -14,10 +14,9 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: npm
 
-      # No package-lock.json is committed (see .gitignore), so there is no
-      # lockfile to key an npm cache off of or to run `npm ci` against.
-      - run: npm install
+      - run: npm ci
 
       - name: Lint (apps/web)
         run: npm --prefix apps/web run lint

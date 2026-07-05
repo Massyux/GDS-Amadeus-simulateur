@@ -31,6 +31,16 @@ rédigées et auditées par l'architecte (Claude Cowork).
   Amadeus authentique)
 - **Périmètre v1.0 vendable** : commandes niveau 1-2 actuelles (cycle réservation complet) ;
   tarification complète et billetterie = v1.x après lancement
+- **Infra v1 (05/07/2026)** : pas de base de données (app 100% client, localStorage) ;
+  hébergement statique gratuit — Cloudflare Pages en premier choix (bande passante illimitée),
+  Vercel/Netlify en alternative ; domaine optionnel au début (sous-domaine gratuit), .com
+  (~12 $/an, Cloudflare Registrar ou Porkbun) au moment de vendre. Phase 6+ : Supabase (gratuit,
+  Postgres + auth) pour comptes/clés/progression ; paiement Algérie : Chargily Pay (CIB/EDAHABIA)
+- **Mode API réel AN/SN (05/07/2026)** : validé comme évolution v1.x — provider
+  `providers/availability/amadeus.js` (API Amadeus Self-Service « Flight Availabilities
+  Search », Massy a déjà une clé) derrière un proxy serverless gratuit (clé jamais côté client,
+  cache des réponses). Le provider sim déterministe RESTE le défaut : indispensable à la
+  correction automatique des exercices (Phase 6). Mode réel = option démo/premium.
 
 ## Contexte de reprise (03/07/2026)
 
@@ -78,14 +88,12 @@ close, ou lors de l'ajout des tests UI en Phase 0.5.
 
 ## Roadmap complète jusqu'à la fin du projet
 
-**Phase 0 — Nettoyage** ✅ fait le 03/07/2026 (voir détail plus haut)
+**Phase 0 — Nettoyage** ✅ fait (03/07/2026, dernier reliquat clos le 05/07/2026 — Mission 01)
 - [x] Fermer PR #2 sans merge
 - [x] Porter les 6 apports utiles de PR #6 dans le Terminal.jsx de main
-- [ ] Repo propre : zéro branche/PR qui traîne — reste à trancher les autres branches non mergées
-  (`fix/monorepo-workspaces-data`, `refactor-engine`, `lot3-an-offline-improved`,
-  `lot4-pricing-amadeuslike`, `lot4d-pricing-ultra-realistic-taxes`,
-  `copilot/lot-2-datastore-clean`, `ux/amadeus-terminal-scroll-anselect-history-alt`,
-  `ux/an-filter-and-class-selection`) — non demandé dans cette session, à traiter séparément
+- [x] Repo propre : zéro branche/PR qui traîne — fait le 05/07/2026 (`missions/MISSION-01.md`,
+  détail dans `TASKS.md`) : PR #6 fermée avec commentaire, 11 branches distantes dormantes
+  supprimées (toutes mergées ou obsolètes, aucun apport perdu), `git branch -r` = `origin/main`
 
 **Phase 0.5 — Outillage** ✅ fait le 03/07/2026
 - [x] Tests UI (Vitest + React Testing Library) sur `apps/web` (`Terminal.test.jsx`, 6 tests)
@@ -100,15 +108,10 @@ close, ou lors de l'ajout des tests UI en Phase 0.5.
   vérifier visuellement dans un vrai Chromium ce qui n'avait pas pu être testé manuellement en
   Phase 0 faute d'outil de pilotage navigateur
 
-⚠️ **Point de vigilance découvert pendant cette phase :** `package-lock.json` est gitignored
-(convention déjà en place avant cette session). Conséquence concrète : `npm install` en CI et en
-local peuvent résoudre des versions différentes des mêmes dépendances (caret ranges), donc un
-lint qui passe en local peut échouer en CI (et vice-versa) sans qu'aucun fichier n'ait changé.
-C'est exactement ce qui s'est produit avec `eslint-plugin-react-hooks` (7.0.1 en local vs 7.1.1
-résolu par CI, nouvelle règle entre les deux). Pas corrigé dans cette session (choix délibéré
-existant, pas remis en cause sans en discuter avec Massy) — mais si ça recommence, envisager de
-committer le lock file.
-- Playwright pour les scénarios bout-en-bout du terminal (scroll, sélection AN, séquences complètes)
+⚠️ **Point de vigilance découvert pendant cette phase :** `package-lock.json` était gitignored,
+ce qui pouvait faire résoudre des versions différentes entre CI et local (déjà causé un faux rouge
+avec `eslint-plugin-react-hooks`). **Résolu le 05/07/2026 (Mission 01, validé par Massy)** : lock
+retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + cache npm.
 
 **Phase 1 — Stabilisation du cœur** ✅ fait le 03/07/2026
 - [x] Scope figé et documenté des commandes "niveau 1-2" garanties sans bug (voir
