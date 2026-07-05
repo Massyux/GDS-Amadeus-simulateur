@@ -91,6 +91,28 @@ describe("Terminal", () => {
     expect(caret.nextSibling.textContent).toBe("DE");
   });
 
+  it("does not truncate commands containing a slash that aren't AN (NM/OP/TKTL)", async () => {
+    // Regression: the AN airline-filter split (AN.../XX) used to run on every
+    // command, truncating anything after a "/" that wasn't an AN entry.
+    const user = userEvent.setup();
+    render(<Terminal />);
+    const input = screen.getByRole("textbox");
+
+    // Each command's echoed input line ("> ...") and its PNR-display line
+    // both legitimately contain the same text, so assert with findAllByText
+    // rather than findByText (which requires exactly one match).
+    await typeCommand(user, input, "NM1MEHDANI/MASSU");
+    expect((await screen.findAllByText(/MEHDANI\/MASSU/)).length).toBeGreaterThan(0);
+
+    await typeCommand(user, input, "OP26DEC/CALL PAX BEFORE DEPARTURE");
+    expect(
+      (await screen.findAllByText(/OP26DEC\/CALL PAX BEFORE DEPARTURE/)).length
+    ).toBeGreaterThan(0);
+
+    await typeCommand(user, input, "TKTL/26DEC");
+    expect((await screen.findAllByText(/TKTL\/26DEC/)).length).toBeGreaterThan(0);
+  });
+
   it("keeps the prompt line centered in the viewport instead of pinned to the bottom", async () => {
     const scrollIntoViewSpy = vi.spyOn(Element.prototype, "scrollIntoView");
     const user = userEvent.setup();

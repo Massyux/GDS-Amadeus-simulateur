@@ -64,7 +64,11 @@ test.describe("Terminal", () => {
     await runCommand(page, "ER");
     await runCommand(page, "RT");
 
-    await expect(page.getByText(/DOE\/JOHN MR/)).toBeVisible();
+    // "DOE/JOHN MR" legitimately appears several times (echoed input line +
+    // PNR display after every step) - assert on the record locator, which
+    // only appears once ER succeeds, to confirm the whole sequence worked.
+    await expect(page.getByText(/RECORD LOCATOR [A-Z]{6}/)).toBeVisible();
+    await expect(page.getByText("DOE/JOHN MR").first()).toBeVisible();
   });
 
   test("keeps the prompt line centered in the viewport as output grows", async ({ page }) => {

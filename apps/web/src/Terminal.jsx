@@ -298,7 +298,12 @@ export default function Terminal() {
     const cmd = value.trim();
     setValue("");
     setCaretPos(0);
-    const { baseCmd, filter } = splitANFilter(cmd);
+    // The AN airline-filter syntax (AN.../XX) only applies to AN itself -
+    // applying it to every command truncated anything else containing a
+    // "/" (NM lastname/firstname, OP date/text, TKTL/date...).
+    const { baseCmd, filter } = cmd.toUpperCase().startsWith("AN")
+      ? splitANFilter(cmd)
+      : { baseCmd: cmd, filter: null };
     await executeCommand(baseCmd, cmd, filter);
   }
 

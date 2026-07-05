@@ -34,6 +34,7 @@
 | 10 | Assistant IA pédagogique intégré | Phase 7 | esquisse |
 | 11 | Site de vente + licences par poste | Phase 8 | esquisse |
 | 12 | Mode « données réelles » AN/SN via API Amadeus (provider + proxy serverless) | v1.x | esquisse |
+| 13 | Liste d'attente réaliste (HL/UC au lieu de refus sur NO SEATS — confirmé Massy, mission 03) | v1.x | esquisse |
 
 **Ordre imposé** : 01 → 02 → 03 → 04. La mission 05 peut s'intercaler dès que Massy est
 disponible. Les missions 06+ ne démarrent pas avant que 01-04 soient closes (règle CLAUDE.md :
