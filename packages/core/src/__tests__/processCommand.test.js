@@ -444,6 +444,26 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["CHECK CLASS OF SERVICE"]);
   });
 
+  it("SS decrements available seats so the same class cannot be oversold indefinitely", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+
+    for (let i = 0; i < initialSeats; i++) {
+      const lines = await runCommand(state, "SS1Y1");
+      assert.equal(lines[0], "OK");
+    }
+    assert.equal(cls.seats, 0);
+    assert.equal(state.activePNR.itinerary.length, initialSeats);
+
+    // Selling once more must fail instead of creating an extra duplicate segment.
+    const overLines = await runCommand(state, "SS1Y1");
+    assert.deepEqual(overLines, ["NO SEATS"]);
+    assert.equal(state.activePNR.itinerary.length, initialSeats);
+  });
+
   it("TN returns timetable lines and keeps results sellable", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");

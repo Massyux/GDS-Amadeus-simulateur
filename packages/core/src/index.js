@@ -1240,6 +1240,8 @@ function handleSS(state, cmdUpper, clock) {
   if (cls.seats <= 0) return { error: "NO SEATS" };
   if (paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
 
+  cls.seats -= paxCount;
+
   const seg = {
     airline: item.airline,
     flightNo: item.flightNo,
