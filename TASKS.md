@@ -6,13 +6,28 @@
 
 ## En cours
 
-- Mission 02 — Audit métier commande par commande (voir `missions/MISSION-02.md` et
-  `AUDIT-COMMANDES.md`) : grille complète faite, 5 familles de bugs corrigées + testées et
-  committées. Reste : rituel de clôture.
+_(aucune — Mission 03 close, voir ci-dessous)_
 
 ## Fait (par session, datée)
 
-### 05/07/2026 — Mission 02 (en cours de clôture)
+### 05/07/2026 — Mission 03 (messages d'erreur fidèles Amadeus)
+- `docs/ERREURS-AMADEUS.md` créé : inventaire exhaustif des 30 messages d'erreur de
+  `packages/core`. 4 déjà conformes (Phase 5 Étape 1), 3 confirmés/corrigés cette session
+  (NO NAME, NOTHING TO CANCEL, END PNR FIRST), 1 hors périmètre (message technique interne),
+  1 point business confirmé mais non traité (voir Backlog), 21 encore « à vérifier » sans urgence.
+- **DATA-1 corrigé** (repris du Backlog Mission 02) : AN/TN/SN consultent maintenant
+  `deps.locations.findByIata()` (nouvelle méthode exposée par `packages/data`) et renvoient
+  `NOT IN TABLE` pour un code ville inconnu, quand un provider est configuré. Bug de câblage
+  trouvé et corrigé au passage : `resolveDeps` ignorait silencieusement un provider qui n'expose
+  que `findByIata` sans `decodeIata`/`searchByText`. Ajout de `PAR` (code ville) aux données
+  réelles ; correction d'une course dans `Terminal.jsx` (le fetch de `locations.json` n'était
+  attendu que pour DAC/DAN, jamais pour AN/TN/SN) ; mock de fetch ajouté au setup Vitest web.
+- **FXR corrigé** : ne doit pas exiger de NM (contrairement à FXP/FXB), confirmé par Massy.
+  Contrôle `NO NAME` retiré de FXR (resté correctement absent de FXL).
+- Suite core passée de 131 à 137 tests, toutes vertes après chaque fix (core/data/web/e2e/lint/
+  typecheck + CI GitHub).
+
+### 05/07/2026 — Mission 02 (close)
 - `AUDIT-COMMANDES.md` créé : grille CONSTITUTION §2 pour les ~35 commandes du dispatcher.
 - 5 bugs trouvés, corrigés et testés (1 commit par famille) :
   - **SS ne décrémentait jamais l'inventaire de sièges** (`state.lastAN`) → survente/duplication
@@ -71,8 +86,12 @@
 - **Amélioration recommandée** : espacement fixe de 12ch après le `>` du prompt (`.prompt-gap`),
   vu dans la branche supprimée `ux/an-filter-and-class-selection`. Cosmétique, non implémenté —
   à valider avec Massy si jugé utile (pas indispensable à la fidélité Amadeus).
-- **Amélioration recommandée (DATA-1)** : AN/TN/SN génèrent de faux vols déterministes pour
-  n'importe quel code ville à 3 lettres, même inexistant (aucune consultation de
-  `packages/data`). Le vrai Amadeus renverrait `NOT IN TABLE`/`CHECK CITY CODE`. Nécessite de
-  coupler `packages/core` à `packages/data` (`deps.locations`) — hors périmètre d'un correctif
-  à un seul fichier, proposé comme mission dédiée future. Détail dans `AUDIT-COMMANDES.md`.
+- **Bug critique confirmé, mission dédiée future (SS liste d'attente HL/UC)** : SS refuse
+  purement la vente si la classe est à 0 siège ou si le nombre de pax dépasse le disponible.
+  **Confirmé par Massy (05/07/2026, Mission 03)** : le vrai Amadeus met en liste d'attente
+  (statut de segment `HL`/`UC`) au lieu de refuser. Le simulateur ne crée aujourd'hui que des
+  segments statut `HK`. Chantier plus large qu'un wording : revoir la logique SS/statuts de
+  segment, l'affichage RT des statuts HL/UC, probablement une commande de confirmation HL→HK.
+  Détail dans `docs/ERREURS-AMADEUS.md`. Non traité dans Mission 03 (hors périmètre message).
+- **Formulations encore à vérifier** (21 messages, sans urgence, aucun impact fonctionnel connu
+  au-delà du texte affiché) : voir la table complète dans `docs/ERREURS-AMADEUS.md`.

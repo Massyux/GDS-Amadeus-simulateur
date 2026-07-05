@@ -143,6 +143,10 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
 - [x] Pré-requis (Mission 02, 05/07/2026) : audit métier commande par commande, 5 bugs corrigés
   et testés (voir `AUDIT-COMMANDES.md`, `TASKS.md`) — le cœur métier est stable avant de peaufiner
   la fidélité
+- [x] Messages d'erreur (Mission 03, 05/07/2026) : inventaire complet (`docs/ERREURS-AMADEUS.md`),
+  DATA-1 corrigé (codes ville AN/TN/SN validés), FXR/FXP/FXB alignés sur le vrai comportement NM
+  (confirmé par Massy). Reste : mission dédiée future pour SS liste d'attente HL/UC (confirmé
+  comme un vrai écart business, voir `TASKS.md` Backlog)
 - Design, terminal, look, logique de travail, codes d'erreur et algorithme métier aussi proches
   que possible du vrai logiciel
 - ⚠️ Recréer l'apparence "à la main" (pas de captures d'écran ni d'assets réels Amadeus copiés),

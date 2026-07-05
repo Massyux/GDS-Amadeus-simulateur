@@ -301,13 +301,33 @@ Interdit :
   périmètre d'un correctif contenu à `packages/core/src/index.js`).
 - Suite core : 123 → 131 tests, 100% verts après chaque fix.
 
+### 05/07/2026 — Mission 03 (messages d'erreur fidèles Amadeus)
+- `docs/ERREURS-AMADEUS.md` créé : inventaire exhaustif des 30 messages d'erreur de
+  `packages/core`. Méthode stricte : rien inventé sans le marquer « à vérifier » ; 4 messages
+  déjà conformes (Phase 5 Étape 1), reste soumis à l'arbitrage de Massy.
+- **DATA-1 corrigé** (repris du Backlog Mission 02) : AN/TN/SN consultent maintenant
+  `deps.locations.findByIata()` (nouvelle méthode `packages/data`) → `NOT IN TABLE` pour un code
+  ville inconnu. Bug de câblage trouvé et corrigé au passage (`resolveDeps` ignorait un provider
+  n'exposant que `findByIata`). `PAR` ajouté aux données réelles ; course corrigée dans
+  `Terminal.jsx` (fetch de `locations.json` pas attendu pour AN/TN/SN avant).
+- Décisions de Massy (expérience terrain réelle, à retenir pour la suite) :
+  - **FXP et FXB exigent un NM dans le PNR, FXR et FXL non.** Règle métier confirmée — FXR
+    corrigé (le contrôle `NO NAME` en avait été ajouté à tort en Mission 02).
+  - `NOTHING TO CANCEL` (VOID re-void) et `END PNR FIRST` (message générique) confirmés tels quels.
+  - **SS refuse la vente à 0 siège/pax insuffisants ; le vrai Amadeus met en liste d'attente
+    (statuts de segment HL/UC) au lieu de refuser.** Confirmé comme un vrai écart business (pas
+    seulement de wording) — non traité dans cette mission, proposé comme mission dédiée future
+    (voir `TASKS.md` Backlog). Le simulateur ne crée aujourd'hui que des segments statut `HK`.
+- Suite core : 131 → 137 tests, 100% verts après chaque fix.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Mission 01 et Mission 02 sont closes (05/07/2026 — voir §9 et `TASKS.md`).
-Prochaine étape : **Mission 03 — Messages d'erreur fidèles Amadeus** (suite de l'Étape 1 Phase 5
-committée le 04/07/2026), puis Mission 04 (fidélité visuelle). Voir `missions/MISSION-03.md` et
-`missions/README.md` pour la séquence complète (05 dès que Massy est disponible).
+Missions 01, 02 et 03 sont closes (05/07/2026 — voir §9 et `TASKS.md`).
+Prochaine étape : **Mission 04 — Fidélité visuelle du terminal** (trade dress à la main). Voir
+`missions/MISSION-04.md` et `missions/README.md` pour la séquence complète (05 dès que Massy est
+disponible). Point notable en Backlog pour une mission future dédiée : SS liste d'attente HL/UC
+(confirmé par Massy, chantier business plus large qu'un correctif de message).
 
 ---
 
