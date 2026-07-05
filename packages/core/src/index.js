@@ -1104,6 +1104,20 @@ function cancelPaxElement(state, element) {
   }
 }
 
+// Optional: only validates city codes when deps.locations exposes findByIata
+// (real usage via apps/web). Skipped when no such provider is configured, so
+// packages/core tests that don't wire a locations provider keep working.
+async function validateCityCodes(deps, from, to) {
+  if (!deps?.locations || typeof deps.locations.findByIata !== "function") {
+    return true;
+  }
+  const [fromLoc, toLoc] = await Promise.all([
+    deps.locations.findByIata(from),
+    deps.locations.findByIata(to),
+  ]);
+  return Boolean(fromLoc && toLoc);
+}
+
 async function handleAN(state, cmdUpper, deps, options = {}) {
   let dateObj = null;
   let from = null;
@@ -1128,6 +1142,9 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
   }
   if (!dateObj) {
     return { error: "CHECK DATE" };
+  }
+  if (!(await validateCityCodes(deps, from, to))) {
+    return { error: "NOT IN TABLE" };
   }
 
   const ddmmm = formatDDMMM(dateObj);
@@ -1286,6 +1303,9 @@ async function handleTN(state, cmdUpper, deps) {
   if (!dateObj) {
     return { error: "CHECK DATE" };
   }
+  if (!(await validateCityCodes(deps, from, to))) {
+    return { error: "NOT IN TABLE" };
+  }
 
   const ddmmm = formatDDMMM(dateObj);
   const dow = dayOfWeek2(dateObj);
@@ -1388,6 +1408,9 @@ async function handleSN(state, cmdUpper, deps) {
   }
   if (!dateObj) {
     return { error: "CHECK DATE" };
+  }
+  if (!(await validateCityCodes(deps, from, to))) {
+    return { error: "NOT IN TABLE" };
   }
 
   const ddmmm = formatDDMMM(dateObj);
@@ -1732,19 +1755,33 @@ function resolveDeps(options = {}) {
     resolvedRng = () => provided.rng.nextFloat();
   }
   const rawLocationsProvider = provided.locations || options.locations || null;
-  const resolvedLocations =
-    rawLocationsProvider &&
-    typeof rawLocationsProvider.decodeIata === "function" &&
-    typeof rawLocationsProvider.searchByText === "function"
-      ? rawLocationsProvider
-      : rawLocationsProvider &&
-          typeof rawLocationsProvider.cmdDAC === "function" &&
-          typeof rawLocationsProvider.cmdDAN === "function"
-        ? {
-            decodeIata: (code) => rawLocationsProvider.cmdDAC(code),
-            searchByText: (text) => rawLocationsProvider.cmdDAN(text),
-          }
-        : null;
+  let resolvedLocations = null;
+  if (rawLocationsProvider) {
+    if (
+      typeof rawLocationsProvider.decodeIata === "function" &&
+      typeof rawLocationsProvider.searchByText === "function"
+    ) {
+      resolvedLocations = rawLocationsProvider;
+    } else if (
+      typeof rawLocationsProvider.cmdDAC === "function" &&
+      typeof rawLocationsProvider.cmdDAN === "function"
+    ) {
+      resolvedLocations = {
+        decodeIata: (code) => rawLocationsProvider.cmdDAC(code),
+        searchByText: (text) => rawLocationsProvider.cmdDAN(text),
+        findByIata:
+          typeof rawLocationsProvider.findByIata === "function"
+            ? (code) => rawLocationsProvider.findByIata(code)
+            : undefined,
+      };
+    } else if (typeof rawLocationsProvider.findByIata === "function") {
+      // Provider only supports existence checks (used by AN/TN/SN city-code
+      // validation), not the full DAC/DAN decode/search contract.
+      resolvedLocations = {
+        findByIata: (code) => rawLocationsProvider.findByIata(code),
+      };
+    }
+  }
   return {
     availability: provided.availability || defaults.availability,
     timetable:

@@ -25,7 +25,15 @@ valeur pédagogique (« développer les mêmes réflexes que dans un vrai GDS »
    jour — si un golden ne casse pas, c'est que le cas n'était pas testé : ajouter le test).
 4. **Cohérence transverse** : même situation = même message partout (ex : PNR requis → un seul
    libellé, dans toutes les commandes qui l'exigent).
-5. Mettre à jour PROJECT_MEMORY (règles messages) et le tableau `docs/ERREURS-AMADEUS.md`.
+5. **DATA-1 (repris du Backlog, accord architecte 05/07)** : AN/TN/SN acceptent aujourd'hui
+   n'importe quel code à 3 lettres sans consulter `packages/data`. Brancher la validation sur les
+   données de `locations` et émettre l'erreur Amadeus authentique pour un code inconnu. C'est le
+   couplage cross-package identifié en mission 02 — le faire proprement (le provider/le moteur
+   interroge le store, pas d'import sauvage). Tests golden : code inconnu, code valide, casse.
+6. **Messages introduits par la mission 02** (NO NAME sur FXP/FXR/FXB, NOTHING TO CANCEL sur
+   VOID, garde-fou AP) : les inclure dans l'inventaire et vérifier leur formulation Amadeus
+   authentique comme les autres — ils ont été choisis plausibles, pas encore vérifiés.
+7. Mettre à jour PROJECT_MEMORY (règles messages) et le tableau `docs/ERREURS-AMADEUS.md`.
 
 ## Critères d'acceptation
 - [ ] `docs/ERREURS-AMADEUS.md` exhaustif, zéro ligne « à corriger » restante

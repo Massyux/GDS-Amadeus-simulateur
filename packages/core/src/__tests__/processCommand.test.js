@@ -616,6 +616,49 @@ describe("processCommand", () => {
     assert.ok(output.some((line) => line.includes("ZZ 9999")));
   });
 
+  function fakeLocationsProvider(knownCodes) {
+    return {
+      findByIata: async (code) =>
+        knownCodes.includes(String(code).toUpperCase())
+          ? { iata: String(code).toUpperCase() }
+          : null,
+    };
+  }
+
+  it("AN/TN/SN skip city validation when no locations provider is configured", async () => {
+    const state = createInitialState();
+    const an = await processCommand(state, "AN26DECZZZXXX");
+    assert.ok(an.events.some((event) => event.type === "print"));
+  });
+
+  for (const cmd of ["AN26DECALGXXX", "TN26DECALGXXX", "SN26DECALGXXX"]) {
+    it(`${cmd} returns NOT IN TABLE for an unknown city code when locations is configured`, async () => {
+      const state = createInitialState();
+      const result = await processCommand(state, cmd, {
+        deps: { locations: fakeLocationsProvider(["ALG"]) },
+      });
+      assert.deepEqual(
+        result.events.map((event) => event.text),
+        ["NOT IN TABLE"]
+      );
+    });
+  }
+
+  for (const cmd of ["an26decalgpar", "AN26DECALGPAR"]) {
+    it(`${cmd} succeeds (case-insensitive) when both city codes are known`, async () => {
+      const state = createInitialState();
+      const result = await processCommand(state, cmd, {
+        deps: { locations: fakeLocationsProvider(["ALG", "PAR"]) },
+      });
+      assert.ok(
+        result.events.some(
+          (event) => event.type === "print" && event.text.startsWith("AN")
+        )
+      );
+      assert.ok(!result.events.some((event) => event.type === "error"));
+    });
+  }
+
   it("FXP creates TST and keeps classes unchanged", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");

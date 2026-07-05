@@ -28,4 +28,16 @@ describe("InMemoryStore", () => {
     assert.ok(dac.some((line) => line.startsWith("DAC ALG")));
     assert.ok(dan.some((line) => line.startsWith("DAN ALGIERS")));
   });
+
+  it("provider.findByIata resolves known codes and returns null for unknown ones", async () => {
+    const store = createInMemoryStore();
+    await store.loadFromArray([
+      { iata: "ALG", city: "ALGIERS", name: "HOUARI", country: "DZ" },
+    ]);
+    const provider = createLocationProvider(store);
+    const known = await provider.findByIata("alg");
+    assert.equal(known.iata, "ALG");
+    const unknown = await provider.findByIata("ZZZ");
+    assert.equal(unknown, null);
+  });
 });

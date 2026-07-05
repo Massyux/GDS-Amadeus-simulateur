@@ -225,7 +225,13 @@ export default function Terminal() {
 
     try {
       const cmdUpper = trimmedCmd.toUpperCase();
-      if (cmdUpper.startsWith("DAC") || cmdUpper.startsWith("DAN")) {
+      if (
+        cmdUpper.startsWith("DAC") ||
+        cmdUpper.startsWith("DAN") ||
+        cmdUpper.startsWith("AN") ||
+        cmdUpper.startsWith("TN") ||
+        cmdUpper.startsWith("SN")
+      ) {
         await storeRef.current.loadFromUrl?.().catch(() => {});
       }
       const { events, state } = await processCommand(

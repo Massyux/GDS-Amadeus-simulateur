@@ -9,6 +9,7 @@ export function createLocationProvider(store) {
   return {
     decodeIata: (code) => store.cmdDAC(code),
     searchByText: (text) => store.cmdDAN(text),
+    findByIata: (code) => store.findByIata(code),
   };
 }
 

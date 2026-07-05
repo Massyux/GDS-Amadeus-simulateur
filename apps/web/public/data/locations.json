@@ -97,6 +97,14 @@
   },
 
   {
+    "iata": "PAR",
+    "type": "C",
+    "city": "PARIS",
+    "name": "PARIS (ALL AIRPORTS)",
+    "country": "FRANCE",
+    "region": "PARIS"
+  },
+  {
     "iata": "CDG",
     "type": "A",
     "city": "PARIS",
