@@ -1834,6 +1834,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NOTHING TO CANCEL",
     "FUNCTION NOT APPLICABLE",
     "NO TST",
+    "NO NAME",
     "NO TICKET",
     "NO EMAIL ADDRESS",
     "TICKET ALREADY ISSUED",
@@ -2543,6 +2544,10 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
+    if (!pnr.passengers || pnr.passengers.length === 0) {
+      print("NO NAME");
+      return { events, state };
+    }
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXP",
@@ -2618,6 +2623,10 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
+    if (!pnr.passengers || pnr.passengers.length === 0) {
+      print("NO NAME");
+      return { events, state };
+    }
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXR",
@@ -2650,6 +2659,10 @@ export async function processCommand(state, cmd, options = {}) {
     const activeSegments = getActiveSortedItinerary(pnr, deps.clock);
     if (activeSegments.length === 0) {
       print("NO ITINERARY");
+      return { events, state };
+    }
+    if (!pnr.passengers || pnr.passengers.length === 0) {
+      print("NO NAME");
       return { events, state };
     }
     const pricing = deps.pricing.price({

@@ -274,7 +274,9 @@ describe("global golden/invariant suite", () => {
       "AN26DECALGPAR",
       "SS1Y1",
       "SS2Y1",
-      "XE1",
+      "NM1DOE/JOHN MR",
+      // Element 1 is the passenger, element 2 is the first segment.
+      "XE2",
       "RT",
       "FXP",
     ]);

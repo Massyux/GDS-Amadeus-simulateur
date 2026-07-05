@@ -664,6 +664,7 @@ describe("processCommand", () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
     const beforeClass = state.activePNR.itinerary[0].classCode;
     const fxr = await processCommand(state, "FXR");
     const fxrLines = fxr.events.map((event) => event.text);
@@ -677,6 +678,7 @@ describe("processCommand", () => {
     const stateFxP = createInitialState();
     await processCommand(stateFxP, "AN26DECALGPAR");
     await processCommand(stateFxP, "SS1Y2");
+    await processCommand(stateFxP, "NM1DOE/JOHN MR");
     const fxp = await processCommand(stateFxP, "FXP");
     const fxpLines = fxp.events.map((event) => event.text);
     const fxpTotal = getMoney(fxpLines, "TOTAL");
@@ -705,6 +707,7 @@ describe("processCommand", () => {
     const baseState = createInitialState();
     await processCommand(baseState, "AN26DECALGPAR");
     await processCommand(baseState, "SS1Y2");
+    await processCommand(baseState, "NM1DOE/JOHN MR");
     const fxp = await processCommand(baseState, "FXP");
     const fxpLines = fxp.events.map((event) => event.text);
     const fxpTotal = getMoney(fxpLines, "TOTAL");
@@ -712,6 +715,7 @@ describe("processCommand", () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
+    await processCommand(state, "NM1DOE/JOHN MR");
     const beforeClass = state.activePNR.itinerary[0].classCode;
     const fxb = await processCommand(state, "FXB");
     const fxbLines = fxb.events.map((event) => event.text);
@@ -978,7 +982,10 @@ describe("processCommand", () => {
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y1");
     await processCommand(state, "SS2Y1");
-    await processCommand(state, "XE1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    // Element order is PAX first, then SEG: with a passenger now present,
+    // element 2 is the first segment (element 1 is the passenger).
+    await processCommand(state, "XE2");
     const fxp = await processCommand(state, "FXP");
     const fxpLines = fxp.events.map((event) => event.text);
     assert.ok(fxpLines.some((line) => line.startsWith("FXP")));
@@ -1023,6 +1030,20 @@ describe("processCommand", () => {
       )
     );
   });
+
+  for (const cmd of ["FXP", "FXR", "FXB"]) {
+    it(`${cmd} returns NO NAME when the PNR has an itinerary but no NM`, async () => {
+      const state = createInitialState();
+      await processCommand(state, "AN26DECALGPAR");
+      await processCommand(state, "SS1Y1");
+      const result = await processCommand(state, cmd);
+      assert.deepEqual(
+        result.events.map((event) => event.text),
+        ["NO NAME"]
+      );
+      assert.equal(state.tsts.length, 0);
+    });
+  }
 
   it("clears an in-memory PNR on IG when it was never recorded (ER)", async () => {
     const state = createInitialState();
@@ -1614,9 +1635,11 @@ describe("processCommand", () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
     await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
     await runCommand(state, "FXP");
 
-    const xeOne = await runCommand(state, "XE1");
+    // Element 1 is the passenger, element 2 is the segment.
+    const xeOne = await runCommand(state, "XE2");
     assert.deepEqual(xeOne, ["NOT ALLOWED - TST SEGMENT"]);
 
     const rtLines = await runCommand(state, "RT");
