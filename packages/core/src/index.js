@@ -2665,10 +2665,9 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO ITINERARY");
       return { events, state };
     }
-    if (!pnr.passengers || pnr.passengers.length === 0) {
-      print("NO NAME");
-      return { events, state };
-    }
+    // Unlike FXP/FXB, FXR (reprice low fare, no rebook/no TST persistence
+    // beyond the reprice display) does not require a name in the PNR
+    // (confirmed by Massy - real GDS experience, Mission 03).
     const pricing = deps.pricing.price({
       pnr,
       mode: "FXR",

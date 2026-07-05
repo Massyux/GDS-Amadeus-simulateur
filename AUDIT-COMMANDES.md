@@ -14,9 +14,9 @@
 |---|---|---|---|---|---|---|
 | HE / HELP | ✅ | ⬜ | ⬜ | ✅ (`HE <inconnu>`→HELP NOT FOUND) | ⬜ | ⬜ |
 | JD | ✅ | ✅ (pur, sans état) | ⬜ | ⬜ | ⬜ | ⬜ |
-| DAC / DAN | ✅ | ✅ (pur) | ✅ (provider absent) | ✅ (format), 🟡 (voir note DATA-1) | ⬜ | ⬜ |
-| AN | ✅ | ✅ (nouvelle recherche remplace `lastAN`) | ⬜ | ✅ format/date, 🟡 (note DATA-1 : accepte tout code 3 lettres) | ⬜ | ✅ (alimente SS) |
-| TN / SN | ✅ | ✅ (pur) | ⬜ | ✅ format/date | ⬜ | ⬜ |
+| DAC / DAN | ✅ | ✅ (pur) | ✅ (provider absent) | ✅ (format), ✅ (note DATA-1 corrigée en Mission 03) | ⬜ | ⬜ |
+| AN | ✅ | ✅ (nouvelle recherche remplace `lastAN`) | ⬜ | ✅ format/date/ville — **DATA-1 corrigé en Mission 03** : code ville inconnu → `NOT IN TABLE` (si `deps.locations` configuré) | ⬜ | ✅ (alimente SS) |
+| TN / SN | ✅ | ✅ (pur) | ⬜ | ✅ format/date/ville (idem AN, Mission 03) | ⬜ | ⬜ |
 | SS | ✅ | ❌1 **corrigé** : décrément de sièges ajouté (survente/duplication) | ✅ (NO AVAILABILITY sans AN) | ✅ ligne/classe inconnue (NOT IN TABLE/CHECK CLASS OF SERVICE) | ⬜ | ✅ crée PNR si besoin |
 | XE / XE1 / XE1-2 / XEALL | ✅ | ✅ (déjà annulé → erreur dédiée) | ✅ (NO ACTIVE PNR) | ✅ (index hors bornes) | ✅ | ✅ (bloqué si TST/dernier segment/dernier ADT/INF associé) |
 | NM | ✅ | ✅ (multi-pax autorisé, cohérent) | ⬜ (auto-crée le PNR) | ✅ **NM-1 corrigé** (confirmé par Massy) : apostrophe/tiret acceptés (`O'BRIEN`, `JEAN-PIERRE`) | ⬜ | ⬜ |
@@ -35,9 +35,9 @@
 | IR | ✅ | ✅ | ✅ (PNR NOT FOUND / NO RECORDED PNR distincts) | ✅ (locator format) | ✅ | ⬜ |
 | XI | ✅ | ✅ (RT vide si déjà rien) | ⬜ | ✅ (variantes XIn rejetées) | ✅ (garde le recorded en store) | ⬜ |
 | QP/QD/QE/QN/QR/QS | ✅ | ✅ (idempotent QS, QE) | ✅ (NO RECORDED PNR, NO ACTIVE QUEUE, QUEUE NOT FOUND) | ✅ (format id) | ⬜ | ⬜ |
-| FXP | ✅ | ✅ (update en place, pas de doublon TST) | ✅ (NO ITINERARY) | ⬜ | ✅ | ❌3 **tarife sans aucun NM dans le PNR** |
-| FXR | ✅ | ✅ | ✅ (NO ITINERARY) | ⬜ | ✅ | ❌3 (même famille que FXP) |
-| FXB | ✅ | ✅ | ✅ (NO ITINERARY) | ⬜ | ✅ | ❌3 (même famille que FXP) |
+| FXP | ✅ | ✅ (update en place, pas de doublon TST) | ✅ (NO ITINERARY) | ⬜ | ✅ | ❌3 **corrigé** : exige ≥1 NM (`NO NAME` sinon) — confirmé par Massy 05/07 |
+| FXR | ✅ | ✅ | ✅ (NO ITINERARY) | ⬜ | ✅ | ✅ n'exige PAS de NM (confirmé par Massy 05/07, distinct de FXP/FXB — contrôle retiré) |
+| FXB | ✅ | ✅ | ✅ (NO ITINERARY) | ⬜ | ✅ | ❌3 **corrigé** : exige ≥1 NM (`NO NAME` sinon) — confirmé par Massy 05/07 |
 | FXX | ✅ | ✅ (STORED stable) | ✅ (NO ITINERARY/NO TST) | ⬜ | ✅ | ⬜ (FXX ne crée pas de TST, ne tarife pas sans TST existant) |
 | FXL | ✅ | ✅ (pur affichage) | ✅ (NO TST) | ✅ (`/` → FUNCTION NOT APPLICABLE) | ⬜ | ⬜ |
 | TQT | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (id inconnu → NO TST) | ⬜ | ⬜ |
@@ -84,13 +84,13 @@ réel : `NM1O'BRIEN/JOHN MR`, `NM1JEAN-PIERRE/MARTIN MR`, `NM1SAINT-JEAN/MARIE-C
 Repris de la session précédente (Bug 4, jamais tranché). Confirmé par Massy dans cette mission —
 classe de caractères étendue à `[A-Z'-]+` dans `parseNmAdultEntries`, `chdMatch` et `infMatch`.
 
-### 🟡 DATA-1 — AN/TN/SN acceptent n'importe quel code ville à 3 lettres
-Aucune commande de disponibilité ne consulte `deps.locations` (la vraie table de lieux) : un code
-syntaxiquement valide mais inexistant (ex. `ANDECZZZXXX`) génère quand même de faux vols
-déterministes via `buildOfflineAvailability`. Le vrai Amadeus renverrait `NOT IN TABLE`/
-`CHECK CITY CODE`. Corriger correctement nécessite de coupler `packages/core` à `packages/data`
-(hors périmètre d'un correctif contenu à un seul fichier) — **non traité dans cette mission**,
-reporté en Backlog pour une mission dédiée.
+### ✅ DATA-1 — AN/TN/SN acceptent n'importe quel code ville à 3 lettres (corrigé en Mission 03)
+Aucune commande de disponibilité ne consultait `deps.locations` (la vraie table de lieux) : un
+code syntaxiquement valide mais inexistant (ex. `ANDECZZZXXX`) générait quand même de faux vols
+déterministes via `buildOfflineAvailability`. **Corrigé** : `validateCityCodes()` consulte
+`deps.locations.findByIata()` (exposé par `packages/data`) et renvoie `NOT IN TABLE` pour un code
+inconnu, quand un provider est configuré (toujours le cas dans `apps/web`). Voir
+`docs/ERREURS-AMADEUS.md` pour le détail du câblage et des tests.
 
 ## Hors périmètre (non couvert par ce dispatcher)
 `RH` (historique PNR) n'existe pas dans le simulateur — déjà noté hors scope niveau 1-2 dans

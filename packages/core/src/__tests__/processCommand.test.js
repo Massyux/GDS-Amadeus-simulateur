@@ -742,10 +742,10 @@ describe("processCommand", () => {
   });
 
   it("FXR reprices and keeps TST linked to segments without rebook", async () => {
+    // Unlike FXP/FXB, FXR does not require a name in the PNR.
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y2");
-    await processCommand(state, "NM1DOE/JOHN MR");
     const beforeClass = state.activePNR.itinerary[0].classCode;
     const fxr = await processCommand(state, "FXR");
     const fxrLines = fxr.events.map((event) => event.text);
@@ -1132,7 +1132,7 @@ describe("processCommand", () => {
     );
   });
 
-  for (const cmd of ["FXP", "FXR", "FXB"]) {
+  for (const cmd of ["FXP", "FXB"]) {
     it(`${cmd} returns NO NAME when the PNR has an itinerary but no NM`, async () => {
       const state = createInitialState();
       await processCommand(state, "AN26DECALGPAR");
@@ -1145,6 +1145,19 @@ describe("processCommand", () => {
       assert.equal(state.tsts.length, 0);
     });
   }
+
+  it("FXR does not require a name in the PNR (confirmed by Massy, unlike FXP/FXB)", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    const result = await processCommand(state, "FXR");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "print" && event.text === "FXR"
+      )
+    );
+    assert.equal(state.tsts.length, 1);
+  });
 
   it("clears an in-memory PNR on IG when it was never recorded (ER)", async () => {
     const state = createInitialState();
