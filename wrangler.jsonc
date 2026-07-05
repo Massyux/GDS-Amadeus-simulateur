@@ -1,0 +1,7 @@
+{
+  "name": "simulateur-amadeus",
+  "compatibility_date": "2026-07-06",
+  "assets": {
+    "directory": "./apps/web/dist"
+  }
+}
