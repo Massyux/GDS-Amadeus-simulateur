@@ -934,6 +934,26 @@ describe("processCommand", () => {
     );
   });
 
+  it("VOID rejects re-voiding an already-void ticket referenced by its number", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+    await processCommand(state, "ET");
+    await processCommand(state, "VOID");
+    const ticketNumber = state.activePNR.tickets[0].ticketNumber;
+
+    const secondVoid = await processCommand(state, `VOID ${ticketNumber}`);
+    assert.ok(
+      secondVoid.events.some(
+        (event) => event.type === "error" && event.text === "NOTHING TO CANCEL"
+      )
+    );
+    assert.equal(state.activePNR.tickets[0].status, "VOID");
+  });
+
   it("ITR-EML sends itinerary receipt and adds receipt element in RT", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");

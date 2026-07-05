@@ -2834,6 +2834,10 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO TICKET");
       return { events, state };
     }
+    if (ticket.status === "VOID") {
+      print("NOTHING TO CANCEL");
+      return { events, state };
+    }
     ticket.status = "VOID";
     ticket.voidedAt = new Date(deps.clock.now()).toISOString();
     if (ticket.tstId && Array.isArray(state.tsts)) {
