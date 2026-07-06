@@ -7,21 +7,38 @@
 ## En cours
 
 **Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION)** : `15 → 16 → 17 → 13 →
-18 → 19 → 20` puis retour à 07. **Mission 15 close (06/07/2026, 8/8 commandes + Étape 0)** ;
-**Mission 16 Étape 0 close (06/07/2026, correction fidélité ET, arbitrée par l'architecte)**,
-tout poussé sur `main`, suites vertes.
+18 → 19 → 20` puis retour à 07. **Mission 15 close** ; **Mission 16 Étape 0 close** (correction
+fidélité ET) ; **Mission 16 commande 1/6 close** (`MD`/`MU`/`MT`/`MB`, état core
+`state.lastDisplay` posé) ; **Mission 16 commande 2/6 close** (`MN`/`MY`) — tout poussé sur
+`main`, suites vertes (209 tests core).
 
-**Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes (Étape 0 faite) et démarrer à
-l'**Étape 1** de sa propre liste (`MD`/`MU`/`MT`/`MB`). Point d'architecture à poser en premier
-(demandé explicitement par la mission) : `state.lastDisplay` (type, critères, position) comme
-état CORE — pas de l'UI — avant de brancher les commandes dessus. Suivre le même protocole de
-non-régression que Mission 15 (suite + typecheck + lint après CHAQUE commande, un commit par
-commande, push). Vigilance famille (leçon Mission 04, rappelée par la mission elle-même) :
-vérifier qu'aucun des nouveaux préfixes (`MD`/`MU`/`MT`/`MB`/`MN`/`MY`/`AC`/`ACR`/`RE`) ne
-collisionne avec des préfixes existants (`RF`, `RT`, etc.) — test golden de non-collision pour
-chaque nouveau préfixe.
+**Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes, démarrer à la **commande 3/6**
+(`AC` + son équivalent `SC` pour SN, puis `ACR`). Point de vigilance avant de coder : cette
+commande a plusieurs sous-modes non triviaux à spécifier d'abord (date `AC18MAY`, heure `AC1845`,
+"classe" `AC/CF` — probablement un filtre compagnie 2 lettres vu le format, à clarifier avant
+d'implémenter plutôt que de deviner —, villes `ACBCNFRA`, delta jours `AC3`/`AC-5`) ; contrairement
+à SB (dont les 3 sous-modes étaient sans ambiguïté vu les exemples), certains formats ici sont
+sujets à interprétation — écrire une spec courte (CLAUDE.md méthode de travail) avant de coder,
+marquer "à vérifier" ce qui reste incertain plutôt que de deviner silencieusement. Continuer le
+protocole de non-régression de Mission 15/16 (suite + typecheck + lint après CHAQUE commande, un
+commit par commande, push). Vigilance famille (leçon Mission 04) : vérifier qu'aucun des nouveaux
+préfixes (`AC`/`ACR`/`SC`/`RE`) ne collisionne avec des préfixes existants (`RF`, `RT`, etc.).
 
 ## Fait (par session, datée)
+
+### 06/07/2026 — Mission 16, commandes 1-2/6 (MD/MU/MT/MB, MN/MY)
+- **1/6 — MD/MU/MT/MB** : nouvel état CORE `state.lastDisplay` ({type, header, itemLines,
+  pageSize, page}), demandé explicitement par la mission ("principe d'architecture" avant les
+  commandes). `TN`/`SN` n'affichent plus que la page courante (avant : toutes les pages d'un
+  coup, comportement historique changé) ; `MD`/`MU`/`MT`/`MB` font défiler, bornes cadenassées en
+  silence (pas d'erreur inventée pour "après la dernière page"). `AN`/`RT` pas branchés (jamais
+  assez de résultats pour paginer dans ce simulateur aujourd'hui, pas une régression). Dispatch
+  par égalité stricte (`c === "MD"`, pas `startsWith`) — testé explicitement pour ne jamais
+  intercepter un futur préfixe plus long (leçon Mission 04). 197→204 tests.
+- **2/6 — MN/MY** : relance `state.lastAN.query` (from/to/date) décalé de ±1 jour comme un vrai
+  `AN`, même si le dernier affichage était un `TN`/`SN` (état partagé). Chaînable, résultat
+  addressable par SS ensuite. `NO ACTIVE DISPLAY` sans recherche préalable. 204→209 tests.
+- Suites vertes après chaque commande (core/typecheck/lint, + web à la fin de ce lot).
 
 ### 06/07/2026 — Mission 16, Étape 0 (correction fidélité ET — reliquat arbitré de M15)
 - L'architecte a mis à jour `missions/MISSION-16.md` pour trancher explicitement le point laissé
