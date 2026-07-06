@@ -34,6 +34,13 @@ function getSegmentStatus(line) {
   return match ? match[1] : null;
 }
 
+function findElementNo(rtLines, substring) {
+  const line = rtLines.find((l) => l.includes(substring));
+  assert.ok(line, `expected a line containing "${substring}"`);
+  const match = line.trim().match(/^(\d+)\s+/);
+  return parseInt(match[1], 10);
+}
+
 describe("processCommand", () => {
   it("returns help output", async () => {
     const state = createInitialState();
@@ -743,6 +750,132 @@ describe("processCommand", () => {
 
     const sbLines = await runCommand(state, `SBM${segNo}`);
     assert.deepEqual(sbLines, ["NOT ALLOWED - TST SEGMENT"]);
+  });
+
+  it("<n>/<text> modifies an RM remark in place", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "RM OLD REMARK");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "RM OLD REMARK");
+
+    const lines = await runCommand(state, `${n}/NEW REMARK`);
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.includes("RM NEW REMARK")));
+    assert.ok(!lines.some((l) => l.includes("OLD REMARK")));
+  });
+
+  it("<n>/<text> modifies an OSI element in place", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "OSI YY OLD TEXT");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "OSI YY OLD TEXT");
+
+    const lines = await runCommand(state, `${n}/YY NEW TEXT`);
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.includes("OSI YY NEW TEXT")));
+  });
+
+  it("<n>/<text> modifies an SSR element in place", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "SSR WCHR YY NEED WHEELCHAIR");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "SSR WCHR YY NEED WHEELCHAIR");
+
+    const lines = await runCommand(state, `${n}/WCHR YY NO LONGER NEEDED`);
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.includes("SSR WCHR YY NO LONGER NEEDED")));
+  });
+
+  it("<n>/<ddMMM> modifies an OP element's date, keeping its text", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "OP26DEC/CALL CLIENT");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "CALL CLIENT");
+
+    const lines = await runCommand(state, `${n}/12JUL`);
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.includes("OP12JUL/CALL CLIENT")));
+  });
+
+  it("<n>/<text> modifies an OP element's text, keeping its date", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "OP26DEC/CALL CLIENT");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "CALL CLIENT");
+
+    const lines = await runCommand(state, `${n}/EMAIL CLIENT INSTEAD`);
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.includes("OP26DEC/EMAIL CLIENT INSTEAD")));
+  });
+
+  it("<n>/<ddMMM> modifies a TKTL date", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "TKTL/26DEC");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "TKTL/26DEC");
+
+    const lines = await runCommand(state, `${n}/27DEC`);
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.includes("TKTL/27DEC")));
+  });
+
+  it("<n>/<ddMMM> returns CHECK DATE for an invalid TKTL date", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "TKTL/26DEC");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "TKTL/26DEC");
+
+    const lines = await runCommand(state, `${n}/30FEB`);
+    assert.deepEqual(lines, ["CHECK DATE"]);
+  });
+
+  it("<n>/<text> returns ELEMENT NOT FOUND for an out-of-range number", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "99/NEW TEXT");
+    assert.deepEqual(lines, ["ELEMENT NOT FOUND"]);
+  });
+
+  it("<n>/<text> returns NOT ALLOWED for an element kind that isn't plain text/date (PAX)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "DOE/JOHN");
+
+    const lines = await runCommand(state, `${n}/SMITH/JANE`);
+    assert.deepEqual(lines, ["NOT ALLOWED"]);
+  });
+
+  it("<n>/<text> returns NOT ALLOWED for a segment element (use SB instead)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const rt = await runCommand(state, "RT");
+    const segNo = parseInt(getRtSegmentLines(rt)[0].trim().split(/\s+/)[0], 10);
+
+    const lines = await runCommand(state, `${segNo}/M`);
+    assert.deepEqual(lines, ["NOT ALLOWED"]);
+  });
+
+  it("<n>/<text> returns NO ACTIVE PNR without a PNR", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "1/TEXT");
+    assert.deepEqual(lines, ["NO ACTIVE PNR"]);
+  });
+
+  it("<n>/ with an empty value returns CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "1/");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
   });
 
   it("TN returns timetable lines and keeps results sellable", async () => {

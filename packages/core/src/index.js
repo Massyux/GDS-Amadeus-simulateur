@@ -1505,6 +1505,55 @@ async function handleSB(state, cmdUpper, deps) {
   return { lines };
 }
 
+// <elementNo>/<newValue> -- modify a free-text/date PNR element in place,
+// referenced by its RT element number (docs/COMMANDES-MANQUANTES.md
+// Priorite 1: "5/NOUVEAU TEXTE", "8/12JUL"). Scoped to the element kinds
+// that are plain free text or a bare date (RM, OSI, SSR, OP, TKTL) --
+// segments are rebooked via SB (already more explicit about which
+// dimension changes) and names via a future NU command, not this one;
+// every other kind (PAX, SEG, AP, FP, RF, TKT, ITR, RECLOC) returns
+// NOT ALLOWED rather than guessing an edit grammar for it.
+function handleElementModify(state, cmdUpper, deps) {
+  const m = cmdUpper.match(/^(\d{1,2})\/(.+)$/);
+  if (!m) return { error: "CHECK FORMAT" };
+  const elementNo = parseInt(m[1], 10);
+  const newValue = m[2].trim();
+  if (!newValue) return { error: "CHECK FORMAT" };
+
+  const pnr = state.activePNR;
+  if (!pnr) return { error: "NO ACTIVE PNR" };
+
+  const elements = buildElementIndex(state, deps.clock);
+  const target = elements.find((e) => e.elementNo === elementNo);
+  if (!target) return { error: "ELEMENT NOT FOUND" };
+
+  if (target.kind === "RM") {
+    pnr.remarks[target.index] = newValue;
+  } else if (target.kind === "OSI") {
+    pnr.osi[target.index] = newValue;
+  } else if (target.kind === "SSR") {
+    pnr.ssr[target.index] = newValue;
+  } else if (target.kind === "OP") {
+    const option = pnr.options[target.index];
+    const dateOnly = newValue.match(/^(\d{1,2}[A-Z]{3})$/);
+    if (dateOnly) {
+      const dateObj = parseDDMMM(dateOnly[1], deps.clock);
+      if (!dateObj) return { error: "CHECK DATE" };
+      option.date = formatDDMMM(dateObj);
+    } else {
+      option.text = newValue;
+    }
+  } else if (target.kind === "TKTL") {
+    const dateObj = parseDDMMM(newValue, deps.clock);
+    if (!dateObj) return { error: "CHECK DATE" };
+    pnr.tktl = formatDDMMM(dateObj);
+  } else {
+    return { error: "NOT ALLOWED" };
+  }
+
+  return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -2232,6 +2281,13 @@ export async function processCommand(state, cmd, options = {}) {
       print("n = SEGMENT'S RT ELEMENT NUMBER");
       return { events, state };
     }
+    if (subject === "MODIFY") {
+      print("HE MODIFY");
+      print("n/TEXT              MODIFY RM/OSI/SSR/OP TEXT BY RT ELEMENT #");
+      print("n/ddMMM             MODIFY OP/TKTL DATE BY RT ELEMENT #");
+      print("EX: 5/NEW REMARK TEXT");
+      return { events, state };
+    }
     if (subject === "NM") {
       print("HE NM");
       print("NM1NAME/FIRST MR    ADD PASSENGER");
@@ -2282,6 +2338,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
+    print("n/TEXT              MODIFY RM/OSI/SSR/OP/TKTL (HE MODIFY for syntax)");
     print("XE1                 CANCEL SEGMENT");
     print("IG                  IGNORE PNR");
     print("IRXXXXXX            RETRIEVE PNR");
@@ -2612,6 +2669,16 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("SB")) {
     const result = await handleSB(state, c, deps);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (/^\d{1,2}\//.test(c)) {
+    const result = handleElementModify(state, c, deps);
     if (result.error) {
       print(result.error);
       return { events, state };
