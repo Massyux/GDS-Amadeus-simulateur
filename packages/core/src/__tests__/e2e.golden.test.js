@@ -350,22 +350,22 @@ describe("global golden/invariant suite", () => {
     assert.ok(getStep(etNoFp.steps, "ET").errors.includes("NO FORM OF PAYMENT"));
     assert.equal((etNoFp.state.activePNR.tickets || []).length, 0);
 
-    const voidNoTicket = await runScenario(["VOID"]);
-    assert.ok(voidNoTicket.steps[0].errors.includes("NO TICKET"));
+    const twxNoTicket = await runScenario(["TWX"]);
+    assert.ok(twxNoTicket.steps[0].errors.includes("NO TICKET"));
 
-    const voidWithTicket = await runScenario([
+    const twxWithTicket = await runScenario([
       "AN26DECALGPAR",
       "SS1Y1",
       "NM1DOE/JOHN MR",
       "FP CASH",
       "FXP",
       "ET",
-      "VOID",
+      "TWX",
       "RT",
     ]);
-    assert.equal(voidWithTicket.state.activePNR.tickets[0].status, "VOID");
+    assert.equal(twxWithTicket.state.activePNR.tickets[0].status, "VOID");
     assert.ok(
-      voidWithTicket.lastRtLines.some((line) => line.includes("FA 172-0000000001 VOID"))
+      twxWithTicket.lastRtLines.some((line) => line.includes("FA 172-0000000001 VOID"))
     );
   });
 

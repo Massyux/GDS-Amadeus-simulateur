@@ -32,7 +32,7 @@ non appliquée) · ⬜ hors périmètre fidélité (message technique interne, p
 
 | Message actuel | Commande(s) | Situation | Message Amadeus proposé | Statut |
 |---|---|---|---|---|
-| `CHECK FORMAT` | AN, TN, SN, DAC, DAN, IR, QP-QS, SS, NM, SSR, OSI, RF, OP, RM, TKTL, FP, APE, VOID, ITR-EML, TQT, FQN, XI (variante non supportée), fallback générique | Erreur de syntaxe générale sur l'entrée | *(déjà conforme)* | ✅ |
+| `CHECK FORMAT` | AN, TN, SN, DAC, DAN, IR, QP-QS, SS, NM, SSR, OSI, RF, OP, RM, TKTL, FP, APE, TWD, TWX, ITR-EML, TQT, FQN, XI (variante non supportée), fallback générique | Erreur de syntaxe générale sur l'entrée | *(déjà conforme)* | ✅ |
 | `CHECK DATE` | AN, TN, SN, OP, TKTL | Date syntaxiquement plausible mais invalide (ex. 30FEB) | *(déjà conforme)* | ✅ |
 | `CHECK CLASS OF SERVICE` | SS | Classe demandée non proposée sur le vol | *(déjà conforme)* | ✅ |
 | `NOT IN TABLE` | SS (ligne AN inexistante), AN/TN/SN (code ville inconnu, depuis Mission 03 DATA-1) | Référence numérique/code absente de la table consultée | *(déjà conforme)* | ✅ |
@@ -50,11 +50,11 @@ non appliquée) · ⬜ hors périmètre fidélité (message technique interne, p
 | `NOT ALLOWED - LAST SEGMENT` | XE (dernier segment actif) | Annulation refusée, dernier segment du PNR | à vérifier | 🟡 |
 | `NOT ALLOWED - LAST ADT` | XE (dernier passager adulte) | Annulation refusée, dernier ADT | à vérifier | 🟡 |
 | `NOT ALLOWED - INF ASSOCIATED` | XE (ADT associé à un INF) | Annulation refusée, ADT porteur d'un INF | à vérifier | 🟡 |
-| `NOTHING TO CANCEL` | XE, VOID (billet déjà void, Mission 02) | Rien à annuler dans la sélection | **Confirmé par Massy (05/07) : garder tel quel.** | ✅ (confirmé) |
+| `NOTHING TO CANCEL` | XE, TWX (billet déjà void, Mission 02 ; commande renommée VOID→TWX en Mission 15) | Rien à annuler dans la sélection | **Confirmé par Massy (05/07) : garder tel quel.** | ✅ (confirmé) |
 | `FUNCTION NOT APPLICABLE` | FXL (avec `/`) | Variante de commande non supportée | à vérifier, confiance modérée que ce soit authentique (formulation Amadeus-like courante) | 🟡 |
 | `NO TST` | FXX, FXL, TQT, FQN, ET/TTP | Commande TST sans TST existant | à vérifier | 🟡 |
 | `NO NAME` | FXP, FXB uniquement (FXR et FXL n'exigent pas de NM) | Tarification tentée sans NM dans le PNR | **Confirmé par Massy (05/07) : FXP et FXB exigent bien un nom ; FXR ne l'exige pas.** Corrigé dans cette mission — le contrôle a été retiré de FXR (il ne l'a jamais été sur FXL) | ✅ (confirmé + corrigé) |
-| `NO TICKET` | VOID, ITR-EML | Commande billet sans billet émis | à vérifier | 🟡 |
+| `NO TICKET` | TWD, TWX, ITR-EML | Commande billet sans billet émis | à vérifier | 🟡 |
 | `NO EMAIL ADDRESS` | ITR-EML | Envoi de reçu sans email en PNR | à vérifier — possible `EMAIL ADDRESS REQUIRED` | 🟡 |
 | `TICKET ALREADY ISSUED` | ET/TTP (re-émission sur même TST) | Émission refusée, billet déjà existant | à vérifier | 🟡 |
 | `NO SEGMENTS` | XE (XEALL sans segment) | Annulation globale sans segment à annuler | à vérifier | 🟡 |
@@ -76,7 +76,7 @@ concernées — pas d'incohérence trouvée entre commandes pour une même situa
 - « pas de PNR enregistré » → `NO RECORDED PNR` partout (IG, IR, QP)
 - « queue introuvable » → `QUEUE NOT FOUND` partout (QD, QE, QR)
 - « pas de TST » → `NO TST` partout (FXX, FXL, TQT, FQN, ET/TTP)
-- « rien à annuler » → `NOTHING TO CANCEL` partout (XE, VOID)
+- « rien à annuler » → `NOTHING TO CANCEL` partout (XE, TWX)
 
 Aucune correction nécessaire sur ce point.
 
@@ -99,7 +99,7 @@ un HL en HK). Proposé comme mission dédiée future (voir `TASKS.md` Backlog).
 | Point | Décision de Massy | Statut final |
 |---|---|---|
 | `NO NAME` (FXP/FXR/FXB) | FXP/FXB l'exigent, FXR non | ✅ Corrigé (contrôle retiré de FXR) |
-| `NOTHING TO CANCEL` (VOID) | Garder tel quel | ✅ Confirmé |
+| `NOTHING TO CANCEL` (VOID, renommé TWX en Mission 15) | Garder tel quel | ✅ Confirmé |
 | `END PNR FIRST` | Garder un message générique unique | ✅ Confirmé (statu quo assumé) |
 | `NO SEATS` / `NOT ENOUGH SEATS` | Le vrai Amadeus met en liste d'attente (HL/UC) | 🟡 Business confirmé à revoir — mission dédiée future, non traité ici |
 

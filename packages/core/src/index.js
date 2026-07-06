@@ -1794,6 +1794,15 @@ function resolveDeps(options = {}) {
   };
 }
 
+// Shared by TWD (display) and TWX (void) -- same resolution rule the old
+// single VOID command used: an explicit ticket number, or else the most
+// recently issued non-void ticket.
+function resolveTicketForDisplayOrVoid(pnr, requestedNumber) {
+  return requestedNumber
+    ? pnr.tickets.find((item) => item.ticketNumber === requestedNumber)
+    : [...pnr.tickets].reverse().find((item) => item.status !== "VOID");
+}
+
 function findAvailabilityClass(state, seg) {
   if (!state.lastAN || !state.lastAN.results) return null;
   const item = state.lastAN.results.find(
@@ -1969,7 +1978,7 @@ export async function processCommand(state, cmd, options = {}) {
       print("SS / XE             SELL OR CANCEL SEGMENTS");
       print("NM AP APE RF ER RT  PNR BUILD AND DISPLAY");
       print("FXP FXX FXR FXB     PRICING");
-      print("ET TTP VOID         TICKETING");
+      print("ET TTP TWD TWX      TICKETING");
       print("HE <COMMAND>        COMMAND HELP (ex: HE AN)");
       return { events, state };
     }
@@ -2017,6 +2026,12 @@ export async function processCommand(state, cmd, options = {}) {
       if (subject === "OP") print("OPddMMM/TEXT        ADD OPTION REMINDER");
       return { events, state };
     }
+    if (subject === "TWD" || subject === "TWX") {
+      print(`HE ${subject}`);
+      if (subject === "TWD") print("TWD[ticket-number]  DISPLAY E-TICKET");
+      if (subject === "TWX") print("TWX[ticket-number]  VOID E-TICKET");
+      return { events, state };
+    }
     print("HELP NOT FOUND");
     return { events, state };
   }
@@ -2043,7 +2058,8 @@ export async function processCommand(state, cmd, options = {}) {
     print("ER                  END PNR");
     print("RT                  DISPLAY PNR (same as live)");
     print("ET / TTP            ISSUE TICKET");
-    print("VOID                VOID LAST ISSUED TICKET");
+    print("TWD                 DISPLAY LAST ISSUED TICKET");
+    print("TWX                 VOID LAST ISSUED TICKET");
     return { events, state };
   }
 
@@ -2910,21 +2926,43 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c.startsWith("VOID")) {
+  if (c.startsWith("TWD")) {
     const pnr = state.activePNR;
     if (!pnr || !Array.isArray(pnr.tickets) || pnr.tickets.length === 0) {
       print("NO TICKET");
       return { events, state };
     }
-    const match = c.match(/^VOID(?:\s+([0-9]{3}-[0-9]{10}))?$/);
+    const match = c.match(/^TWD(?:\s+([0-9]{3}-[0-9]{10}))?$/);
     if (!match) {
       print("CHECK FORMAT");
       return { events, state };
     }
-    const requestedNumber = match[1] || null;
-    const ticket = requestedNumber
-      ? pnr.tickets.find((item) => item.ticketNumber === requestedNumber)
-      : [...pnr.tickets].reverse().find((item) => item.status !== "VOID");
+    const ticket = resolveTicketForDisplayOrVoid(pnr, match[1] || null);
+    if (!ticket) {
+      print("NO TICKET");
+      return { events, state };
+    }
+    // Minimal ticket-image placeholder (fare basis/taxes/endorsements not
+    // modeled yet) -- exact real TWD screen layout marked "a verifier" in
+    // docs/ERREURS-AMADEUS.md pending Massy's confirmation.
+    print("TWD");
+    print(`FA ${ticket.ticketNumber} ${ticket.status || "ISSUED"}`);
+    print(`FB TST${ticket.tstId || "-"} ${ticket.ticketNumber}`);
+    return { events, state };
+  }
+
+  if (c.startsWith("TWX")) {
+    const pnr = state.activePNR;
+    if (!pnr || !Array.isArray(pnr.tickets) || pnr.tickets.length === 0) {
+      print("NO TICKET");
+      return { events, state };
+    }
+    const match = c.match(/^TWX(?:\s+([0-9]{3}-[0-9]{10}))?$/);
+    if (!match) {
+      print("CHECK FORMAT");
+      return { events, state };
+    }
+    const ticket = resolveTicketForDisplayOrVoid(pnr, match[1] || null);
     if (!ticket) {
       print("NO TICKET");
       return { events, state };
@@ -2947,7 +2985,7 @@ export async function processCommand(state, cmd, options = {}) {
         }
       }
     }
-    print("VOID");
+    print("TWX");
     print(`TICKET VOIDED ${ticket.ticketNumber}`);
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };

@@ -961,7 +961,7 @@ describe("processCommand", () => {
     );
   });
 
-  it("VOID marks ticket as void and RT reflects it", async () => {
+  it("TWX marks ticket as void and RT reflects it", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y1");
@@ -970,9 +970,9 @@ describe("processCommand", () => {
     await processCommand(state, "FXP");
     await processCommand(state, "ET");
 
-    const voidResult = await processCommand(state, "VOID");
-    const voidLines = voidResult.events.map((event) => event.text);
-    assert.ok(voidLines.some((line) => line.includes("TICKET VOIDED")));
+    const twxResult = await processCommand(state, "TWX");
+    const twxLines = twxResult.events.map((event) => event.text);
+    assert.ok(twxLines.some((line) => line.includes("TICKET VOIDED")));
     assert.equal(state.activePNR.tickets[0].status, "VOID");
     assert.equal(state.tsts[0].status, "VOID");
 
@@ -986,17 +986,17 @@ describe("processCommand", () => {
     );
   });
 
-  it("VOID without ticket returns NO TICKET", async () => {
+  it("TWX without ticket returns NO TICKET", async () => {
     const state = createInitialState();
-    const voidResult = await processCommand(state, "VOID");
+    const twxResult = await processCommand(state, "TWX");
     assert.ok(
-      voidResult.events.some(
+      twxResult.events.some(
         (event) => event.type === "error" && event.text === "NO TICKET"
       )
     );
   });
 
-  it("VOID rejects re-voiding an already-void ticket referenced by its number", async () => {
+  it("TWX rejects re-voiding an already-void ticket referenced by its number", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y1");
@@ -1004,16 +1004,46 @@ describe("processCommand", () => {
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
     await processCommand(state, "ET");
-    await processCommand(state, "VOID");
+    await processCommand(state, "TWX");
     const ticketNumber = state.activePNR.tickets[0].ticketNumber;
 
-    const secondVoid = await processCommand(state, `VOID ${ticketNumber}`);
+    const secondTwx = await processCommand(state, `TWX ${ticketNumber}`);
     assert.ok(
-      secondVoid.events.some(
+      secondTwx.events.some(
         (event) => event.type === "error" && event.text === "NOTHING TO CANCEL"
       )
     );
     assert.equal(state.activePNR.tickets[0].status, "VOID");
+  });
+
+  it("TWD displays the ticket without voiding it", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+    await processCommand(state, "ET");
+
+    const twdResult = await processCommand(state, "TWD");
+    const twdLines = twdResult.events.map((event) => event.text);
+    assert.ok(twdLines.some((line) => line.includes("FA 172-0000000001 ISSUED")));
+    assert.equal(state.activePNR.tickets[0].status, "ISSUED");
+
+    const twxResult = await processCommand(state, "TWX");
+    assert.ok(
+      twxResult.events.some((event) => event.text.includes("TICKET VOIDED"))
+    );
+  });
+
+  it("TWD without ticket returns NO TICKET", async () => {
+    const state = createInitialState();
+    const twdResult = await processCommand(state, "TWD");
+    assert.ok(
+      twdResult.events.some(
+        (event) => event.type === "error" && event.text === "NO TICKET"
+      )
+    );
   });
 
   it("ITR-EML sends itinerary receipt and adds receipt element in RT", async () => {

@@ -13,7 +13,7 @@
 | Constat | Vrai Amadeus | À faire |
 |---|---|---|
 | `ET` est traité comme « émission de billet » | **`ET` = End Transaction** (valide le PNR sans le réafficher, jumeau de `ER`). L'émission, c'est `TTP` seul | Reclasser ET en fin de transaction ; l'émission reste TTP |
-| `VOID` comme commande d'annulation de billet | L'annulation d'un e-ticket passe par **`TWD`** (afficher le billet) puis **`TWX`** (l'annuler). « VOID » n'est pas une entrée cryptique | Renommer le flux : TWD/TWX ; garder la logique déjà écrite |
+| ~~`VOID` comme commande d'annulation de billet~~ **corrigé Mission 15 (06/07/2026)** | L'annulation d'un e-ticket passe par **`TWD`** (afficher le billet) puis **`TWX`** (l'annuler). « VOID » n'est pas une entrée cryptique | ✅ Fait : `VOID` retiré du dispatcher, `TWD`/`TWX` ajoutés (même logique de résolution/annulation qu'avant, format d'affichage TWD minimal — repose sur les lignes FA/FB déjà utilisées ailleurs — marqué « à vérifier » : la richesse réelle de l'écran TWD (base tarifaire, taxes, endossements) n'est pas modélisée) |
 
 À vérifier aussi : notre `OSI` (le vrai code d'entrée est `OS`), notre `SSR` (vrai code `SR`),
 notre `FQN` (dans le vrai système, FQN affiche les notes tarifaires d'une ligne de FQD).

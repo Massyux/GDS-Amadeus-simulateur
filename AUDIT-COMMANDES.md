@@ -43,7 +43,8 @@
 | TQT | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (id inconnu → NO TST) | ⬜ | ⬜ |
 | FQN | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (index hors bornes → fallback 1er) | ⬜ | ⬜ |
 | ET / TTP | ✅ | ✅ (TICKET ALREADY ISSUED) | ✅ (NO ITINERARY/NO TST/NO FORM OF PAYMENT) | ⬜ | ⬜ | ✅ (dépend TST+FP) |
-| VOID | ✅ | ❌4 **corrigé** : re-VOID d'un billet déjà void par numéro exact → `NOTHING TO CANCEL` | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ✅ (dévalide le TST lié si plus aucun billet actif dessus) |
+| TWD (ex-VOID, affichage) | ✅ | ✅ (pur affichage) | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ⬜ — **Mission 15** : VOID renommé TWD (affichage) / TWX (annulation) pour coller au vrai flux Amadeus |
+| TWX (ex-VOID, annulation) | ✅ | ❌4 **corrigé** : re-void d'un billet déjà void par numéro exact → `NOTHING TO CANCEL` | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ✅ (dévalide le TST lié si plus aucun billet actif dessus) |
 | ITR-EML | ✅ | ✅ (renvoi multiple = cas réel légitime) | ✅ (NO TICKET/NO EMAIL ADDRESS) | ✅ (`ITR-EML` strict) | ⬜ | ⬜ |
 
 ## Notes détaillées
