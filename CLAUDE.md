@@ -127,9 +127,22 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
 - [x] Page d'accueil/onboarding minimale (`apps/web/src/Onboarding.jsx`) : présentation du
   projet, disclaimer de non-affiliation Amadeus, 3 commandes d'exemple, bouton d'entrée, choix
   mémorisé en `localStorage`. Testé Vitest (`App.test.jsx`) + Playwright (`e2e/onboarding.spec.js`)
-- [ ] Déploiement public (Vercel/Netlify) — **volontairement pas fait dans cette session** : Massy
-  a choisi de s'en occuper lui-même (ou de me guider étape par étape) car ça implique son propre
-  compte d'hébergement/domaine. Ne pas déployer sans qu'il le redemande explicitement.
+- [x] Déploiement public ✅ (Mission 05, 05-06/07/2026, avec Massy sur son compte Cloudflare) :
+  **https://gds-amadeus-simulateur.pages.dev/** — projet Pages classique (`build_command:
+  npm run build:web`, `destination_dir: apps/web/dist`, `root_dir: /`), connecté au repo GitHub,
+  redéploiement automatique sur push `main` **confirmé** (plusieurs push ont chacun déclenché un
+  déploiement). Séquence complète AN→SS→NM→AP→RF→ER→RT vérifiée en production (Record Locator
+  généré, onboarding + disclaimer visibles). Phase 2 close → **jalon v1.0 atteint**.
+  - Premier essai parti sur le flux unifié "Workers & Pages" (créait un Worker, pas un projet
+    Pages) → `wrangler deploy` échouait sans config ; ajout de `wrangler.jsonc` (assets-only),
+    puis recréation en Pages classique par Massy — a résolu le déploiement lui-même.
+  - Bug séparé découvert ensuite : le titre affiché en prod restait "frontend" (template Vite par
+    défaut) malgré plusieurs redéploiements. Cause réelle : `apps/web/index.html` (titre/lang/
+    description corrects, probablement du travail Phase 2 onboarding) n'avait **jamais été
+    committé** — restait un changement local non poussé pendant tout ce temps. Corrigé en le
+    committant. (Deux commits intermédiaires ajoutant `emptyOutDir`/un script `prebuild` pour
+    nettoyer `dist/` avant chaque build restent en place par hygiène — ils ne sont pas la cause
+    réelle mais ne nuisent pas.)
 
 **Phase 3 — Offre commerciale v1**
 - Produit vendu = bundle "Formation Amadeus + accès simulateur" (pas le simulateur seul)

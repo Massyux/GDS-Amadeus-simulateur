@@ -6,9 +6,31 @@
 
 ## En cours
 
-_(aucune — Mission 04 close, voir ci-dessous)_
+_(aucune — Mission 05 close, voir ci-dessous)_
 
 ## Fait (par session, datée)
+
+### 06/07/2026 — Mission 05 (déploiement public)
+- Déployé sur Cloudflare Pages : **https://gds-amadeus-simulateur.pages.dev/**. Redéploiement
+  automatique sur push `main` confirmé (plusieurs push, chacun a déclenché un build+deploy).
+  Séquence complète AN→SS→NM→AP→RF→ER→RT vérifiée en production (Record Locator généré,
+  onboarding + disclaimer visibles).
+- **Bug 1 (déploiement échoue)** : premier essai créé un **Worker** (flux unifié Cloudflare
+  "Workers & Pages") au lieu d'un projet Pages classique → `wrangler deploy` échouait
+  ("application detection... run in the root of a workspace"), aucun `wrangler.jsonc` dans le
+  repo pour lever l'ambiguïté du monorepo. Ajout de `wrangler.jsonc` (assets-only, pointe vers
+  `apps/web/dist`) ; Massy a finalement recréé le projet en Pages classique, qui a fonctionné.
+- **Bug 2 (titre "frontend" en prod)** : après déploiement réussi, la page affichait encore le
+  titre par défaut de Vite au lieu du vrai titre/lang/description. Fausse piste explorée d'abord
+  (cache de build Cloudflare, comportement `emptyOutDir` du bundler expérimental
+  `rolldown-vite` — ni l'un ni l'autre n'était la cause, même si les deux correctifs ajoutés
+  restent en place par hygiène, sans nuire). **Cause réelle** : `apps/web/index.html` (titre,
+  `lang="fr"`, meta description) existait comme modification locale **jamais committée** depuis
+  la session Phase 2 onboarding — chaque déploiement construisait donc le vrai template Vite
+  resté en l'état dans git. Corrigé en committant le fichier.
+- Jeton API Cloudflare (scope Pages, créé par Massy pour cette session) utilisé pour diagnostiquer
+  et corriger via l'API (lecture des logs de build, désactivation temporaire du cache de build,
+  déclenchement de déploiements de test) — révoqué par Massy après la mission.
 
 ### 05/07/2026 — Mission 04 (fidélité visuelle du terminal)
 - `docs/FIDELITE-VISUELLE.md` créé : Massy a comparé le terminal au vrai Amadeus (expérience

@@ -335,14 +335,33 @@ Interdit :
   affichée à l'écran, jamais le contenu réel du PNR) — corrigé pour vérifier le Record Locator.
 - Suite web : 10 → 11 tests Vitest, 8 Playwright inchangés, tout vert après le fix.
 
+### 06/07/2026 — Mission 05 (déploiement public, avec Massy)
+- Déployé : **https://gds-amadeus-simulateur.pages.dev/** (Cloudflare Pages, projet classique
+  connecté au repo GitHub). Redéploiement automatique sur push `main` confirmé (plusieurs push
+  testés). Séquence complète AN→SS→NM→AP→RF→ER→RT vérifiée en production.
+- Deux bugs distincts trouvés et corrigés pendant le déploiement (aucun n'était visible avant
+  d'essayer réellement de déployer) :
+  1. Premier essai a créé un **Worker** (flux Cloudflare unifié "Workers & Pages") au lieu d'un
+     projet Pages classique → échec (`wrangler deploy` ne savait pas quoi déployer dans le
+     monorepo). Résolu en recréant en Pages classique (config : `build_command: npm run
+     build:web`, `destination_dir: apps/web/dist`, `root_dir: /`).
+  2. Le titre affiché en prod restait celui par défaut de Vite ("frontend") malgré des
+     déploiements réussis. Fausses pistes explorées (cache de build Cloudflare, comportement
+     `emptyOutDir` du bundler expérimental `rolldown-vite`) avant de trouver la vraie cause :
+     `apps/web/index.html` (titre/lang/description corrects) était une modification locale
+     **jamais committée**, probablement depuis la session Phase 2 onboarding. Corrigé en la
+     committant. Leçon : toujours vérifier `git status` en début de session/tâche, même quand on
+     pense repartir d'un état propre.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 04 sont closes (05/07/2026 — voir §9 et `TASKS.md`).
-Prochaine étape : **Mission 05 — Déploiement public** (avec Massy, son compte hébergeur), puis
-missions 06+ (offre commerciale, pilote, etc. — voir `missions/README.md`). Point notable en
-Backlog pour une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, chantier
-business plus large qu'un correctif de message).
+Missions 01 à 05 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
+(déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2).
+Prochaine étape : missions 06+ (offre commerciale, pilote, etc. — voir `missions/README.md`),
+selon la priorité que Massy souhaite donner. Point notable en Backlog pour une mission future
+dédiée : SS liste d'attente HL/UC (confirmé par Massy, chantier business plus large qu'un
+correctif de message).
 
 ---
 
