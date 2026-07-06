@@ -79,8 +79,9 @@ ne l'ignore pas ») avant toute autre commande de la Mission 15 (CONSTITUTION §
   important : si `IR <AUTRE-LOCATOR>` bascule vers un PNR *différent*, seule la queue non
   enregistrée du PNR qu'on QUITTE est libérée (relative à SON PROPRE dernier `ER`) — jamais les
   segments du PNR différent qu'on rejoint, qui restent valides et inchangés.
-- **`ER`/`ET`** → enregistrent le PNR actif (`ET` ne réaffiche pas — écart de fidélité identifié,
-  pas encore corrigé, voir `docs/COMMANDES-MANQUANTES.md`).
+- **`ER`/`ET`** → enregistrent le PNR actif via le même helper (`recordPnr`) ; `ET` ne réaffiche
+  pas le PNR (contrairement à `ER`) et n'émet jamais de billet — corrigé en Mission 16 Étape 0
+  (06/07/2026, voir §9). Seul `TTP` émet un billet.
 - **`XI`** → vide le PNR actif en mémoire (comportement actuel : tout, pas juste l'itinéraire —
   écart avec le vrai Amadeus noté dans `docs/COMMANDES-MANQUANTES.md`, pas corrigé ici, hors
   périmètre de l'Étape 0). Même règle de restitution des sièges que IG : seule la part non
@@ -212,8 +213,9 @@ modifiée ici doit rester couverte par un test avant merge (voir méthode de tra
   05/07/2026 — avant cela, tarifiait sans aucun passager)
 
 **Ticketing**
-- ET / TTP (émission), TWD / TWX (affichage / annulation billet émis — renommé depuis VOID en
-  Mission 15, 06/07/2026, voir §9), ITR-EML (envoi reçu itinéraire)
+- TTP seul émet un billet (`ET` corrigé en Mission 16 Étape 0, 06/07/2026 : jumeau de `ER`, ne
+  réaffiche pas le PNR, n'émet plus de billet — voir §9), TWD / TWX (affichage / annulation
+  billet émis — renommé depuis VOID en Mission 15, 06/07/2026), ITR-EML (envoi reçu itinéraire)
 
 Hors scope niveau 1-2 (pas encore implémenté / pas dans ce périmètre figé) : toute commande non
 listée ci-dessus. Depuis le 06/07/2026, une chaîne d'implémentation v1.x (missions 15-20, voir
@@ -425,16 +427,28 @@ Interdit :
   réduit aux segments — tout le reste est déjà réellement supprimé par XE, voir
   `cancelElements`) ; `SI ARNK` (élément neutre de continuité) ; `TKOK`/`TKXL` complétant TKTL
   (refactor `pnr.tktl` → `pnr.tk = {kind, date}`, un seul élément TK par PNR).
-- **Point non traité, à trancher** : la correction de fidélité `ET` (`ET` traité aujourd'hui
-  comme `TTP` — émission de billet — alors que le vrai `ET` = End Transaction, jumeau de `ER`,
-  sans émettre de billet) est mentionnée dans `docs/COMMANDES-MANQUANTES.md` et le libellé de
-  Mission 15, mais **absente de la liste numérotée réelle de `MISSION-15.md`** — non traitée pour
-  ne pas élargir le périmètre de ma propre initiative (CONSTITUTION §6). Voir `TASKS.md` Backlog.
+- **Point non traité à la clôture, tranché depuis** : la correction de fidélité `ET` avait été
+  identifiée mais non traitée en Mission 15 (absente de sa liste numérotée réelle — périmètre non
+  élargi de ma propre initiative). Voir Mission 16 Étape 0 ci-dessous : l'architecte l'a arbitrée
+  et ajoutée explicitement à Mission 16.
 - Suite core passée de 137 à 192 tests (+55), toutes vertes après chaque commande (protocole de
   non-régression strict : suite complète + typecheck + lint après CHAQUE commande, pas seulement
   en fin de mission). Web (22) + e2e (10) + production vérifiés en fin de mission.
-- **Enchaînement immédiat sur Mission 16** dans la même session (règle de la chaîne
-  d'implémentation, `missions/README.md`).
+
+### 06/07/2026 — Mission 16, Étape 0 (correction fidélité ET, reliquat arbitré de M15)
+- L'architecte a mis à jour `missions/MISSION-16.md` en ajoutant une Étape 0 explicite pour
+  trancher le point laissé en Backlog à la clôture de Mission 15.
+- `ET` partage désormais la logique d'enregistrement de `ER` via un helper commun `recordPnr`
+  (validation NM/AP/RF, génération/réutilisation du record locator, promotion des TST
+  CREATED→VALIDATED, snapshot enregistré) — mais n'affiche que la confirmation (`PNR RECORDED` +
+  `RECORD LOCATOR X`), sans réafficher le PNR (contrairement à `ER`). `ET` n'émet plus de billet :
+  seul `TTP` le fait (`if (c === "TTP")`, retiré de l'ancien `if (c === "ET" || c === "TTP")`
+  partagé). Voir §2.2 pour le détail de la règle.
+- ~16 tests existants qui utilisaient `ET` comme raccourci « émettre un billet » basculés sur
+  `TTP` (la commande qui émet réellement) ; 5 nouveaux tests dédiés au vrai comportement `ET`.
+  `HELP`/`HE ET`/`HE TTP` mis à jour. Suite core 192 → 197 tests, tout vert.
+- **Enchaînement immédiat sur l'Étape 1 de Mission 16** (`MD`/`MU`/`MT`/`MB`) dans la même
+  session, règle de la chaîne d'implémentation.
 
 ---
 
@@ -442,9 +456,11 @@ Interdit :
 Missions 01 à 06 et 15 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
 (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre commerciale v1)
 close** (accès par clé en production, page d'accueil FR/EN), et **chaîne d'implémentation v1.x en
-cours** (missions 15→16→17→13→18→19→20, décision Massy du 06/07/2026).
-Prochaine étape : **Mission 16** (navigation & affichages), enchaînée immédiatement sans arrêt de
-session, selon la règle de la chaîne dans `missions/README.md`. Points notables en Backlog pour
+cours** (missions 15→16→17→13→18→19→20, décision Massy du 06/07/2026). **Mission 16 Étape 0
+close** (correction fidélité ET).
+Prochaine étape : **Mission 16, Étape 1** (`MD`/`MU`/`MT`/`MB`, navigation & affichages),
+enchaînée immédiatement sans arrêt de session, selon la règle de la chaîne dans
+`missions/README.md`. Points notables en Backlog pour
 une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, Mission 03) ; correction
 de fidélité `ET` (voir Mission 15 ci-dessus, à trancher avec l'architecte/Massy).
 

@@ -12,7 +12,7 @@
 
 | Constat | Vrai Amadeus | À faire |
 |---|---|---|
-| `ET` est traité comme « émission de billet » | **`ET` = End Transaction** (valide le PNR sans le réafficher, jumeau de `ER`). L'émission, c'est `TTP` seul | Reclasser ET en fin de transaction ; l'émission reste TTP |
+| ~~`ET` est traité comme « émission de billet »~~ **corrigé Mission 16 Étape 0 (06/07/2026)** | **`ET` = End Transaction** (valide le PNR sans le réafficher, jumeau de `ER`). L'émission, c'est `TTP` seul | ✅ Fait : `ET` partage désormais la logique d'enregistrement de `ER` (helper commun `recordPnr`) mais n'affiche que la confirmation/record locator, sans réafficher le PNR ; `ET` n'émet plus de billet — seul `TTP` le fait |
 | ~~`VOID` comme commande d'annulation de billet~~ **corrigé Mission 15 (06/07/2026)** | L'annulation d'un e-ticket passe par **`TWD`** (afficher le billet) puis **`TWX`** (l'annuler). « VOID » n'est pas une entrée cryptique | ✅ Fait : `VOID` retiré du dispatcher, `TWD`/`TWX` ajoutés (même logique de résolution/annulation qu'avant, format d'affichage TWD minimal — repose sur les lignes FA/FB déjà utilisées ailleurs — marqué « à vérifier » : la richesse réelle de l'écran TWD (base tarifaire, taxes, endossements) n'est pas modélisée) |
 
 À vérifier aussi : notre `OSI` (le vrai code d'entrée est `OS`), notre `SSR` (vrai code `SR`),

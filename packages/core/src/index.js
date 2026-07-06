@@ -2223,6 +2223,55 @@ function computeUnrecordedTailSegments(state) {
   return state.activePNR.itinerary.slice(keptLength);
 }
 
+// Shared by ER and ET (End Transaction, a twin of ER -- see the ET/TTP
+// dispatch below): validates the active PNR, generates/reuses its record
+// locator, promotes CREATED TSTs to VALIDATED, and stores the recorded
+// snapshot. Only the caller decides whether to redisplay the PNR
+// afterward (ER does; ET does not).
+function recordPnr(state, deps) {
+  const pnr = state.activePNR;
+  if (!pnr) return { error: "NO ACTIVE PNR" };
+  if (pnr.cancelRequested) {
+    if (pnr.recordLocator && state.pnrStore) {
+      delete state.pnrStore[pnr.recordLocator];
+    }
+    if (
+      state.recordedSnapshot &&
+      state.recordedSnapshot.recordLocator === pnr.recordLocator
+    ) {
+      state.recordedSnapshot = null;
+    }
+    state.activePNR = null;
+    state.tsts = [];
+    return { cancelled: true };
+  }
+  if (!pnr.passengers.length) return { error: "END PNR FIRST" };
+  if (!pnr.contacts.length) return { error: "END PNR FIRST" };
+  if (!pnr.rf) return { error: "END PNR FIRST" };
+
+  if (!pnr.recordLocator) {
+    pnr.recordLocator = generateRecordLocator(pnr);
+  }
+  pnr.status = "RECORDED";
+  if (state.tsts && state.tsts.length > 0) {
+    state.tsts = state.tsts.map((tst) =>
+      tst.status === "CREATED" ? { ...tst, status: "VALIDATED" } : tst
+    );
+  }
+  rebuildPnrElements(pnr, deps.clock);
+  state.pnrStore ||= {};
+  state.pnrStore[pnr.recordLocator] = {
+    pnrSnapshot: deepCopy(pnr),
+    tstsSnapshot: deepCopy(state.tsts),
+  };
+  state.recordedSnapshot = {
+    recordLocator: pnr.recordLocator,
+    pnrSnapshot: deepCopy(pnr),
+    tstsSnapshot: deepCopy(state.tsts),
+  };
+  return { recordLocator: pnr.recordLocator };
+}
+
 function resolveRecordedLocator(state, preferredLocator = null) {
   if (preferredLocator) return String(preferredLocator).toUpperCase();
   // Deliberately scoped to the CURRENT active PNR's own record locator only
@@ -2407,17 +2456,20 @@ export async function processCommand(state, cmd, options = {}) {
       print("NEUTRAL ITINERARY PLACEHOLDER, NO FLIGHT/DATE");
       return { events, state };
     }
-    if (subject === "ER" || subject === "RT") {
+    if (subject === "ER" || subject === "RT" || subject === "ET") {
       print(`HE ${subject}`);
-      print(subject === "ER" ? "ER                  END AND RECORD PNR" : "RT                  DISPLAY ACTIVE PNR");
+      if (subject === "ER") print("ER                  END AND RECORD PNR");
+      if (subject === "RT") print("RT                  DISPLAY ACTIVE PNR");
+      if (subject === "ET") {
+        print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
+        print("DOES NOT ISSUE A TICKET -- USE TTP");
+      }
       return { events, state };
     }
-    if (subject === "FXP" || subject === "TTP" || subject === "ET") {
+    if (subject === "FXP" || subject === "TTP") {
       print(`HE ${subject}`);
       if (subject === "FXP") print("FXP                 CREATE OR UPDATE TST");
-      if (subject === "TTP" || subject === "ET") {
-        print("TTP / ET            ISSUE TICKET FROM TST");
-      }
+      if (subject === "TTP") print("TTP                 ISSUE TICKET FROM TST");
       return { events, state };
     }
     if (subject === "TN" || subject === "SN") {
@@ -2469,8 +2521,9 @@ export async function processCommand(state, cmd, options = {}) {
     print("TKTL/TKOK/TKXL      TICKETING TIME LIMIT / OK / CANCEL DATE");
     print("FXP/FXX/FXR/FXB     PRICING");
     print("ER                  END PNR");
+    print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
     print("RT                  DISPLAY PNR (same as live)");
-    print("ET / TTP            ISSUE TICKET");
+    print("TTP                 ISSUE TICKET");
     print("TWD                 DISPLAY LAST ISSUED TICKET");
     print("TWX                 VOID LAST ISSUED TICKET");
     return { events, state };
@@ -2954,65 +3007,26 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c === "ER") {
-    const pnr = state.activePNR;
-    if (!pnr) {
-      print("NO ACTIVE PNR");
+  if (c === "ER" || c === "ET") {
+    const result = recordPnr(state, deps);
+    if (result.error) {
+      print(result.error);
       return { events, state };
     }
-    if (pnr.cancelRequested) {
-      if (pnr.recordLocator && state.pnrStore) {
-        delete state.pnrStore[pnr.recordLocator];
-      }
-      if (
-        state.recordedSnapshot &&
-        state.recordedSnapshot.recordLocator === pnr.recordLocator
-      ) {
-        state.recordedSnapshot = null;
-      }
-      state.activePNR = null;
-      state.tsts = [];
+    if (result.cancelled) {
       print("OK");
       print("PNR CANCELLED");
       renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
-    if (!pnr.passengers.length) {
-      print("END PNR FIRST");
-      return { events, state };
-    }
-    if (!pnr.contacts.length) {
-      print("END PNR FIRST");
-      return { events, state };
-    }
-    if (!pnr.rf) {
-      print("END PNR FIRST");
-      return { events, state };
-    }
-
-    if (!pnr.recordLocator) {
-      pnr.recordLocator = generateRecordLocator(pnr);
-    }
-    pnr.status = "RECORDED";
-    if (state.tsts && state.tsts.length > 0) {
-      state.tsts = state.tsts.map((tst) =>
-        tst.status === "CREATED" ? { ...tst, status: "VALIDATED" } : tst
-      );
-    }
-    rebuildPnrElements(pnr, deps.clock);
-    state.pnrStore ||= {};
-    state.pnrStore[pnr.recordLocator] = {
-      pnrSnapshot: deepCopy(pnr),
-      tstsSnapshot: deepCopy(state.tsts),
-    };
-    state.recordedSnapshot = {
-      recordLocator: pnr.recordLocator,
-      pnrSnapshot: deepCopy(pnr),
-      tstsSnapshot: deepCopy(state.tsts),
-    };
     print("PNR RECORDED");
-    print("RECORD LOCATOR " + pnr.recordLocator);
-    renderPNRLiveView(state, deps.clock).forEach(print);
+    print("RECORD LOCATOR " + result.recordLocator);
+    // ET is End Transaction, a twin of ER that does NOT redisplay the PNR
+    // (docs/COMMANDES-MANQUANTES.md "2 ecarts de fidelite" -- and unlike
+    // the old behavior, ET never issues a ticket either: TTP alone does).
+    if (c === "ER") {
+      renderPNRLiveView(state, deps.clock).forEach(print);
+    }
     return { events, state };
   }
 
@@ -3383,7 +3397,7 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c === "ET" || c === "TTP") {
+  if (c === "TTP") {
     const pnr = state.activePNR;
     if (!pnr || !pnr.itinerary || pnr.itinerary.length === 0) {
       print("NO ITINERARY");

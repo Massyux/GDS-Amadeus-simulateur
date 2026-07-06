@@ -2,6 +2,13 @@
 
 **Chaîne d'implémentation, maillon 2/7** · Détail : `docs/COMMANDES-MANQUANTES.md` §Priorité 1
 
+## ÉTAPE 0 — reliquat arbitré de M15 (accord architecte 06/07/2026)
+
+Correction fidélité `ET` : doit se comporter comme `ER` **sans réafficher le PNR** (fin de
+transaction, enregistre, affiche uniquement la confirmation/record locator) et ne doit PAS
+émettre de billet (l'émission reste `TTP` seul). Mettre à jour tests golden + docs + retirer
+la ligne correspondante du Backlog TASKS.md et du tableau d'écarts de COMMANDES-MANQUANTES.md.
+
 ## Principe d'architecture
 
 La pagination et le « dernier affichage » sont un état du CORE (`state.lastDisplay` : type,

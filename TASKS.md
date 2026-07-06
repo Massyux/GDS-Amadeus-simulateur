@@ -7,11 +7,11 @@
 ## En cours
 
 **Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION)** : `15 → 16 → 17 → 13 →
-18 → 19 → 20` puis retour à 07. **Mission 15 close (06/07/2026, 8/8 commandes + Étape 0)**, tout
-poussé sur `main`, CI verte, production vérifiée.
+18 → 19 → 20` puis retour à 07. **Mission 15 close (06/07/2026, 8/8 commandes + Étape 0)** ;
+**Mission 16 Étape 0 close (06/07/2026, correction fidélité ET, arbitrée par l'architecte)**,
+tout poussé sur `main`, suites vertes.
 
-**Reprise exacte (limite de session atteinte après la clôture de la Mission 15)** : ouvrir
-`missions/MISSION-16.md` (déjà lu, pas encore commencée — aucun code écrit) et démarrer à
+**Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes (Étape 0 faite) et démarrer à
 l'**Étape 1** de sa propre liste (`MD`/`MU`/`MT`/`MB`). Point d'architecture à poser en premier
 (demandé explicitement par la mission) : `state.lastDisplay` (type, critères, position) comme
 état CORE — pas de l'UI — avant de brancher les commandes dessus. Suivre le même protocole de
@@ -22,6 +22,25 @@ collisionne avec des préfixes existants (`RF`, `RT`, etc.) — test golden de n
 chaque nouveau préfixe.
 
 ## Fait (par session, datée)
+
+### 06/07/2026 — Mission 16, Étape 0 (correction fidélité ET — reliquat arbitré de M15)
+- L'architecte a mis à jour `missions/MISSION-16.md` pour trancher explicitement le point laissé
+  en Backlog à la clôture de Mission 15 (correction `ET` mentionnée dans la doc mais absente de
+  la liste numérotée de M15 — périmètre non élargi de ma propre initiative à l'époque).
+- `ET` partage désormais la logique d'enregistrement de `ER` (helper commun `recordPnr` extrait
+  du handler `ER`) : valide NM/AP/RF, génère/réutilise le record locator, promeut les TST
+  CREATED→VALIDATED, enregistre le snapshot — **mais n'affiche que la confirmation** (`PNR
+  RECORDED` + `RECORD LOCATOR X`), sans réafficher le PNR (contrairement à `ER`). `ET` n'émet
+  plus de billet : seul `TTP` le fait désormais (`if (c === "TTP")`, retiré de l'ancien
+  `if (c === "ET" || c === "TTP")` partagé).
+- Tests : ~16 tests existants qui utilisaient `ET` comme raccourci « émettre un billet »
+  (TWX/TWD/NU/ITR-EML/RT/XE, dans `processCommand.test.js` et `e2e.golden.test.js`) basculés sur
+  `TTP` — c'est la commande qui émet réellement, pas un simple renommage cosmétique. 5 nouveaux
+  tests dédiés au vrai comportement `ET` (enregistre sans réafficher, n'émet pas de billet,
+  exige NM/AP/RF comme ER, idempotent). `HELP`/`HE ET`/`HE TTP` mis à jour pour refléter la
+  distinction. Suite core 192 → 197 tests, tout vert (typecheck/lint aussi).
+- `docs/COMMANDES-MANQUANTES.md` (tableau des 2 écarts) et le Backlog `TASKS.md` mis à jour :
+  l'écart `ET` est maintenant marqué corrigé, à égalité avec `VOID`→`TWD`/`TWX` (Mission 15).
 
 ### 06/07/2026 — Mission 15 (servicing du PNR actif — chaîne d'implémentation)
 - **Étape 0 (bug critique signalé par Massy, traité en premier)** : « IG ne sort pas complètement
@@ -224,14 +243,3 @@ chaque nouveau préfixe.
   Détail dans `docs/ERREURS-AMADEUS.md`. Non traité dans Mission 03 (hors périmètre message).
 - **Formulations encore à vérifier** (21 messages, sans urgence, aucun impact fonctionnel connu
   au-delà du texte affiché) : voir la table complète dans `docs/ERREURS-AMADEUS.md`.
-- **Incohérence fonctionnelle confirmée, à arbitrer (correction fidélité `ET`)** : `ET` est traité
-  aujourd'hui exactement comme `TTP` (émission de billet). Le vrai Amadeus : `ET` = End
-  Transaction (valide/enregistre le PNR sans le réafficher, jumeau de `ER`) ; seul `TTP` émet un
-  billet. Mentionné dans `docs/COMMANDES-MANQUANTES.md` (« 2 écarts de fidélité ») et dans le
-  libellé de Mission 15 (`missions/README.md`), mais **absent de la liste numérotée des 8
-  commandes de `missions/MISSION-15.md`** — périmètre non élargi de ma propre initiative
-  (CONSTITUTION §6), le point n'a donc pas été traité dans cette mission. Impact si corrigé : `ET`
-  ne créerait plus de billet ; casserait toute logique/tests qui utilisent `ET` comme raccourci
-  « émettre un billet » (fait dans plusieurs tests golden existants et dans les nouveaux tests
-  Mission 15 — NU/TWX/DL). À trancher avec l'architecte/Massy : mission dédiée ou ajout explicite
-  à une mission future, pas une correction incidente en passant.

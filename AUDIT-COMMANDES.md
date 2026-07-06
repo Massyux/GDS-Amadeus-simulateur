@@ -35,7 +35,7 @@
 | RF | ✅ | ✅ (écrase, correct) | ⬜ | ✅ (vide, `RF+` rejeté) | ⬜ | ✅ (exigé par ER) |
 | TKTL / TKOK / TKXL (famille TK complétée Mission 15) | ✅ (3 formes) | ✅ (écrase — un seul élément TK par PNR, `TKOK` après `TKTL` remplace, n'additionne pas) | ⬜ | ✅ (date pour TL/XL, pas de date pour OK) | ⬜ | ✅ compatible XE/DL (`cancellableKinds`) et modification par n° (`NOT ALLOWED` sur la date d'un TKOK, qui n'en a pas) |
 | FP | ✅ | ✅ (écrase) | ⬜ | ✅ (CASH/CC regex) | ⬜ | ✅ (exigé par ET/TTP) |
-| ER | ✅ | ✅ (locator stable) | ✅ (NO ACTIVE PNR, END PNR FIRST si NM/AP/RF manquant) | ⬜ | ✅ | ✅ (valide les TST CREATED→VALIDATED) |
+| ER | ✅ | ✅ (locator stable) | ✅ (NO ACTIVE PNR, END PNR FIRST si NM/AP/RF manquant) | ⬜ | ✅ | ✅ (valide les TST CREATED→VALIDATED ; logique d'enregistrement partagée avec ET via `recordPnr`, Mission 16 Étape 0) |
 | RT | ✅ | ✅ (pur) | ✅ (NO ACTIVE PNR) | ⬜ | ✅ | ⬜ |
 | IG | ✅ | ✅ | ✅ (NO RECORDED PNR si rien à annuler) | ⬜ | ❌5 **corrigé** (Mission 15 Étape 0, 06/07/2026) : résurrectait un PNR non lié via un pointeur global périmé ; sièges vendus non restitués | ⬜ |
 | IR | ✅ | ✅ | ✅ (PNR NOT FOUND / NO RECORDED PNR distincts) | ✅ (locator format) | ❌5 **corrigé** (même famille qu'IG, voir note 5) | ⬜ |
@@ -48,7 +48,8 @@
 | FXL | ✅ | ✅ (pur affichage) | ✅ (NO TST) | ✅ (`/` → FUNCTION NOT APPLICABLE) | ⬜ | ⬜ |
 | TQT | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (id inconnu → NO TST) | ⬜ | ⬜ |
 | FQN | ✅ | ✅ (pur) | ✅ (NO TST) | ✅ (index hors bornes → fallback 1er) | ⬜ | ⬜ |
-| ET / TTP | ✅ | ✅ (TICKET ALREADY ISSUED) | ✅ (NO ITINERARY/NO TST/NO FORM OF PAYMENT) | ⬜ | ⬜ | ✅ (dépend TST+FP) |
+| ET (**corrigé Mission 16 Étape 0**) | ✅ (jumeau de ER, ne réaffiche pas) | ✅ (idempotent, même locator) | ✅ (NO ACTIVE PNR, END PNR FIRST) | ⬜ | ✅ | ✅ N'émet plus de billet (seul TTP le fait) — ancien comportement partagé `ET`/`TTP` séparé |
+| TTP | ✅ | ✅ (TICKET ALREADY ISSUED) | ✅ (NO ITINERARY/NO TST/NO FORM OF PAYMENT) | ⬜ | ⬜ | ✅ (dépend TST+FP) — seule commande émettant un billet depuis Mission 16 Étape 0 |
 | TWD (ex-VOID, affichage) | ✅ | ✅ (pur affichage) | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ⬜ — **Mission 15** : VOID renommé TWD (affichage) / TWX (annulation) pour coller au vrai flux Amadeus |
 | TWX (ex-VOID, annulation) | ✅ | ❌4 **corrigé** : re-void d'un billet déjà void par numéro exact → `NOTHING TO CANCEL` | ✅ (NO TICKET) | ✅ (format numéro billet) | ⬜ | ✅ (dévalide le TST lié si plus aucun billet actif dessus) |
 | ITR-EML | ✅ | ✅ (renvoi multiple = cas réel légitime) | ✅ (NO TICKET/NO EMAIL ADDRESS) | ✅ (`ITR-EML` strict) | ⬜ | ⬜ |

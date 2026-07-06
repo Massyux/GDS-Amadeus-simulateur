@@ -966,7 +966,7 @@ describe("processCommand", () => {
     await runCommand(state, "NM1DOE/JOHN MR");
     await runCommand(state, "FP CASH");
     await runCommand(state, "FXP");
-    await runCommand(state, "ET");
+    await runCommand(state, "TTP");
 
     const lines = await runCommand(state, "NU1/1SMITH/JANE MRS");
     assert.deepEqual(lines, ["NOT ALLOWED"]);
@@ -1514,7 +1514,7 @@ describe("processCommand", () => {
     );
   });
 
-  it("ET issues ticket and RT shows FA line", async () => {
+  it("TTP issues ticket and RT shows FA line", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y1");
@@ -1522,9 +1522,9 @@ describe("processCommand", () => {
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
 
-    const et = await processCommand(state, "ET");
-    const etLines = et.events.map((event) => event.text);
-    assert.ok(etLines.some((line) => line.includes("TICKET ISSUED")));
+    const ttp = await processCommand(state, "TTP");
+    const ttpLines = ttp.events.map((event) => event.text);
+    assert.ok(ttpLines.some((line) => line.includes("TICKET ISSUED")));
     assert.equal(state.activePNR.tickets.length, 1);
     assert.equal(state.activePNR.tickets[0].status, "ISSUED");
     assert.equal(state.tsts[0].status, "TICKETED");
@@ -1535,18 +1535,18 @@ describe("processCommand", () => {
     assert.ok(rtLines.some((line) => line.includes("FB TST1 172-0000000001")));
   });
 
-  it("ET rejects duplicate issue on the same TST", async () => {
+  it("TTP rejects duplicate issue on the same TST", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y1");
     await processCommand(state, "NM1DOE/JOHN MR");
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
-    await processCommand(state, "ET");
+    await processCommand(state, "TTP");
 
-    const secondEt = await processCommand(state, "ET");
+    const secondTtp = await processCommand(state, "TTP");
     assert.ok(
-      secondEt.events.some(
+      secondTtp.events.some(
         (event) =>
           event.type === "error" && event.text === "TICKET ALREADY ISSUED"
       )
@@ -1554,16 +1554,77 @@ describe("processCommand", () => {
     assert.equal(state.activePNR.tickets.length, 1);
   });
 
-  it("ET without TST returns NO TST", async () => {
+  it("TTP without TST returns NO TST", async () => {
     const state = createInitialState();
     await processCommand(state, "AN26DECALGPAR");
     await processCommand(state, "SS1Y1");
     await processCommand(state, "NM1DOE/JOHN MR");
     await processCommand(state, "FP CASH");
+    const ttp = await processCommand(state, "TTP");
+    assert.ok(
+      ttp.events.some((event) => event.type === "error" && event.text === "NO TST")
+    );
+  });
+
+  it("ET ends the transaction like ER (records the PNR) but does not redisplay it", async () => {
+    const state = createInitialState();
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "AP123456");
+    await processCommand(state, "RFTEST");
+
+    const et = await processCommand(state, "ET");
+    const etLines = et.events.map((event) => event.text);
+    assert.deepEqual(etLines[0], "PNR RECORDED");
+    assert.ok(etLines[1].startsWith("RECORD LOCATOR "));
+    // Only the confirmation lines -- no trailing RT view (unlike ER).
+    assert.equal(etLines.length, 2);
+    assert.equal(state.activePNR.status, "RECORDED");
+    assert.ok(state.activePNR.recordLocator);
+  });
+
+  it("ET never issues a ticket, even with a priced TST and a form of payment (TTP alone issues)", async () => {
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR");
+    await processCommand(state, "SS1Y1");
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "AP123456");
+    await processCommand(state, "RFTEST");
+    await processCommand(state, "FP CASH");
+    await processCommand(state, "FXP");
+
+    await processCommand(state, "ET");
+    assert.equal((state.activePNR.tickets || []).length, 0);
+    assert.equal(state.tsts[0].status, "VALIDATED");
+  });
+
+  it("ET requires NM/AP/RF like ER (END PNR FIRST)", async () => {
+    const state = createInitialState();
+    await processCommand(state, "NM1DOE/JOHN MR");
     const et = await processCommand(state, "ET");
     assert.ok(
-      et.events.some((event) => event.type === "error" && event.text === "NO TST")
+      et.events.some(
+        (event) => event.type === "error" && event.text === "END PNR FIRST"
+      )
     );
+  });
+
+  it("ET is idempotent like ER: a second ET keeps the same record locator", async () => {
+    const state = createInitialState();
+    await processCommand(state, "NM1DOE/JOHN MR");
+    await processCommand(state, "AP123456");
+    await processCommand(state, "RFTEST");
+
+    const first = await processCommand(state, "ET");
+    const firstLocator = first.events
+      .map((event) => event.text)
+      .find((text) => text.startsWith("RECORD LOCATOR "));
+
+    const second = await processCommand(state, "ET");
+    const secondLocator = second.events
+      .map((event) => event.text)
+      .find((text) => text.startsWith("RECORD LOCATOR "));
+
+    assert.equal(firstLocator, secondLocator);
   });
 
   it("TTP without FP returns NO FORM OF PAYMENT", async () => {
@@ -1587,7 +1648,7 @@ describe("processCommand", () => {
     await processCommand(state, "NM1DOE/JOHN MR");
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
-    await processCommand(state, "ET");
+    await processCommand(state, "TTP");
 
     const twxResult = await processCommand(state, "TWX");
     const twxLines = twxResult.events.map((event) => event.text);
@@ -1622,7 +1683,7 @@ describe("processCommand", () => {
     await processCommand(state, "NM1DOE/JOHN MR");
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
-    await processCommand(state, "ET");
+    await processCommand(state, "TTP");
     await processCommand(state, "TWX");
     const ticketNumber = state.activePNR.tickets[0].ticketNumber;
 
@@ -1642,7 +1703,7 @@ describe("processCommand", () => {
     await processCommand(state, "NM1DOE/JOHN MR");
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
-    await processCommand(state, "ET");
+    await processCommand(state, "TTP");
 
     const twdResult = await processCommand(state, "TWD");
     const twdLines = twdResult.events.map((event) => event.text);
@@ -1673,7 +1734,7 @@ describe("processCommand", () => {
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
     await processCommand(state, "FXX");
-    await processCommand(state, "ET");
+    await processCommand(state, "TTP");
     await processCommand(state, "APE-john.doe@example.com");
 
     const itr = await processCommand(state, "ITR-EML");
@@ -1704,7 +1765,7 @@ describe("processCommand", () => {
     await processCommand(state, "NM1DOE/JOHN MR");
     await processCommand(state, "FP CASH");
     await processCommand(state, "FXP");
-    await processCommand(state, "ET");
+    await processCommand(state, "TTP");
     const itr = await processCommand(state, "ITR-EML");
     assert.ok(
       itr.events.some(
@@ -2279,7 +2340,7 @@ describe("processCommand", () => {
     await runCommand(state, "FXX");
     const tqt = await runCommand(state, "TQT");
     assert.ok(tqt.some((line) => line.startsWith("TQT1")));
-    await runCommand(state, "ET");
+    await runCommand(state, "TTP");
 
     const rtLines = await runCommand(state, "RT");
     const segmentIndex = rtLines.findIndex((line) =>
@@ -2332,7 +2393,7 @@ describe("processCommand", () => {
     await runCommand(state, "RFTEST");
     await runCommand(state, "FP CASH");
     await runCommand(state, "FXP");
-    await runCommand(state, "ET");
+    await runCommand(state, "TTP");
 
     const rtBefore = await runCommand(state, "RT");
     const apLine = rtBefore.find((line) => line.includes("AP123456"));
@@ -2358,7 +2419,7 @@ describe("processCommand", () => {
     await runCommand(state, "NM1DOE/JOHN MR");
     await runCommand(state, "FP CASH");
     await runCommand(state, "FXP");
-    await runCommand(state, "ET");
+    await runCommand(state, "TTP");
 
     const rtBefore = await runCommand(state, "RT");
     const faLine = rtBefore.find((line) => line.includes("FA 172-0000000001"));

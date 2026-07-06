@@ -133,7 +133,7 @@ describe("global golden/invariant suite", () => {
     "FXP",
     "FXX",
     "TQT",
-    "ET",
+    "TTP",
     "ITR-EML",
     "ER",
     "RT",
@@ -336,19 +336,19 @@ describe("global golden/invariant suite", () => {
   });
 
   it("TESTSET 6 - ticketing invariants", async () => {
-    const etNoTst = await runScenario(["AN26DECALGPAR", "SS1Y1", "NM1DOE/JOHN MR", "ET"]);
-    assert.ok(getStep(etNoTst.steps, "ET").errors.includes("NO TST"));
-    assert.equal((etNoTst.state.activePNR.tickets || []).length, 0);
+    const ttpNoTst = await runScenario(["AN26DECALGPAR", "SS1Y1", "NM1DOE/JOHN MR", "TTP"]);
+    assert.ok(getStep(ttpNoTst.steps, "TTP").errors.includes("NO TST"));
+    assert.equal((ttpNoTst.state.activePNR.tickets || []).length, 0);
 
-    const etNoFp = await runScenario([
+    const ttpNoFp = await runScenario([
       "AN26DECALGPAR",
       "SS1Y1",
       "NM1DOE/JOHN MR",
       "FXP",
-      "ET",
+      "TTP",
     ]);
-    assert.ok(getStep(etNoFp.steps, "ET").errors.includes("NO FORM OF PAYMENT"));
-    assert.equal((etNoFp.state.activePNR.tickets || []).length, 0);
+    assert.ok(getStep(ttpNoFp.steps, "TTP").errors.includes("NO FORM OF PAYMENT"));
+    assert.equal((ttpNoFp.state.activePNR.tickets || []).length, 0);
 
     const twxNoTicket = await runScenario(["TWX"]);
     assert.ok(twxNoTicket.steps[0].errors.includes("NO TICKET"));
@@ -359,7 +359,7 @@ describe("global golden/invariant suite", () => {
       "NM1DOE/JOHN MR",
       "FP CASH",
       "FXP",
-      "ET",
+      "TTP",
       "TWX",
       "RT",
     ]);
@@ -367,6 +367,30 @@ describe("global golden/invariant suite", () => {
     assert.ok(
       twxWithTicket.lastRtLines.some((line) => line.includes("FA 172-0000000001 VOID"))
     );
+  });
+
+  it("TESTSET 6b - ET ends the transaction like ER without redisplaying, and never issues a ticket", async () => {
+    const etScenario = await runScenario([
+      "AN26DECALGPAR",
+      "SS1Y1",
+      "NM1DOE/JOHN MR",
+      "AP123456",
+      "RFTEST",
+      "FP CASH",
+      "FXP",
+      "ET",
+    ]);
+    const etStep = getStep(etScenario.steps, "ET");
+    assert.deepEqual(etStep.errors, []);
+    assert.deepEqual(etStep.prints[0], "PNR RECORDED");
+    assert.ok(etStep.prints[1].startsWith("RECORD LOCATOR "));
+    assert.equal(etStep.prints.length, 2);
+    assert.equal(etScenario.state.activePNR.status, "RECORDED");
+    assert.equal((etScenario.state.activePNR.tickets || []).length, 0);
+    assert.equal(etScenario.state.tsts[0].status, "VALIDATED");
+
+    const etMissingRf = await runScenario(["NM1DOE/JOHN MR", "AP123456", "ET"]);
+    assert.ok(getStep(etMissingRf.steps, "ET").errors.includes("END PNR FIRST"));
   });
 
   it("TESTSET 7 - ITR-EML invariants", async () => {
@@ -379,7 +403,7 @@ describe("global golden/invariant suite", () => {
       "NM1DOE/JOHN MR",
       "FP CASH",
       "FXP",
-      "ET",
+      "TTP",
       "ITR-EML",
     ]);
     assert.ok(getStep(noEmail.steps, "ITR-EML").errors.includes("NO EMAIL ADDRESS"));
@@ -390,7 +414,7 @@ describe("global golden/invariant suite", () => {
       "NM1DOE/JOHN MR",
       "FP CASH",
       "FXP",
-      "ET",
+      "TTP",
       "APE-john.doe@example.com",
       "ITR-EML",
       "RT",
@@ -433,7 +457,8 @@ describe("global golden/invariant suite", () => {
     assert.ok(lines.some((line) => line.startsWith("ER")));
     assert.ok(lines.some((line) => line.startsWith("RT")));
     assert.ok(lines.some((line) => line.includes("FXP/FXX/FXR/FXB")));
-    assert.ok(lines.some((line) => line.includes("ET / TTP")));
+    assert.ok(lines.some((line) => line.startsWith("ET ")));
+    assert.ok(lines.some((line) => line.startsWith("TTP ")));
   });
 
   it("TESTSET 10 - queue end-to-end and edge cases", async () => {
