@@ -8,10 +8,11 @@ async function runCommand(page, cmd) {
 
 test.describe("Terminal", () => {
   test.beforeEach(async ({ page }) => {
-    // Skip the onboarding screen: these tests target the terminal itself,
-    // the onboarding flow has its own spec.
+    // Skip the onboarding/access-key screens: these tests target the
+    // terminal itself, the onboarding and access flows have their own spec.
     await page.addInitScript(() => {
       localStorage.setItem("simulateur-amadeus:skip-onboarding", "1");
+      localStorage.setItem("simulateur-amadeus:access-key-valid", "1");
     });
   });
 

@@ -37,4 +37,10 @@ jobs:
         run: npx --prefix apps/web playwright install --with-deps chromium
 
       - name: E2E (apps/web)
+        # Not a real access key: a test-only value whose SHA-256 hash is
+        # baked into this build via the client-side fallback (Cloudflare
+        # Pages Functions don't run under `vite preview`). See
+        # apps/web/e2e/onboarding.spec.js and CLAUDE.md "Accès par clé".
+        env:
+          VITE_FALLBACK_KEY_HASHES: f422821e3d707a6557c0b112a856927c754b5ca0842cb44503e6e028aa539a16
         run: npm run test:e2e
