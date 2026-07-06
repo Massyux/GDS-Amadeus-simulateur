@@ -144,9 +144,34 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
     nettoyer `dist/` avant chaque build restent en place par hygiène — ils ne sont pas la cause
     réelle mais ne nuisent pas.)
 
-**Phase 3 — Offre commerciale v1**
+**Phase 3 — Offre commerciale v1** — ✅ fait (06/07/2026, Mission 06)
 - Produit vendu = bundle "Formation Amadeus + accès simulateur" (pas le simulateur seul)
 - Accès simple pour la v1 (clé/lien privé), pas de système de comptes complexe
+- [x] Accès par clé (`GDS-XXXX-XXXX`) : validation serveur via Cloudflare Pages Function
+  (`functions/api/verify-key.js`), hachés SHA-256 en variable d'environnement Cloudflare
+  (`ACCESS_KEY_HASHES`), jamais de clé en clair dans le repo ni dans le bundle livré au
+  navigateur. Terminal jamais monté sans clé validée (`localStorage
+  simulateur-amadeus:access-key-valid`), y compris en appelant l'app directement.
+  `scripts/generate-keys.mjs` génère les clés + un CSV en clair (dossier `keys/`, gitignored) ;
+  doc d'usage (ajout/révocation sans toucher au code) dans `README.md` §Gestion des clés.
+- **Repli client documenté** (prévu explicitement par la mission, pas une improvisation) : une
+  variable de build `VITE_FALLBACK_KEY_HASHES` (mêmes hachés) permet une validation côté
+  navigateur si les Pages Functions sont un jour bloquées. Vide par défaut → inactive en
+  production tant que Massy ne la configure pas lui-même. Utilisée uniquement pour les tests
+  (Vitest + Playwright + CI), avec une clé de test `GDS-TEST-0001` qui n'est pas un vrai secret.
+  Delibérément moins robuste que la validation serveur (les hachés finiraient dans le bundle si
+  jamais activée en prod) — acceptable pour un pilote, à n'activer qu'en cas de besoin réel.
+- [x] Page d'accueil enrichie (`Onboarding.jsx`) : proposition de valeur + public cible
+  (étudiants/écoles de tourisme), aperçu du terminal réel-rendu (composant statique non
+  interactif réutilisant les classes CSS du vrai terminal, pas une image), bouton "J'ai une clé
+  d'accès", bouton "Demander un accès" (mailto vers massinissa.mehdani@gmail.com — canal e-mail
+  choisi par Massy), disclaimer conservé.
+- [x] FR/EN léger (`apps/web/src/i18n/dictionary.js`, dictionnaire JSON plat, pas de lib i18n),
+  FR par défaut, bascule mémorisée en localStorage. Ne couvre que l'enveloppe (accueil + écran de
+  clé) — le terminal reste en anglais Amadeus-authentique (décision confirmée le 05/07/2026).
+- [x] Tests : unitaires (`lib/keyHash.test.js`), Vitest UI (`AccessGate.test.jsx`,
+  `App.test.jsx`), Playwright e2e (`e2e/onboarding.spec.js` étendu) — tous verts, CI ne dépend
+  d'aucun secret réel (haché de test injecté en variable d'environnement du job e2e).
 
 **Phase 4 — Lancement test**
 - Groupe pilote restreint (étudiants tourisme / audience TikTok FikraDZ si pertinent)

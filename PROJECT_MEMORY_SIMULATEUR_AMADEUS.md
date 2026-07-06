@@ -353,15 +353,29 @@ Interdit :
      committant. Leçon : toujours vérifier `git status` en début de session/tâche, même quand on
      pense repartir d'un état propre.
 
+### 06/07/2026 — Mission 06 (accès par clé + habillage commercial v1, Phase 3)
+- Aucune règle métier `packages/core` touchée (mission 100% web/infra) — noté ici pour la
+  continuité de session, pas parce qu'une règle a changé.
+- Accès public désormais gardé par clé (`GDS-XXXX-XXXX`) : validation serveur (Cloudflare Pages
+  Function `functions/api/verify-key.js`, hachés SHA-256 en variable d'environnement Cloudflare,
+  jamais en clair) + repli client documenté et accepté (`VITE_FALLBACK_KEY_HASHES`, vide par
+  défaut, usage tests uniquement). Terminal jamais monté sans clé validée. Détail complet dans
+  `CLAUDE.md` Phase 3 et `README.md` §Gestion des clés.
+- Page d'accueil devenue une vraie page marketing FR/EN (`Onboarding.jsx` + `i18n/dictionary.js`)
+  — le terminal (`Terminal.jsx`, `packages/core`) reste intact et en anglais Amadeus-authentique.
+- `scripts/generate-keys.mjs` : outil Node autonome pour Massy (génération + CSV clés en clair,
+  gitignored).
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 05 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
-(déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2).
-Prochaine étape : missions 06+ (offre commerciale, pilote, etc. — voir `missions/README.md`),
-selon la priorité que Massy souhaite donner. Point notable en Backlog pour une mission future
-dédiée : SS liste d'attente HL/UC (confirmé par Massy, chantier business plus large qu'un
-correctif de message).
+Missions 01 à 06 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
+(déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2) et **Phase 3 (offre commerciale v1)
+close** : accès par clé en production, page d'accueil FR/EN.
+Prochaine étape : mission 07 (lancement pilote + traitement des retours, Phase 4) ou toute autre
+priorité que Massy souhaite donner — voir `missions/README.md`. Point notable en Backlog pour une
+mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, chantier business plus
+large qu'un correctif de message).
 
 ---
 

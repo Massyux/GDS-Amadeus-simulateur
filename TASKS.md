@@ -10,6 +10,33 @@ _(aucune — Mission 05 close, voir ci-dessous)_
 
 ## Fait (par session, datée)
 
+### 06/07/2026 — Mission 06 (accès par clé + habillage commercial v1)
+- Décisions Massy en début de session : canal « demander un accès » = e-mail
+  (massinissa.mehdani@gmail.com) ; wording de la proposition de valeur proposé par l'assistant.
+- **Validation des clés côté serveur** : `functions/api/verify-key.js` (Cloudflare Pages
+  Function), `POST {key} -> {valid}`. Clés jamais en clair : hachés SHA-256 dans la variable
+  d'environnement Cloudflare `ACCESS_KEY_HASHES`. Anti-abus minimal (réponse identique clé
+  absente/invalide/config vide, délai plancher 300ms, pas de listing).
+- **Repli client documenté** (`VITE_FALLBACK_KEY_HASHES`, vide par défaut donc inactif en prod) :
+  utilisé uniquement par les tests (clé `GDS-TEST-0001`, pas un vrai secret) — voir `CLAUDE.md`
+  Phase 3 pour le détail du compromis accepté.
+- **Écran d'accès** (`AccessGate.jsx`) : clé mémorisée en `localStorage`
+  (`simulateur-amadeus:access-key-valid`), erreur sobre si invalide, terminal jamais monté sans
+  clé validée (vérifié y compris en rechargeant/rappelant l'app directement).
+- **Page d'accueil enrichie** (`Onboarding.jsx`) : proposition de valeur + public cible, aperçu
+  du terminal réel-rendu (composant statique, pas une image), bouton « J'ai une clé d'accès »,
+  bouton « Demander un accès » (mailto), disclaimer conservé.
+- **FR/EN** : `apps/web/src/i18n/dictionary.js` (dictionnaire plat) + `useLang.js` (bascule
+  mémorisée, FR par défaut). Le terminal reste en anglais Amadeus-authentique.
+- **Outil de gestion des clés** : `scripts/generate-keys.mjs` — génère N clés `GDS-XXXX-XXXX`,
+  écrit un CSV en clair dans `keys/` (gitignored) + affiche les hachés à coller dans Cloudflare.
+  Usage documenté dans `README.md` §Gestion des clés (ajout/révocation sans toucher au code).
+- Suite web passée à 22 tests Vitest (+11 : `keyHash.test.js`, `AccessGate.test.jsx`,
+  `App.test.jsx` réécrit) ; Playwright étendu (10 scénarios au total, `onboarding.spec.js`
+  réécrit pour couvrir accueil FR/EN + clé valide/invalide/persistance ; `terminal.spec.js` ajusté
+  pour poser aussi le flag de clé validée). CI (`ci.yml`) injecte le haché de test pour l'étape
+  e2e — aucun secret réel requis. Toutes les suites (core/data/web/e2e/lint/typecheck) vertes.
+
 ### 06/07/2026 — Mission 05 (déploiement public)
 - Déployé sur Cloudflare Pages : **https://gds-amadeus-simulateur.pages.dev/**. Redéploiement
   automatique sur push `main` confirmé (plusieurs push, chacun a déclenché un build+deploy).

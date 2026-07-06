@@ -27,7 +27,7 @@
 | 03 | Messages d'erreur fidèles Amadeus (suite de l'Étape 1 committée) | Phase 5 | fait (05/07/2026) |
 | 04 | Fidélité visuelle du terminal (trade dress à la main) | Phase 5 | fait (05/07/2026) |
 | 05 | Déploiement public — **avec Massy** (son compte hébergeur) | Phase 2 (fin) | fait (06/07/2026) |
-| 06 | Accès v1 par clé/lien privé (offre commerciale) | Phase 3 | esquisse |
+| 06 | Accès v1 par clé/lien privé (offre commerciale) | Phase 3 | fait (06/07/2026) |
 | 07 | Lancement pilote + traitement des retours | Phase 4 | esquisse |
 | 08 | Moteur d'exercices guidés (spec → moteur → contenu) | Phase 6 | esquisse |
 | 09 | Quiz, notation, progression | Phase 6 | esquisse |
