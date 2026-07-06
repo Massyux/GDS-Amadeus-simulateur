@@ -1588,6 +1588,38 @@ function handleNU(state, cmdUpper, deps) {
   return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
 }
 
+// DL<n> -- TRUE deletion of a segment (docs/COMMANDES-MANQUANTES.md
+// Priorite 1: "vs XE qui annule"). Scoped to segments only: every other
+// element kind (RM/OSI/SSR/OP/AP/APE/TKTL/FP/RF) is already truly removed
+// by XE's cancelElements (splice/null, not a historized marker) -- there is
+// no real "vs XE" distinction left to make for those, so DL on a non-SEG
+// element returns NOT ALLOWED and points at XE instead. Reuses XE's own
+// segment-cancellation guards (TST lock, last active segment) and the same
+// inventory restitution as IG/SB/XI, then removes the segment outright
+// (no HX remnant, unlike XE).
+function handleDL(state, cmdUpper, deps) {
+  const pnr = state.activePNR;
+  if (!pnr) return { error: "NO ACTIVE PNR" };
+
+  const m = cmdUpper.match(/^DL(\d{1,2})$/);
+  if (!m) return { error: "CHECK FORMAT" };
+
+  const elementNo = parseInt(m[1], 10);
+  const elements = buildElementIndex(state, deps.clock);
+  const target = elements.find((e) => e.elementNo === elementNo);
+  if (!target) return { error: "ELEMENT NOT FOUND" };
+  if (target.kind !== "SEG") return { error: "NOT ALLOWED" };
+
+  const validation = validateSegmentCancellation(state, [target], deps.clock);
+  if (validation.error) return { error: validation.error };
+
+  const segment = pnr.itinerary[target.index];
+  releaseInventoryForSegments(state, [segment]);
+  pnr.itinerary.splice(target.index, 1);
+
+  return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -2335,6 +2367,13 @@ export async function processCommand(state, cmd, options = {}) {
       print("BLOCKED ONCE A TICKET IS ISSUED");
       return { events, state };
     }
+    if (subject === "DL") {
+      print("HE DL");
+      print("DLn                 DELETE SEGMENT (RT ELEMENT #)");
+      print("EX: DL4");
+      print("OTHER ELEMENTS: USE XE (ALREADY A TRUE DELETE)");
+      return { events, state };
+    }
     if (subject === "ER" || subject === "RT") {
       print(`HE ${subject}`);
       print(subject === "ER" ? "ER                  END AND RECORD PNR" : "RT                  DISPLAY ACTIVE PNR");
@@ -2381,6 +2420,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
     print("n/TEXT              MODIFY RM/OSI/SSR/OP/TKTL (HE MODIFY for syntax)");
     print("XE1                 CANCEL SEGMENT");
+    print("DLn                 DELETE SEGMENT (HE DL for syntax)");
     print("IG                  IGNORE PNR");
     print("IRXXXXXX            RETRIEVE PNR");
     print("XI                  CANCEL ACTIVE PNR");
@@ -2731,6 +2771,16 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("XE")) {
     const result = handleXE(state, c, deps.clock);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("DL")) {
+    const result = handleDL(state, c, deps);
     if (result.error) {
       print(result.error);
       return { events, state };

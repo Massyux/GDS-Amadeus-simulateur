@@ -925,6 +925,91 @@ describe("processCommand", () => {
     assert.equal(state.activePNR.passengers[0].lastName, "DOE");
   });
 
+  it("DL<n> truly removes a segment (no HX remnant, unlike XE) and restores inventory", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const ySeats = item.bookingClasses.find((c) => c.code === "Y").seats;
+
+    // A second segment keeps this from being the PNR's only (protected)
+    // segment -- RT sorts segments by departure time, not insertion order,
+    // so find line 1's own segment by its flight number rather than by
+    // position in the printed RT.
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "SS2Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const rtBefore = await runCommand(state, "RT");
+    const segNo = findElementNo(rtBefore, String(item.flightNo));
+
+    const dlLines = await runCommand(state, `DL${segNo}`);
+    assert.equal(dlLines[0], "OK");
+    assert.equal(state.activePNR.itinerary.length, 1);
+    assert.ok(!dlLines.some((l) => l.includes(" HX")));
+
+    const cls = state.lastAN.results
+      .find((r) => r.lineNo === 1)
+      .bookingClasses.find((c) => c.code === "Y");
+    assert.equal(cls.seats, ySeats);
+  });
+
+  it("DL<n> returns NOT ALLOWED for a non-segment element (already truly deleted by XE)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "RM SOME REMARK");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "RM SOME REMARK");
+
+    const lines = await runCommand(state, `DL${n}`);
+    assert.deepEqual(lines, ["NOT ALLOWED"]);
+  });
+
+  it("DL<n> returns ELEMENT NOT FOUND for an out-of-range number", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "DL99");
+    assert.deepEqual(lines, ["ELEMENT NOT FOUND"]);
+  });
+
+  it("DL<n> is blocked by NOT ALLOWED - TST SEGMENT when the segment is priced", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "FXP");
+
+    const rt = await runCommand(state, "RT");
+    const segNo = parseInt(getRtSegmentLines(rt)[0].trim().split(/\s+/)[0], 10);
+
+    const lines = await runCommand(state, `DL${segNo}`);
+    assert.deepEqual(lines, ["NOT ALLOWED - TST SEGMENT"]);
+  });
+
+  it("DL<n> is blocked by NOT ALLOWED - LAST SEGMENT for a single-passenger PNR's only segment", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+
+    const rt = await runCommand(state, "RT");
+    const segNo = parseInt(getRtSegmentLines(rt)[0].trim().split(/\s+/)[0], 10);
+
+    const lines = await runCommand(state, `DL${segNo}`);
+    assert.deepEqual(lines, ["NOT ALLOWED - LAST SEGMENT"]);
+  });
+
+  it("DL<n> returns NO ACTIVE PNR without a PNR", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "DL1");
+    assert.deepEqual(lines, ["NO ACTIVE PNR"]);
+  });
+
+  it("DL rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "DLX");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
   it("TN returns timetable lines and keeps results sellable", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");
