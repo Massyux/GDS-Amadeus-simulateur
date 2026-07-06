@@ -1166,14 +1166,14 @@ describe("processCommand", () => {
     assert.ok(state.lastDisplay);
     assert.equal(state.lastDisplay.type, "TN");
     assert.equal(state.lastDisplay.page, 1);
-    assert.ok(state.lastDisplay.itemLines.length > state.lastDisplay.pageSize);
+    assert.ok(state.lastDisplay.items.length > state.lastDisplay.pageSize);
   });
 
   it("MD scrolls to the next page of the last paginated display", async () => {
     const state = createInitialState();
     await runCommand(state, "TN26DECALGPAR");
     const totalPages = Math.ceil(
-      state.lastDisplay.itemLines.length / state.lastDisplay.pageSize
+      state.lastDisplay.items.length / state.lastDisplay.pageSize
     );
     assert.ok(totalPages > 1);
 
@@ -1188,7 +1188,7 @@ describe("processCommand", () => {
     const state = createInitialState();
     await runCommand(state, "TN26DECALGPAR");
     const totalPages = Math.ceil(
-      state.lastDisplay.itemLines.length / state.lastDisplay.pageSize
+      state.lastDisplay.items.length / state.lastDisplay.pageSize
     );
     for (let i = 0; i < totalPages + 2; i++) {
       await runCommand(state, "MD");
@@ -1214,7 +1214,7 @@ describe("processCommand", () => {
     const state = createInitialState();
     await runCommand(state, "TN26DECALGPAR");
     const totalPages = Math.ceil(
-      state.lastDisplay.itemLines.length / state.lastDisplay.pageSize
+      state.lastDisplay.items.length / state.lastDisplay.pageSize
     );
 
     const mbLines = await runCommand(state, "MB");
@@ -1239,7 +1239,7 @@ describe("processCommand", () => {
     const lines = await runCommand(state, "SN26DECALGPAR");
     assert.ok(state.lastDisplay);
     assert.equal(state.lastDisplay.type, "SN");
-    if (Math.ceil(state.lastDisplay.itemLines.length / state.lastDisplay.pageSize) > 1) {
+    if (Math.ceil(state.lastDisplay.items.length / state.lastDisplay.pageSize) > 1) {
       assert.ok(lines.some((line) => line.startsWith("PAGE 1/")));
     }
   });
@@ -1295,6 +1295,228 @@ describe("processCommand", () => {
     assert.deepEqual(mnLines, ["NO ACTIVE DISPLAY"]);
     const myLines = await runCommand(state, "MY");
     assert.deepEqual(myLines, ["NO ACTIVE DISPLAY"]);
+  });
+
+  it("AC/SC/ACR return NO ACTIVE DISPLAY without a prior availability search", async () => {
+    const state = createInitialState();
+    assert.deepEqual(await runCommand(state, "AC18MAY"), ["NO ACTIVE DISPLAY"]);
+    assert.deepEqual(await runCommand(state, "SC18MAY"), ["NO ACTIVE DISPLAY"]);
+    assert.deepEqual(await runCommand(state, "ACR"), ["NO ACTIVE DISPLAY"]);
+  });
+
+  it("AC<ddMMM> changes only the date, keeping the same route", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "AC18MAY");
+    assert.ok(lines.some((line) => line.startsWith("AN18MAYALGPAR")));
+    assert.equal(state.lastAN.query.ddmmm, "18MAY");
+    assert.equal(state.lastAN.query.from, "ALG");
+    assert.equal(state.lastAN.query.to, "PAR");
+  });
+
+  it("AC<n>/AC-<n> shifts the date by a signed day delta", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "AC3");
+    assert.equal(state.lastAN.query.ddmmm, "29DEC");
+
+    await runCommand(state, "AC-5");
+    assert.equal(state.lastAN.query.ddmmm, "24DEC");
+  });
+
+  it("AC<6 letters> changes the whole city pair", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "ACBCNFRA");
+    assert.ok(lines.some((line) => line.startsWith("AN26DECBCNFRA")));
+    assert.equal(state.lastAN.query.from, "BCN");
+    assert.equal(state.lastAN.query.to, "FRA");
+  });
+
+  it("AC<3 letters> changes only the origin", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "ACBCN");
+    assert.equal(state.lastAN.query.from, "BCN");
+    assert.equal(state.lastAN.query.to, "PAR");
+  });
+
+  it("AC//<3 letters> changes only the destination", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "AC//FRA");
+    assert.equal(state.lastAN.query.from, "ALG");
+    assert.equal(state.lastAN.query.to, "FRA");
+  });
+
+  it("AC/A<XX>[,YY,ZZ] filters to the given airline(s)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const before = state.lastAN.results;
+    const airline = before[0].airline;
+
+    await runCommand(state, `AC/A${airline}`);
+    assert.ok(state.lastAN.results.length > 0);
+    assert.ok(state.lastAN.results.every((r) => r.airline === airline));
+
+    const otherAirlines = [...new Set(before.map((r) => r.airline))].filter(
+      (a) => a !== airline
+    );
+    if (otherAirlines.length > 0) {
+      await runCommand(state, "AN26DECALGPAR");
+      await runCommand(state, `AC/A${airline},${otherAirlines[0]}`);
+      assert.ok(
+        state.lastAN.results.every(
+          (r) => r === undefined || [airline, otherAirlines[0]].includes(r.airline)
+        )
+      );
+    }
+  });
+
+  it("AC/C<letters> filters to flights offering that class with seats, and /C alone cancels it", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const before = state.lastAN.results;
+    const expectedCount = before.filter((r) =>
+      r.bookingClasses.some((c) => c.code === "D" && c.seats > 0)
+    ).length;
+
+    await runCommand(state, "AC/CD");
+    assert.equal(state.lastAN.results.length, expectedCount);
+    assert.ok(
+      state.lastAN.results.every((r) =>
+        r.bookingClasses.some((c) => c.code === "D" && c.seats > 0)
+      )
+    );
+
+    const cancelLines = await runCommand(state, "AC/C");
+    assert.equal(cancelLines[0], "AN26DECALGPAR");
+    assert.equal(state.lastAN.results.length, before.length);
+  });
+
+  it("AC/C<invalid letter> returns CHECK CLASS OF SERVICE", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "AC/CU");
+    assert.deepEqual(lines, ["CHECK CLASS OF SERVICE"]);
+  });
+
+  it("AC/B<n> filters to flights with at least n seats in some class", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const before = state.lastAN.results;
+    const expectedCount = before.filter((r) =>
+      r.bookingClasses.some((c) => c.seats >= 9)
+    ).length;
+
+    await runCommand(state, "AC/B9");
+    assert.equal(state.lastAN.results.length, expectedCount);
+  });
+
+  it("AC<4 digits> filters to flights departing at or after that time", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const before = state.lastAN.results;
+    const expectedCount = before.filter((r) => r.depTime >= "1200").length;
+
+    await runCommand(state, "AC1200");
+    assert.equal(state.lastAN.results.length, expectedCount);
+    assert.ok(state.lastAN.results.every((r) => r.depTime >= "1200"));
+  });
+
+  it("AC rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "AC!!!");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
+  it("AC rejects an unknown city with NOT IN TABLE when locations is configured", async () => {
+    const state = createInitialState();
+    const deps = { locations: fakeLocationsProvider(["ALG", "PAR"]) };
+    await processCommand(state, "AN26DECALGPAR", { deps });
+    const result = await processCommand(state, "AC//ZZZ", { deps });
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "NOT IN TABLE"
+      )
+    );
+  });
+
+  it("AC keeps filters set by a previous AC when changing an unrelated criterion (all other criteria are kept)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const before = state.lastAN.results;
+    const airline = before[0].airline;
+
+    await runCommand(state, `AC/A${airline}`);
+    await runCommand(state, "AC3");
+
+    assert.equal(state.lastAN.query.ddmmm, "29DEC");
+    assert.deepEqual(state.lastAN.query.airlineFilter, [airline]);
+    assert.ok(state.lastAN.results.every((r) => r.airline === airline));
+  });
+
+  it("AC always redisplays as an AN, even right after an SN/SC display", async () => {
+    const state = createInitialState();
+    await runCommand(state, "SN26DECALGPAR");
+    const lines = await runCommand(state, "AC3");
+    assert.ok(lines.some((line) => line.includes("AMADEUS AVAILABILITY - AN")));
+    assert.equal(state.lastDisplay.type, "AN");
+  });
+
+  it("SC changes the date like AC but always redisplays as an SN", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "SC18MAY");
+    assert.ok(lines.some((line) => line.includes("AMADEUS SCHEDULE - SN")));
+    assert.equal(state.lastDisplay.type, "SN");
+    assert.equal(state.lastAN.query.ddmmm, "18MAY");
+  });
+
+  it("ACR alone swaps cities and defaults to departures from 18:00 the same day", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "ACR");
+    assert.ok(lines.some((line) => line.startsWith("AN26DECPARALG")));
+    assert.equal(state.lastAN.query.from, "PAR");
+    assert.equal(state.lastAN.query.to, "ALG");
+    assert.equal(state.lastAN.query.afterTime, "1800");
+    assert.ok(state.lastAN.results.every((r) => r.depTime >= "1800"));
+  });
+
+  it("ACR<hhmm> swaps cities and uses the given time instead of the 18:00 default", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "ACR1345");
+    assert.equal(state.lastAN.query.afterTime, "1345");
+    assert.equal(state.lastAN.query.ddmmm, "26DEC");
+  });
+
+  it("ACR<ddMMM><hhmm> swaps cities, sets a new date, and uses the given time", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "ACR24JUL2130");
+    assert.equal(state.lastAN.query.ddmmm, "24JUL");
+    assert.equal(state.lastAN.query.afterTime, "2130");
+    assert.equal(state.lastAN.query.from, "PAR");
+    assert.equal(state.lastAN.query.to, "ALG");
+  });
+
+  it("ACR result stays addressable by SS and chainable with MD", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "ACR");
+    if (state.lastAN.results.length === 0) return; // nothing after 18:00 -- nothing to sell
+    const ss = await runCommand(state, `SS${state.lastAN.results[0].lineNo}Y1`);
+    assert.equal(ss[0], "OK");
+  });
+
+  it("ACR rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "ACRXX");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
   });
 
   it("returns invalid format for a malformed AN", async () => {

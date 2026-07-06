@@ -8,23 +8,40 @@
 
 **Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION)** : `15 → 16 → 17 → 13 →
 18 → 19 → 20` puis retour à 07. **Mission 15 close** ; **Mission 16 Étape 0 close** (correction
-fidélité ET) ; **Mission 16 commande 1/6 close** (`MD`/`MU`/`MT`/`MB`, état core
-`state.lastDisplay` posé) ; **Mission 16 commande 2/6 close** (`MN`/`MY`) — tout poussé sur
-`main`, suites vertes (209 tests core).
+fidélité ET) ; **Mission 16 commandes 1/6, 2/6 et 3/6 closes** (`MD`/`MU`/`MT`/`MB`, `MN`/`MY`,
+`AC`/`SC`/`ACR`) — tout poussé sur `main`, suites vertes (230 tests core).
 
-**Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes, démarrer à la **commande 3/6**
-(`AC` + son équivalent `SC` pour SN, puis `ACR`). Point de vigilance avant de coder : cette
-commande a plusieurs sous-modes non triviaux à spécifier d'abord (date `AC18MAY`, heure `AC1845`,
-"classe" `AC/CF` — probablement un filtre compagnie 2 lettres vu le format, à clarifier avant
-d'implémenter plutôt que de deviner —, villes `ACBCNFRA`, delta jours `AC3`/`AC-5`) ; contrairement
-à SB (dont les 3 sous-modes étaient sans ambiguïté vu les exemples), certains formats ici sont
-sujets à interprétation — écrire une spec courte (CLAUDE.md méthode de travail) avant de coder,
-marquer "à vérifier" ce qui reste incertain plutôt que de deviner silencieusement. Continuer le
-protocole de non-régression de Mission 15/16 (suite + typecheck + lint après CHAQUE commande, un
-commit par commande, push). Vigilance famille (leçon Mission 04) : vérifier qu'aucun des nouveaux
-préfixes (`AC`/`ACR`/`SC`/`RE`) ne collisionne avec des préfixes existants (`RF`, `RT`, etc.).
+**Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes, démarrer à la **commande 4/6**
+(`RT` partiels : `RTN`, `RTI`, `RTA`, `RTK`, `RTG`, `RTR`, `RTF` — filtres d'affichage du PNR
+actif). Continuer le protocole de non-régression de Mission 15/16 (suite + typecheck + lint après
+CHAQUE commande, un commit par commande, push). Vigilance famille (leçon Mission 04) : vérifier
+que `RTx` ne collisionne pas avec `RT` seul (déjà géré) ni avec un futur préfixe ; après la
+commande 4/6 reste la commande 5/6 (`RE`/`RE2`, état core historique de saisie).
 
 ## Fait (par session, datée)
+
+### 06/07/2026 — Mission 16, commande 3/6 (AC/SC/ACR — spec architecte, 8 règles déterministes)
+- L'architecte a ajouté une spec complète et non ambiguë dans `MISSION-16.md` (§Spec AC/SC/ACR),
+  levant l'ambiguïté relevée à la clôture précédente (ordre de désambiguïsation du parsing en
+  8 règles strictes, testées dans cet ordre exact).
+- Refactor `state.lastDisplay` : `itemLines: string[]` → `items: string[][]` (chaque item = 1 à
+  3 lignes) pour supporter les entrées `AN` qui peuvent wrapper sur plusieurs lignes — nécessaire
+  car `AC` doit réafficher en style `AN` paginé, ce que le modèle de la commande 1/6 (pensé pour
+  `TN`/`SN`, 1 ligne = 1 item) ne permettait pas. `formatAvailabilityItem` extrait de `handleAN`
+  pour réutilisation sans dupliquer le rendu multi-lignes.
+- `AC`/`SC` : rejouent `state.lastAN.query` en changeant SEULEMENT le delta indiqué (date, delta
+  jours signé, paire de villes, origine seule, destination seule via `//`, filtre compagnie
+  `/AXX[,YY,ZZ]` max 3, filtre classe `/Cx[y,z]` max 3 (`/C` seul annule), sièges min `/Bn`,
+  heure de départ mini 4 chiffres) — tous les autres critères conservés et chaînables (`AC/CF`
+  puis `AC3` puis `MD` fonctionne). `AC` réaffiche toujours en style AN, `SC` toujours en style
+  SN, quel que soit le type du dernier affichage réel (ex: `AC` juste après un `SN`). `MN`/`MY`
+  (commande 2/6) mis à jour pour préserver les mêmes filtres (cohérence de toute la famille).
+- `ACR` : inverse les villes, défaut départs ≥18h00 même jour ; `ACRhhmm` (heure) ;
+  `ACRddMMMhhmm` (date + heure). Toujours en style AN.
+- Erreurs réutilisées : `NOT IN TABLE`, `CHECK DATE`, `CHECK CLASS OF SERVICE` (lettre de classe
+  invalide) ; filtre compagnie/sièges/heure sans correspondance → liste vide affichée, pas
+  d'erreur inventée (non spécifié par l'architecte). 209→230 tests, tout vert (typecheck/lint/
+  web aussi).
 
 ### 06/07/2026 — Mission 16, commandes 1-2/6 (MD/MU/MT/MB, MN/MY)
 - **1/6 — MD/MU/MT/MB** : nouvel état CORE `state.lastDisplay` ({type, header, itemLines,

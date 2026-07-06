@@ -25,6 +25,32 @@ d'abord, le faire valider par les tests, puis brancher les commandes dessus.
 5. `RT` partiels : `RTN`, `RTI`, `RTA`, `RTK`, `RTG`, `RTR`, `RTF` (filtres du PNR actif)
 6. `RE` / `RE2` — rappel des dernières entrées (état core : historique de saisie)
 
+## Spec AC / SC / ACR (arbitrée par l'architecte, 06/07/2026 — source : guide §Air, Change Entries)
+
+Principe : `AC` rejoue la **dernière recherche de disponibilité** en ne changeant QUE le delta
+indiqué ; tous les autres critères sont conservés ; le résultat réalimente `lastAN`/
+`lastDisplay` (donc chaînable : `AC18MAY` puis `AC/CF` puis `MN`…). `SC` = identique pour
+l'affichage schedule (SN). Erreur `NO ACTIVE DISPLAY` si aucune recherche préalable.
+
+Ordre de désambiguïsation du parsing (déterministe, dans cet ordre) :
+1. Commence par `R` → **ACR** (retour) : villes inversées ; `ACR` seul = jour d'arrivée,
+   départs après 18h00 ; `ACR1345` = heure indiquée ; `ACR24JUL2130` = date + heure
+2. Commence par `/` → option :
+   - `/A<XX>[,YY,ZZ]` filtre compagnies (max 3) — `AC/ALH,IB`
+   - `/C<lettre(s)>` filtre classes (max 3) — `AC/CF` = classe F ; `/C` seul = annule le filtre
+   - `/B<n>` nombre de sièges — `AC/B4`
+3. `//` + 3 lettres → changer la destination seule (`AC//FRA`)
+4. 6 lettres → nouvelle paire de villes (`ACBCNFRA`) ; 3 lettres → nouvelle origine (`ACBCN`)
+5. Motif `ddMMM` → nouvelle date (`AC18MAY`)
+6. 4 chiffres → nouvelle heure de départ (`AC1845`)
+7. 1-2 chiffres signés → décalage en jours (`AC3`, `AC-5`)
+8. Sinon → `CHECK FORMAT`
+
+Erreurs réutilisées : `NOT IN TABLE` (ville inconnue), `CHECK DATE`, `CHECK CLASS OF SERVICE`.
+Point marqué « à vérifier terrain » (Massy) : comportement exact quand on tape `AC` après un
+affichage schedule (le guide distingue AC=dispo / SC=schedule ; implémenter : chaque commande
+produit son type d'affichage à partir de la même dernière recherche).
+
 ## Points de vigilance famille (leçon mission 04)
 
 Aucun de ces préfixes ne doit intercepter d'autres commandes : `MD` vs un futur `DM`, `RE` vs

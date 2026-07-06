@@ -228,6 +228,31 @@ export const __queueStoreUtils = {
   queuePeek,
 };
 
+const AVAILABLE_CLASS_CODES = [
+  "J",
+  "C",
+  "D",
+  "Y",
+  "E",
+  "B",
+  "M",
+  "H",
+  "K",
+  "Q",
+  "V",
+  "L",
+  "T",
+  "N",
+  "R",
+  "S",
+  "X",
+  "W",
+  "A",
+  "F",
+  "Z",
+  "I",
+];
+
 function buildOfflineAvailability({ from, to, ddmmm, dow }) {
   const rand = createSeededRandom(`${from}${to}${ddmmm}`);
   const randInt = (max) => Math.floor(rand() * max);
@@ -239,30 +264,7 @@ function buildOfflineAvailability({ from, to, ddmmm, dow }) {
   const carrierCount = 2 + randInt(3);
   const chosenCarriers = carriers.slice(0, carrierCount);
 
-  const classes = [
-    "J",
-    "C",
-    "D",
-    "Y",
-    "E",
-    "B",
-    "M",
-    "H",
-    "K",
-    "Q",
-    "V",
-    "L",
-    "T",
-    "N",
-    "R",
-    "S",
-    "X",
-    "W",
-    "A",
-    "F",
-    "Z",
-    "I",
-  ];
+  const classes = AVAILABLE_CLASS_CODES;
 
   const pickSeats = (code) => {
     if (code === "J" || code === "C" || code === "D") {
@@ -1222,41 +1224,241 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
   const lines = [];
   lines.push(`AN${ddmmm}${from}${to}`);
   lines.push(`** AMADEUS AVAILABILITY - AN ** ${to}`);
-
-  results.forEach((r) => {
-    const ln = String(r.lineNo);
-    const airline = padR(r.airline, 2);
-    const fno = padL(String(r.flightNo), 4, "0");
-
-    const tokens = r.bookingClasses.map((x) => `${x.code}${x.seats}`);
-    const wrapped = wrapTokens(tokens, 8);
-    const route = `/${r.from} ${r.to}`;
-
-    const line1 =
-      `${ln}  ${airline} ${fno}  ` +
-      padR(wrapped[0].join(" "), 34) +
-      ` ${route}`;
-    lines.push(line1);
-
-    if (wrapped[1]) lines.push(`     ${wrapped[1].join(" ")}`);
-    if (wrapped[2]) lines.push(`     ${wrapped[2].join(" ")}`);
-  });
+  results.forEach((r) => lines.push(...formatAvailabilityItem(r)));
 
   return { lines };
 }
 
+// Shared by plain AN and AC's re-displays (docs/COMMANDES-MANQUANTES.md
+// Priorite 1): one flight's availability line(s), wrapping booking-class
+// tokens across up to 3 lines exactly like AN always has.
+function formatAvailabilityItem(r) {
+  const ln = String(r.lineNo);
+  const airline = padR(r.airline, 2);
+  const fno = padL(String(r.flightNo), 4, "0");
+
+  const tokens = r.bookingClasses.map((x) => `${x.code}${x.seats}`);
+  const wrapped = wrapTokens(tokens, 8);
+  const route = `/${r.from} ${r.to}`;
+
+  const lines = [
+    `${ln}  ${airline} ${fno}  ` + padR(wrapped[0].join(" "), 34) + ` ${route}`,
+  ];
+  if (wrapped[1]) lines.push(`     ${wrapped[1].join(" ")}`);
+  if (wrapped[2]) lines.push(`     ${wrapped[2].join(" ")}`);
+  return lines;
+}
+
 // MN/MY -- relaunch the last availability search shifted a day forward/back
 // (docs/COMMANDES-MANQUANTES.md Priorite 1). Reuses state.lastAN.query
-// (from/to/date), which AN/TN/SN/SS long sell/SB all populate -- so this
-// re-displays as a real AN, even if the last thing shown was e.g. a TN.
+// (from/to/date/filters), which AN/TN/SN/SS long sell/SB/AC/SC all
+// populate -- so this re-displays as a real AN, even if the last thing
+// shown was e.g. a TN, and keeps any AC/SC filter still in effect.
 async function handleMoveDay(state, deps, deltaDays) {
   if (!state.lastAN || !state.lastAN.query) return { error: "NO ACTIVE DISPLAY" };
-  const { from, to, ddmmm } = state.lastAN.query;
-  const dateObj = parseDDMMM(ddmmm, deps.clock);
+  const base = state.lastAN.query;
+  const dateObj = parseDDMMM(base.ddmmm, deps.clock);
   if (!dateObj) return { error: "NO ACTIVE DISPLAY" };
   dateObj.setDate(dateObj.getDate() + deltaDays);
-  const newDdmmm = formatDDMMM(dateObj);
-  return handleAN(state, `AN${newDdmmm}${from}${to}`, deps);
+  const criteria = {
+    from: base.from,
+    to: base.to,
+    ddmmm: formatDDMMM(dateObj),
+    airlineFilter: base.airlineFilter || null,
+    classFilter: base.classFilter || null,
+    minSeats: base.minSeats || null,
+    afterTime: base.afterTime || null,
+  };
+  return runAvailabilityDisplay(state, deps, criteria, "AN");
+}
+
+// AC/SC -- modify the last availability search by exactly ONE delta,
+// keeping every other criterion (docs/COMMANDES-MANQUANTES.md Priorite 1,
+// spec arbitree par l'architecte 06/07/2026). AC always re-displays as an
+// AN; SC always re-displays as an SN -- regardless of which command
+// actually produced the criteria being modified. Parsing order is
+// deterministic and matches the spec exactly (rule 1 -- ACR -- is handled
+// by a separate function/dispatch entry, checked before this one).
+async function handleAvailabilityChange(state, deps, rest, displayType) {
+  if (!state.lastAN || !state.lastAN.query) return { error: "NO ACTIVE DISPLAY" };
+  const base = state.lastAN.query;
+  const criteria = {
+    from: base.from,
+    to: base.to,
+    ddmmm: base.ddmmm,
+    airlineFilter: base.airlineFilter || null,
+    classFilter: base.classFilter || null,
+    minSeats: base.minSeats || null,
+    afterTime: base.afterTime || null,
+  };
+
+  let m;
+  if ((m = rest.match(/^\/A([A-Z]{2})(?:,([A-Z]{2}))?(?:,([A-Z]{2}))?$/))) {
+    criteria.airlineFilter = [m[1], m[2], m[3]].filter(Boolean);
+  } else if ((m = rest.match(/^\/C([A-Z]{0,3})$/))) {
+    if (m[1]) {
+      const letters = m[1].split("");
+      if (!letters.every((letter) => AVAILABLE_CLASS_CODES.includes(letter))) {
+        return { error: "CHECK CLASS OF SERVICE" };
+      }
+      criteria.classFilter = letters;
+    } else {
+      criteria.classFilter = null;
+    }
+  } else if ((m = rest.match(/^\/B(\d{1,2})$/))) {
+    criteria.minSeats = parseInt(m[1], 10);
+  } else if ((m = rest.match(/^\/\/([A-Z]{3})$/))) {
+    criteria.to = m[1];
+  } else if ((m = rest.match(/^([A-Z]{6})$/))) {
+    criteria.from = m[1].slice(0, 3);
+    criteria.to = m[1].slice(3, 6);
+  } else if ((m = rest.match(/^([A-Z]{3})$/))) {
+    criteria.from = m[1];
+  } else if ((m = rest.match(/^(\d{1,2}[A-Z]{3})$/))) {
+    const dateObj = parseDDMMM(m[1], deps.clock);
+    if (!dateObj) return { error: "CHECK DATE" };
+    criteria.ddmmm = formatDDMMM(dateObj);
+  } else if ((m = rest.match(/^(\d{4})$/))) {
+    criteria.afterTime = m[1];
+  } else if ((m = rest.match(/^([+-]?\d{1,2})$/))) {
+    const dateObj = parseDDMMM(criteria.ddmmm, deps.clock);
+    if (!dateObj) return { error: "CHECK DATE" };
+    dateObj.setDate(dateObj.getDate() + parseInt(m[1], 10));
+    criteria.ddmmm = formatDDMMM(dateObj);
+  } else {
+    return { error: "CHECK FORMAT" };
+  }
+
+  return runAvailabilityDisplay(state, deps, criteria, displayType);
+}
+
+// ACR -- return flights of the last availability search
+// (docs/COMMANDES-MANQUANTES.md Priorite 1, spec arbitree par
+// l'architecte): swaps cities, keeps every other criterion, defaults to
+// departures from/after 18:00 the same day unless a time (and optionally a
+// new date) is given. Always re-displays as an AN (same family as AC).
+async function handleReturnAvailability(state, deps, rest) {
+  if (!state.lastAN || !state.lastAN.query) return { error: "NO ACTIVE DISPLAY" };
+  const base = state.lastAN.query;
+  const criteria = {
+    from: base.to,
+    to: base.from,
+    ddmmm: base.ddmmm,
+    airlineFilter: base.airlineFilter || null,
+    classFilter: base.classFilter || null,
+    minSeats: base.minSeats || null,
+    afterTime: "1800",
+  };
+
+  let m;
+  if (rest === "") {
+    // keep the default afterTime = "1800"
+  } else if ((m = rest.match(/^(\d{1,2}[A-Z]{3})(\d{4})$/))) {
+    const dateObj = parseDDMMM(m[1], deps.clock);
+    if (!dateObj) return { error: "CHECK DATE" };
+    criteria.ddmmm = formatDDMMM(dateObj);
+    criteria.afterTime = m[2];
+  } else if ((m = rest.match(/^(\d{4})$/))) {
+    criteria.afterTime = m[1];
+  } else {
+    return { error: "CHECK FORMAT" };
+  }
+
+  return runAvailabilityDisplay(state, deps, criteria, "AN");
+}
+
+// Shared by MN/MY/AC/SC/ACR: fetches availability for the given criteria,
+// applies whichever filters are set, stores the result as the new
+// state.lastAN (so it stays addressable by SS and chainable by the next
+// MN/MY/AC/SC/ACR/MD.../etc.), and renders it as the requested display
+// type via the paginated state.lastDisplay.
+async function runAvailabilityDisplay(state, deps, criteria, displayType) {
+  if (!(await validateCityCodes(deps, criteria.from, criteria.to))) {
+    return { error: "NOT IN TABLE" };
+  }
+  const dateObj = parseDDMMM(criteria.ddmmm, deps.clock);
+  if (!dateObj) return { error: "CHECK DATE" };
+  const ddmmm = formatDDMMM(dateObj);
+  const dow = dayOfWeek2(dateObj);
+
+  let results;
+  if (
+    deps?.availability &&
+    typeof deps.availability.searchAvailability === "function"
+  ) {
+    const external = await deps.availability.searchAvailability({
+      from: criteria.from,
+      to: criteria.to,
+      ddmmm,
+      dow,
+    });
+    if (!Array.isArray(external)) return { error: "CHECK FORMAT" };
+    results = external;
+  } else {
+    results = buildOfflineAvailability({ from: criteria.from, to: criteria.to, ddmmm, dow });
+  }
+
+  let normalized = [...results].sort((a, b) =>
+    a.depTime === b.depTime
+      ? String(a.airline).localeCompare(String(b.airline))
+      : a.depTime.localeCompare(b.depTime)
+  );
+
+  if (criteria.airlineFilter && criteria.airlineFilter.length > 0) {
+    normalized = normalized.filter((item) => criteria.airlineFilter.includes(item.airline));
+  }
+  if (criteria.classFilter && criteria.classFilter.length > 0) {
+    normalized = normalized.filter((item) =>
+      item.bookingClasses.some(
+        (cls) => criteria.classFilter.includes(cls.code) && cls.seats > 0
+      )
+    );
+  }
+  if (criteria.minSeats) {
+    normalized = normalized.filter((item) =>
+      item.bookingClasses.some((cls) => cls.seats >= criteria.minSeats)
+    );
+  }
+  if (criteria.afterTime) {
+    normalized = normalized.filter((item) => item.depTime >= criteria.afterTime);
+  }
+
+  normalized = normalized.map((item, idx) => ({ ...item, lineNo: idx + 1 }));
+
+  state.lastAN = {
+    query: {
+      from: criteria.from,
+      to: criteria.to,
+      ddmmm,
+      dow,
+      airlineFilter: criteria.airlineFilter,
+      classFilter: criteria.classFilter,
+      minSeats: criteria.minSeats,
+      afterTime: criteria.afterTime,
+    },
+    results: normalized,
+  };
+
+  const lines =
+    displayType === "AN"
+      ? startPagedDisplay(state, {
+          type: "AN",
+          header: [
+            `AN${ddmmm}${criteria.from}${criteria.to}`,
+            `** AMADEUS AVAILABILITY - AN ** ${criteria.to}`,
+          ],
+          items: normalized.map((item) => formatAvailabilityItem(item)),
+        })
+      : startPagedDisplay(state, {
+          type: "SN",
+          header: [
+            `SN${ddmmm}${criteria.from}${criteria.to}`,
+            `** AMADEUS SCHEDULE - SN ** ${criteria.from}-${criteria.to}`,
+          ],
+          items: normalized.map((item) => [formatTimetableLine(item)]),
+        });
+
+  return { lines };
 }
 
 function handleSS(state, cmdUpper, clock) {
@@ -1672,24 +1874,27 @@ function formatTimetableLine(item) {
 // Pagination is CORE state (state.lastDisplay), not something the UI
 // recomputes (docs/COMMANDES-MANQUANTES.md Priorite 1, MD/MU/MT/MB
 // "principe d'architecture"). A paginated command stores its header
-// (always shown) and item lines (one per result), then only the current
-// page's slice is ever printed -- unlike the old behavior of dumping every
-// page in one go.
-function startPagedDisplay(state, { type, header, itemLines, pageSize = 5 }) {
-  state.lastDisplay = { type, header, itemLines, pageSize, page: 1 };
+// (always shown) and its items -- each item is the array of 1+ lines it
+// takes on screen (a plain TN/SN entry is one line; an AN-style entry can
+// wrap to up to 3) -- then only the current page's slice of ITEMS (not raw
+// lines) is ever printed, unlike the old behavior of dumping every page in
+// one go.
+function startPagedDisplay(state, { type, header, items, pageSize = 5 }) {
+  state.lastDisplay = { type, header, items, pageSize, page: 1 };
   return renderCurrentDisplayPage(state);
 }
 
 function renderCurrentDisplayPage(state) {
   const display = state.lastDisplay;
   if (!display) return [];
-  const totalPages = Math.max(1, Math.ceil(display.itemLines.length / display.pageSize));
+  const totalPages = Math.max(1, Math.ceil(display.items.length / display.pageSize));
   const lines = [...display.header];
   if (totalPages > 1) {
     lines.push(`PAGE ${display.page}/${totalPages}`);
   }
   const start = (display.page - 1) * display.pageSize;
-  lines.push(...display.itemLines.slice(start, start + display.pageSize));
+  const pageItems = display.items.slice(start, start + display.pageSize);
+  pageItems.forEach((itemLines) => lines.push(...itemLines));
   return lines;
 }
 
@@ -1700,7 +1905,7 @@ function renderCurrentDisplayPage(state) {
 function handleDisplayNav(state, direction) {
   const display = state.lastDisplay;
   if (!display) return { error: "NO ACTIVE DISPLAY" };
-  const totalPages = Math.max(1, Math.ceil(display.itemLines.length / display.pageSize));
+  const totalPages = Math.max(1, Math.ceil(display.items.length / display.pageSize));
   if (direction === "down") display.page = Math.min(display.page + 1, totalPages);
   else if (direction === "up") display.page = Math.max(display.page - 1, 1);
   else if (direction === "top") display.page = 1;
@@ -1784,7 +1989,7 @@ async function handleTN(state, cmdUpper, deps) {
   const lines = startPagedDisplay(state, {
     type: "TN",
     header: [`TN${ddmmm}${from}${to}`, `** AMADEUS TIMETABLE - TN ** ${from}-${to}`],
-    itemLines: normalized.map(formatTimetableLine),
+    items: normalized.map((item) => [formatTimetableLine(item)]),
   });
   return { lines };
 }
@@ -1865,7 +2070,7 @@ async function handleSN(state, cmdUpper, deps) {
   const lines = startPagedDisplay(state, {
     type: "SN",
     header: [`SN${ddmmm}${from}${to}`, `** AMADEUS SCHEDULE - SN ** ${from}-${to}`],
-    itemLines: normalized.map(formatTimetableLine),
+    items: normalized.map((item) => [formatTimetableLine(item)]),
   });
   return { lines };
 }
@@ -2505,6 +2710,22 @@ export async function processCommand(state, cmd, options = {}) {
       print("MY                  SAME AVAILABILITY, PREVIOUS DAY");
       return { events, state };
     }
+    if (subject === "AC" || subject === "SC" || subject === "ACR") {
+      print(`HE ${subject}`);
+      print("ACddMMM             CHANGE DATE (ex: AC18MAY)");
+      print("ACn / AC-n          SHIFT n DAYS (ex: AC3, AC-5)");
+      print("ACXXXYYY            CHANGE CITY PAIR (ex: ACBCNFRA)");
+      print("ACXXX               CHANGE ORIGIN ONLY (ex: ACBCN)");
+      print("AC//YYY             CHANGE DESTINATION ONLY (ex: AC//FRA)");
+      print("AC/AXX[,YY,ZZ]      AIRLINE FILTER (ex: AC/ALH,IB)");
+      print("AC/Cx[y,z]          CLASS FILTER, /C ALONE CLEARS (ex: AC/CF)");
+      print("AC/Bn               MINIMUM SEATS (ex: AC/B4)");
+      print("AC hhmm             DEPARTURES AT/AFTER TIME (ex: AC1845)");
+      print("SC                  SAME AS AC, REDISPLAYS AS SCHEDULE (SN)");
+      print("ACR                 RETURN FLIGHTS, SWAPPED CITIES, AFTER 1800");
+      print("ACRhhmm / ACRddMMMhhmm  RETURN WITH TIME (+ OPTIONAL DATE)");
+      return { events, state };
+    }
     if (subject === "APE" || subject === "OP") {
       print(`HE ${subject}`);
       if (subject === "APE") print("APE-EMAIL@DOMAIN.TLD ADD EMAIL CONTACT");
@@ -2529,6 +2750,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("SNddMMMXXXYYY       SCHEDULE (ex: SN26DECALGPAR)");
     print("MD/MU/MT/MB         SCROLL LAST DISPLAY (HE MD for syntax)");
     print("MN/MY               SAME AVAILABILITY NEXT/PREVIOUS DAY");
+    print("AC/SC/ACR           CHANGE OR REVERSE LAST DISPLAY (HE AC for syntax)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
@@ -2633,6 +2855,38 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c === "MN" || c === "MY") {
     const result = await handleMoveDay(state, deps, c === "MN" ? 1 : -1);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  // ACR must be checked before the generic "AC" prefix (ACR also starts
+  // with "AC") -- deterministic parsing order per the architect's spec.
+  if (c.startsWith("ACR")) {
+    const result = await handleReturnAvailability(state, deps, c.slice(3));
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("AC")) {
+    const result = await handleAvailabilityChange(state, deps, c.slice(2), "AN");
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("SC")) {
+    const result = await handleAvailabilityChange(state, deps, c.slice(2), "SN");
     if (result.error) {
       print(result.error);
       return { events, state };
