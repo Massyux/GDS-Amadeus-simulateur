@@ -1278,6 +1278,86 @@ function handleSS(state, cmdUpper, clock) {
   return { lines };
 }
 
+// SS<airline><flightNo><class><ddMMM><from><to><pax> -- direct/"long" sell
+// without a prior AN display (docs/COMMANDES-MANQUANTES.md Priorite 1).
+// Runs the same availability lookup AN would have shown (and stores it in
+// state.lastAN, exactly like AN does) so the sold flight/class is
+// addressable afterwards -- by a follow-up numeric SS, and for inventory
+// restitution on IG/IR/XI.
+async function handleSSLongSell(state, cmdUpper, deps) {
+  const m = cmdUpper.match(
+    /^SS([A-Z]{2})(\d{1,4})([A-Z])(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\d{1,2})$/
+  );
+  if (!m) {
+    return { error: "CHECK FORMAT" };
+  }
+  const [, airline, flightNoRaw, classCode, dateToken, from, to, paxToken] = m;
+  const flightNo = parseInt(flightNoRaw, 10);
+  const paxCount = parseInt(paxToken, 10);
+
+  const dateObj = parseDDMMM(dateToken, deps?.clock);
+  if (!dateObj) {
+    return { error: "CHECK DATE" };
+  }
+  if (!(await validateCityCodes(deps, from, to))) {
+    return { error: "NOT IN TABLE" };
+  }
+
+  const ddmmm = formatDDMMM(dateObj);
+  const dow = dayOfWeek2(dateObj);
+
+  let results;
+  if (
+    deps?.availability &&
+    typeof deps.availability.searchAvailability === "function"
+  ) {
+    const external = await deps.availability.searchAvailability({
+      from,
+      to,
+      ddmmm,
+      dow,
+    });
+    if (!Array.isArray(external)) {
+      return { error: "CHECK FORMAT" };
+    }
+    results = external;
+  } else {
+    results = buildOfflineAvailability({ from, to, ddmmm, dow });
+  }
+
+  state.lastAN = { query: { from, to, ddmmm, dow }, results };
+
+  const item = results.find(
+    (r) => r.airline === airline && Number(r.flightNo) === flightNo
+  );
+  if (!item) return { error: "NOT IN TABLE" };
+
+  const cls = item.bookingClasses.find((x) => x.code === classCode);
+  if (!cls) return { error: "CHECK CLASS OF SERVICE" };
+  if (cls.seats <= 0) return { error: "NO SEATS" };
+  if (paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
+
+  cls.seats -= paxCount;
+
+  ensurePNR(state);
+  const seg = {
+    airline: item.airline,
+    flightNo: item.flightNo,
+    classCode,
+    dateDDMMM: item.dateDDMMM,
+    from: item.from,
+    to: item.to,
+    depTime: item.depTime,
+    arrTime: item.arrTime,
+    status: "HK",
+    paxCount,
+  };
+  state.activePNR.itinerary.push(seg);
+
+  const lines = ["OK", ...renderPNRLiveView(state, deps.clock)];
+  return { lines };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -1993,6 +2073,8 @@ export async function processCommand(state, cmd, options = {}) {
       print("HE SS");
       print("SSnCn[pax]          SELL FROM LAST AN");
       print("EX: SS1Y1");
+      print("SSAABBBBCddMMMXXXYYYn  LONG SELL (NO PRIOR AN)");
+      print("EX: SSAF950C12DECCDGBRU1");
       return { events, state };
     }
     if (subject === "NM") {
@@ -2043,6 +2125,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("TNddMMMXXXYYY       TIMETABLE (ex: TN26DECALGPAR)");
     print("SNddMMMXXXYYY       SCHEDULE (ex: SN26DECALGPAR)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
+    print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
     print("XE1                 CANCEL SEGMENT");
     print("IG                  IGNORE PNR");
     print("IRXXXXXX            RETRIEVE PNR");
@@ -2357,7 +2440,12 @@ export async function processCommand(state, cmd, options = {}) {
   }
 
   if (c.startsWith("SS") && !c.startsWith("SSR")) {
-    const result = handleSS(state, c, deps.clock);
+    // Digit right after SS -> sell a line from the last AN (existing).
+    // Letter right after SS -> long sell by airline/flight (no prior AN).
+    const isLongSell = /^SS[A-Z]/.test(c);
+    const result = isLongSell
+      ? await handleSSLongSell(state, c, deps)
+      : handleSS(state, c, deps.clock);
     if (result.error) {
       print(result.error);
       return { events, state };

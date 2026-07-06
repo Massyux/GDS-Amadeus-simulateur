@@ -502,6 +502,107 @@ describe("processCommand", () => {
     assert.equal(state.activePNR.itinerary.length, initialSeats);
   });
 
+  it("SS long sell (SS<airline><flight><class><date><from><to><pax>) sells directly without a prior AN", async () => {
+    const probeState = createInitialState();
+    await runCommand(probeState, "AN26DECALGPAR");
+    const item = probeState.lastAN.results[0];
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    assert.ok(cls.seats > 0);
+
+    const state = createInitialState();
+    assert.equal(state.lastAN, null);
+    const lines = await runCommand(
+      state,
+      `SS${item.airline}${item.flightNo}Y26DECALGPAR1`
+    );
+    assert.equal(lines[0], "OK");
+    assert.equal(state.activePNR.itinerary.length, 1);
+    const seg = state.activePNR.itinerary[0];
+    assert.equal(seg.status, "HK");
+    assert.equal(seg.airline, item.airline);
+    assert.equal(seg.flightNo, item.flightNo);
+    assert.equal(seg.classCode, "Y");
+    assert.equal(seg.from, "ALG");
+    assert.equal(seg.to, "PAR");
+    // The implicit lookup behaves like a real AN: addressable afterwards.
+    assert.ok(state.lastAN);
+    assert.equal(state.lastAN.results.find((r) => r.lineNo === item.lineNo).bookingClasses.find((c) => c.code === "Y").seats, cls.seats - 1);
+  });
+
+  it("SS long sell rejects an unknown flight number with NOT IN TABLE", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "SSZZ9999Y26DECALGPAR1");
+    assert.deepEqual(lines, ["NOT IN TABLE"]);
+  });
+
+  it("SS long sell rejects an unknown city code with NOT IN TABLE", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "SSAF950Y26DECALGZZZ1", {
+      deps: { locations: fakeLocationsProvider(["ALG"]) },
+    });
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "NOT IN TABLE"
+      )
+    );
+  });
+
+  it("SS long sell rejects an invalid date with CHECK DATE", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "SSAF950Y30FEBALGPAR1");
+    assert.deepEqual(lines, ["CHECK DATE"]);
+  });
+
+  it("SS long sell rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "SSAF950Y26DECALG1");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
+  it("SS long sell rejects a class not offered on the flight", async () => {
+    const probeState = createInitialState();
+    await runCommand(probeState, "AN26DECALGPAR");
+    const item = probeState.lastAN.results[0];
+
+    const state = createInitialState();
+    const lines = await runCommand(
+      state,
+      `SS${item.airline}${item.flightNo}G26DECALGPAR1`
+    );
+    assert.deepEqual(lines, ["CHECK CLASS OF SERVICE"]);
+  });
+
+  it("SS long sell shares depleted inventory with a later numeric SS on the same implicit AN", async () => {
+    const probeState = createInitialState();
+    await runCommand(probeState, "AN26DECALGPAR");
+    const item = probeState.lastAN.results[0];
+    const initialSeats = item.bookingClasses.find((c) => c.code === "Y").seats;
+
+    const state = createInitialState();
+    await runCommand(state, `SS${item.airline}${item.flightNo}Y26DECALGPAR1`);
+    const numericLines = await runCommand(state, `SS${item.lineNo}Y${initialSeats}`);
+    // Only initialSeats - 1 remained after the long sell -- requesting all
+    // of the original inventory again must fail, not oversell.
+    assert.deepEqual(numericLines, ["NOT ENOUGH SEATS"]);
+  });
+
+  it("IG on a never-recorded PNR restores inventory sold via a long sell (same family as numeric SS)", async () => {
+    const probeState = createInitialState();
+    await runCommand(probeState, "AN26DECALGPAR");
+    const item = probeState.lastAN.results[0];
+    const initialSeats = item.bookingClasses.find((c) => c.code === "Y").seats;
+
+    const state = createInitialState();
+    await runCommand(state, `SS${item.airline}${item.flightNo}Y26DECALGPAR1`);
+    const cls = state.lastAN.results
+      .find((r) => r.lineNo === item.lineNo)
+      .bookingClasses.find((c) => c.code === "Y");
+    assert.equal(cls.seats, initialSeats - 1);
+
+    await runCommand(state, "IG");
+    assert.equal(cls.seats, initialSeats);
+  });
+
   it("TN returns timetable lines and keeps results sellable", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");

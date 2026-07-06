@@ -17,7 +17,8 @@
 | DAC / DAN | ✅ | ✅ (pur) | ✅ (provider absent) | ✅ (format), ✅ (note DATA-1 corrigée en Mission 03) | ⬜ | ⬜ |
 | AN | ✅ | ✅ (nouvelle recherche remplace `lastAN`) | ⬜ | ✅ format/date/ville — **DATA-1 corrigé en Mission 03** : code ville inconnu → `NOT IN TABLE` (si `deps.locations` configuré) | ⬜ | ✅ (alimente SS) |
 | TN / SN | ✅ | ✅ (pur) | ⬜ | ✅ format/date/ville (idem AN, Mission 03) | ⬜ | ⬜ |
-| SS | ✅ | ❌1 **corrigé** : décrément de sièges ajouté (survente/duplication) | ✅ (NO AVAILABILITY sans AN) | ✅ ligne/classe inconnue (NOT IN TABLE/CHECK CLASS OF SERVICE) | ⬜ | ✅ crée PNR si besoin |
+| SS (numérique, depuis AN) | ✅ | ❌1 **corrigé** : décrément de sièges ajouté (survente/duplication) | ✅ (NO AVAILABILITY sans AN) | ✅ ligne/classe inconnue (NOT IN TABLE/CHECK CLASS OF SERVICE) | ⬜ | ✅ crée PNR si besoin |
+| SS (long sell, **ajouté Mission 15**) | ✅ | ✅ (décrémente `state.lastAN` régénéré à l'identique, pas de survente) | ✅ (aucun état requis, remplace `lastAN` comme AN) | ✅ vol/ville inconnu (NOT IN TABLE), classe fermée, date invalide, format | ✅ (restitution testée, même famille que SS numérique) | ✅ alimente `state.lastAN` (implicite AN), crée PNR si besoin |
 | XE / XE1 / XE1-2 / XEALL | ✅ | ✅ (déjà annulé → erreur dédiée) | ✅ (NO ACTIVE PNR) | ✅ (index hors bornes) | ✅ | ✅ (bloqué si TST/dernier segment/dernier ADT/INF associé) |
 | NM | ✅ | ✅ (multi-pax autorisé, cohérent) | ⬜ (auto-crée le PNR) | ✅ **NM-1 corrigé** (confirmé par Massy) : apostrophe/tiret acceptés (`O'BRIEN`, `JEAN-PIERRE`) | ⬜ | ⬜ |
 | AP | ✅ | ✅ (additif, normal) | ⬜ | ❌2 **corrigé** : payload vide rejeté (CHECK FORMAT), aligné sur RM/OP/etc. | ⬜ | ⬜ |

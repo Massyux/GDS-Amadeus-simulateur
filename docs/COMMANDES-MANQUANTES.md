@@ -22,7 +22,7 @@ notre `FQN` (dans le vrai système, FQN affiche les notes tarifaires d'une ligne
 
 | Commande | Rôle | Logique / état requis |
 |---|---|---|
-| `SS` vente directe (long sell) | Vendre SANS affichage AN préalable : `SSAF950C12DECCDGBRU1` | Parse vol/classe/date/villes → interroge provider dispo → segment HK. Erreurs : vol inconnu, classe fermée |
+| ~~`SS` vente directe (long sell)~~ **fait Mission 15 (06/07/2026)** | Vendre SANS affichage AN préalable : `SSAF950C12DECCDGBRU1` | ✅ Fait : `handleSSLongSell` — parse vol/classe/date/villes, réutilise la même recherche de disponibilité qu'AN (et alimente `state.lastAN`, comme un AN implicite — sièges partagés avec un SS numérique ultérieur, restitution IG/IR/XI déjà couverte), crée un segment HK. Erreurs : `NOT IN TABLE` (vol/ville inconnu), `CHECK CLASS OF SERVICE`, `CHECK DATE`, `CHECK FORMAT` |
 | `SB` | Rebooker : classe (`SBY6`), date (`SB12APR7`), vol (`SBBA194*3`) | PNR actif avec segments ; remplace le segment (l'ancien passe annulé), re-décrémente l'inventaire |
 | Modification par n° d'élément | `5/NOUVEAU TEXTE`, `8/12JUL`, `4/2` (sièges), `2/HK` | Syntaxe transverse : n° de ligne PNR + `/` + nouvelle valeur ; dépend du type d'élément |
 | `NU` | Corriger un nom (`NU1/1SMITH/JOHN MR`) | PNR actif ; interdit/contrôlé après émission |
