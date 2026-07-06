@@ -36,6 +36,17 @@ rédigées et auditées par l'architecte (Claude Cowork).
   Vercel/Netlify en alternative ; domaine optionnel au début (sous-domaine gratuit), .com
   (~12 $/an, Cloudflare Registrar ou Porkbun) au moment de vendre. Phase 6+ : Supabase (gratuit,
   Postgres + auth) pour comptes/clés/progression ; paiement Algérie : Chargily Pay (CIB/EDAHABIA)
+- **Chaîne d'implémentation (06/07/2026)** : décision Massy — implémenter TOUTES les commandes
+  manquantes (docs/COMMANDES-MANQUANTES.md) AVANT le pilote. Ordre : missions 15→16→17→13→18→
+  19→20 en enchaînement continu avec non-régression après chaque commande (protocole dans
+  missions/README.md §Chaîne). Le pilote (mission 07) attend la fin de chaîne.
+- **Bug critique signalé par Massy (06/07/2026)** : IG ne sort pas complètement du PNR / ne
+  l'ignore pas entièrement. Traité en ÉTAPE 0 de MISSION-15 (matrice transactionnelle complète
+  IG/IR/ER/ET/XI à refondre et tester).
+- **Licences & admin (06/07/2026)** : espace admin + verrouillage par poste construits APRÈS le
+  pilote (pilote = clés actuelles tracées à la main), obligatoires AVANT la vente large.
+  Politique : paliers dès le départ — individuel (1 poste) et école (2-4 postes), liaison
+  clé↔appareils via Supabase (voir MISSION-14).
 - **Mode API réel AN/SN (05/07/2026)** : validé comme évolution v1.x — provider
   `providers/availability/amadeus.js` (API Amadeus Self-Service « Flight Availabilities
   Search », Massy a déjà une clé) derrière un proxy serverless gratuit (clé jamais côté client,

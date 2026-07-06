@@ -29,16 +29,44 @@
 | 05 | Déploiement public — **avec Massy** (son compte hébergeur) | Phase 2 (fin) | fait (06/07/2026) |
 | 06 | Accès v1 par clé/lien privé (offre commerciale) | Phase 3 | fait (06/07/2026) |
 | 07 | Lancement pilote + traitement des retours | Phase 4 | esquisse |
+| 14 | **Espace admin + licences par poste** (paliers 1 / 2-4 postes, Supabase) — après le pilote, avant la vente large | Phase 8 anticipée | détaillée |
 | 08 | Moteur d'exercices guidés (spec → moteur → contenu) | Phase 6 | esquisse |
 | 09 | Quiz, notation, progression | Phase 6 | esquisse |
 | 10 | Assistant IA pédagogique intégré | Phase 7 | esquisse |
 | 11 | Site de vente + licences par poste | Phase 8 | esquisse |
 | 12 | Mode « données réelles » AN/SN via API Amadeus (provider + proxy serverless) | v1.x | esquisse |
-| 13 | Liste d'attente réaliste (HL/UC au lieu de refus sur NO SEATS — confirmé Massy, mission 03) | v1.x | esquisse |
+| 13 | Liste d'attente réaliste HL/UC/KK/KL + ETK/ERK (confirmé Massy, mission 03) | v1.x | esquisse |
+| 15 | Servicing du PNR actif : SS long sell, SB, modif par n°, NU, DL, SI ARNK, TKOK/TKXL + corrections fidélité ET & VOID→TWD/TWX | v1.x | voir docs/COMMANDES-MANQUANTES.md |
+| 16 | Navigation & affichages : MD/MU/MT/MB, MN/MY, AC/ACR, RT partiels, RE | v1.x | voir docs/COMMANDES-MANQUANTES.md |
+| 17 | Utilitaires agent : DC/DNA/DNE/DB, DD/DF, DO, DM (+ JI/JO à valider) | v1.x | voir docs/COMMANDES-MANQUANTES.md |
+| 18 | Sièges : SM / ST / SX | v1.x | voir docs/COMMANDES-MANQUANTES.md |
+| 19 | PNR enregistrés & multi-PNR : RT locator/nom, SP/EF/RTAXR, RRN/RRI/RRP, RH | v1.x | voir docs/COMMANDES-MANQUANTES.md |
+| 20 | Tarifs & billetterie complets : FQD/FQP, famille TST, TTP options, TWD/TWX, TRF | v2 | voir docs/COMMANDES-MANQUANTES.md |
 
 **Ordre imposé** : 01 → 02 → 03 → 04. La mission 05 peut s'intercaler dès que Massy est
 disponible. Les missions 06+ ne démarrent pas avant que 01-04 soient closes (règle CLAUDE.md :
 jamais démarrer une phase avant que la précédente soit testée et mergée).
+
+## CHAÎNE D'IMPLÉMENTATION (décision Massy 06/07/2026 — EN COURS)
+
+Implémenter TOUTES les commandes manquantes AVANT le pilote. Ordre strict :
+
+**15 → 16 → 17 → 13 → 18 → 19 → 20** — puis retour à 07 (pilote).
+
+Règles de la chaîne (s'ajoutent aux règles générales ci-dessus) :
+
+1. **Enchaînement sans arrêt** : quand une mission est close (rituel exécuté, tout vert),
+   ouvrir IMMÉDIATEMENT la suivante dans la même session. Ne s'arrêter que si la limite de
+   session approche : alors clore proprement et écrire dans `TASKS.md` la ligne de reprise
+   exacte (« Chaîne : reprendre MISSION-XX, étape N »). La session suivante lit `TASKS.md`
+   et repart de là sans requestion.
+2. **Non-régression après CHAQUE commande** (pas après chaque mission) : suite core +
+   typecheck + lint verts avant de passer à la commande suivante ; grille CONSTITUTION §2
+   ajoutée à `AUDIT-COMMANDES.md` ; un commit par commande, push (CI = 2e filet).
+3. **Fin de chaque mission** : les 6 suites + e2e + vérification production, rituel de clôture.
+4. Toute découverte hors périmètre → `TASKS.md` Backlog, on ne dévie pas de la chaîne.
+5. Les questions à Massy listées en tête de mission (17 : JI/JO ; 13 : règle waitlist ;
+   19 : persistance) se posent en début de mission concernée, pas avant.
 
 Les missions marquées "esquisse" sont volontairement non détaillées : l'architecte les détaillera
 au moment venu, sur la base de l'état réel du projet (éviter les specs spéculatives qui divergent).
