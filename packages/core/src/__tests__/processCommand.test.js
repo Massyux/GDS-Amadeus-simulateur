@@ -1289,6 +1289,89 @@ describe("processCommand", () => {
     assert.deepEqual(rtAfterIg, rtAfterEr);
   });
 
+  it("IG on a never-recorded PNR does not resurrect an unrelated earlier recorded PNR (stale locator bug reported by Massy)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    const erLines = await runCommand(state, "ER");
+    const firstLocator = getRecordLocator(erLines);
+    assert.ok(firstLocator);
+
+    // Fully exit the first PNR's working context (it stays recorded in the
+    // store, see "XI clears active PNR but keeps recorded PNR in store").
+    await runCommand(state, "XI");
+
+    // Start a brand new PNR that is never recorded (no ER).
+    await runCommand(state, "NM1SMITH/ANNA MR");
+    await runCommand(state, "AP654321");
+    await runCommand(state, "RFTEST2");
+
+    const igLines = await runCommand(state, "IG");
+    // Must discard the new, never-recorded PNR entirely -- not resurrect the
+    // unrelated first PNR via a stale "last recorded locator" pointer.
+    assert.ok(!igLines.some((line) => line.includes("SMITH")));
+    assert.ok(!igLines.some((line) => line.includes(firstLocator)));
+    assert.equal(state.activePNR, null);
+
+    const rtLines = await runCommand(state, "RT");
+    assert.deepEqual(rtLines, ["NO ACTIVE PNR"]);
+  });
+
+  it("IG on a never-recorded PNR restores the seat inventory sold via SS (zero phantom state)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+
+    await runCommand(state, "SS1Y1");
+    assert.equal(cls.seats, initialSeats - 1);
+
+    await runCommand(state, "IG");
+    assert.equal(cls.seats, initialSeats);
+    assert.equal(state.activePNR, null);
+  });
+
+  it("IG on an already-recorded PNR releases inventory only for segments added after ER (the recorded segment stays sold)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP123456");
+    await runCommand(state, "RFTEST");
+    await runCommand(state, "ER");
+    assert.equal(cls.seats, initialSeats - 1);
+
+    // Sell a second seat on the same class after the PNR is already recorded.
+    await runCommand(state, "SS1Y1");
+    assert.equal(cls.seats, initialSeats - 2);
+
+    await runCommand(state, "IG");
+    // The recorded segment (sold before ER) stays sold; only the unrecorded
+    // second sale is released.
+    assert.equal(cls.seats, initialSeats - 1);
+    assert.equal(state.activePNR.itinerary.length, 1);
+  });
+
+  it("XI releases the seat inventory of a never-recorded PNR's itinerary", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+
+    await runCommand(state, "SS1Y1");
+    assert.equal(cls.seats, initialSeats - 1);
+
+    await runCommand(state, "XI");
+    assert.equal(cls.seats, initialSeats);
+  });
+
   it("IR restores exact recorded state and removes unrecorded OSI", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");

@@ -62,6 +62,41 @@ Interdit :
   - ≥ 1 RF
 - Record Locator généré uniquement à ER
 
+#### Matrice d'états transactionnelle (IG/IR/ER/XI) — figée le 06/07/2026, Mission 15 Étape 0
+Établie pour corriger un bug critique signalé par Massy (« IG ne sort pas complètement du PNR et
+ne l'ignore pas ») avant toute autre commande de la Mission 15 (CONSTITUTION §3, famille complète).
+
+- **`IG` sur PNR jamais enregistré** (aucun `ER` fait) → le PNR disparaît TOTALEMENT (passagers,
+  segments, contacts, TST, tout) ; les sièges vendus via `SS` sont restitués à `state.lastAN` (si
+  le contexte de disponibilité est toujours le même — pas de restitution si un `AN` plus récent
+  l'a remplacé, aucune donnée fiable où restituer) ; `RT` ensuite → `NO ACTIVE PNR`.
+- **`IG` sur PNR déjà enregistré** → tout ce qui a été modifié EN MÉMOIRE depuis le dernier `ER`
+  (nouveaux segments `SS`, remarques, OSI, etc.) est jeté ; le PNR revient EXACTEMENT à son
+  dernier état enregistré. Seuls les sièges des segments vendus APRÈS ce dernier `ER` sont
+  restitués — le(s) segment(s) déjà enregistré(s) restent vendus (le PNR enregistré existe
+  toujours tel quel dans `pnrStore`).
+- **`IR`** (avec ou sans locator) → même logique que IG, plus réaffichage (`RETRIEVED`). Point
+  important : si `IR <AUTRE-LOCATOR>` bascule vers un PNR *différent*, seule la queue non
+  enregistrée du PNR qu'on QUITTE est libérée (relative à SON PROPRE dernier `ER`) — jamais les
+  segments du PNR différent qu'on rejoint, qui restent valides et inchangés.
+- **`ER`/`ET`** → enregistrent le PNR actif (`ET` ne réaffiche pas — écart de fidélité identifié,
+  pas encore corrigé, voir `docs/COMMANDES-MANQUANTES.md`).
+- **`XI`** → vide le PNR actif en mémoire (comportement actuel : tout, pas juste l'itinéraire —
+  écart avec le vrai Amadeus noté dans `docs/COMMANDES-MANQUANTES.md`, pas corrigé ici, hors
+  périmètre de l'Étape 0). Même règle de restitution des sièges que IG : seule la part non
+  enregistrée depuis le dernier `ER` est libérée, le PNR enregistré reste intact dans `pnrStore`
+  et reste récupérable via `IR <LOCATOR>`.
+- **Bug racine corrigé** : `resolveRecordedLocator` avait un 3e niveau de repli sur
+  `state.lastRecordedLocator`, un pointeur GLOBAL "dernier PNR jamais enregistré dans toute la
+  session" — complètement déconnecté du PNR actif courant. Conséquence : after `ER` (PNR A) →
+  `XI` → nouveau PNR B jamais enregistré → `IG` résurrectait A au lieu de simplement jeter B. Le
+  pointeur global et son champ d'état ont été supprimés ; `resolveRecordedLocator` ne regarde
+  plus que le PNR actif courant (son propre `recordLocator`) ou son propre `recordedSnapshot`.
+- **Zéro état fantôme vérifié** : après chaque transition ci-dessus, `lastAN` (sièges), `tsts` et
+  `pnrStore` ont été audités un par un (voir tests golden `processCommand.test.js` autour de
+  « stale locator bug reported by Massy », « zero phantom state », « releases inventory only for
+  segments added after ER », « XI releases the seat inventory »).
+
 ### 2.3 TST / Pricing (règles)
 - TST créé uniquement par :
   - FXP

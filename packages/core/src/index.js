@@ -1695,7 +1695,6 @@ export function createInitialState() {
     lastTicketSeq: 0,
     pnrStore: {},
     recordedSnapshot: null,
-    lastRecordedLocator: null,
     queueStore: {},
     activeQueue: null,
     currentQueueItem: null,
@@ -1795,16 +1794,69 @@ function resolveDeps(options = {}) {
   };
 }
 
+function findAvailabilityClass(state, seg) {
+  if (!state.lastAN || !state.lastAN.results) return null;
+  const item = state.lastAN.results.find(
+    (r) =>
+      r.airline === seg.airline &&
+      r.flightNo === seg.flightNo &&
+      r.dateDDMMM === seg.dateDDMMM &&
+      r.from === seg.from &&
+      r.to === seg.to
+  );
+  if (!item) return null;
+  return item.bookingClasses.find((cls) => cls.code === seg.classCode) || null;
+}
+
+// Best-effort restitution of seats sold via SS when a segment is discarded
+// without ever being (or staying) part of a recorded PNR -- IG/IR/XI on an
+// unrecorded PNR or its unrecorded tail (segments sold after the last ER).
+// No-op if the availability context has since changed (a later AN replaced
+// state.lastAN): there is nothing safe to restore inventory into then.
+function releaseInventoryForSegments(state, segments) {
+  if (!segments || segments.length === 0) return;
+  for (const seg of segments) {
+    if (isSegmentCancelledStatus(seg.status)) continue;
+    const cls = findAvailabilityClass(state, seg);
+    if (cls) cls.seats += seg.paxCount || 1;
+  }
+}
+
+// How many of the CURRENT PNR's own itinerary segments are already covered
+// by its own last recorded snapshot (0 if it was never recorded at all).
+function peekRecordedItineraryLength(state, locator) {
+  if (!locator) return 0;
+  const stored = state.pnrStore && state.pnrStore[locator];
+  if (stored && stored.pnrSnapshot) return stored.pnrSnapshot.itinerary?.length || 0;
+  if (state.recordedSnapshot && state.recordedSnapshot.recordLocator === locator) {
+    return state.recordedSnapshot.pnrSnapshot?.itinerary?.length || 0;
+  }
+  return 0;
+}
+
+// Segments sold on the CURRENT active PNR since its own last save (all of
+// them if it was never recorded) -- always relative to the PNR's OWN record
+// locator, never to whatever other PNR a command like `IR <LOCATOR>` may be
+// about to switch to (a different, already-valid PNR's own segments must
+// never be released just because we're navigating away from it).
+function computeUnrecordedTailSegments(state) {
+  if (!state.activePNR) return [];
+  const keptLength = peekRecordedItineraryLength(state, state.activePNR.recordLocator);
+  return state.activePNR.itinerary.slice(keptLength);
+}
+
 function resolveRecordedLocator(state, preferredLocator = null) {
   if (preferredLocator) return String(preferredLocator).toUpperCase();
+  // Deliberately scoped to the CURRENT active PNR's own record locator only
+  // (never a session-wide "last recorded PNR, whatever it was" pointer): a
+  // global fallback here used to resurrect an unrelated, already-exited PNR
+  // when the current one was never recorded (bug reported by Massy, fixed
+  // 06/07/2026 -- see PROJECT_MEMORY §2.2 transactional state matrix).
   if (state.activePNR && state.activePNR.recordLocator) {
     return state.activePNR.recordLocator;
   }
   if (state.recordedSnapshot && state.recordedSnapshot.recordLocator) {
     return state.recordedSnapshot.recordLocator;
-  }
-  if (state.lastRecordedLocator) {
-    return state.lastRecordedLocator;
   }
   return null;
 }
@@ -1837,7 +1889,6 @@ function restoreRecordedState(state, locator) {
     pnrSnapshot: deepCopy(pnrSnapshot),
     tstsSnapshot: deepCopy(tstsSnapshot) || [],
   };
-  state.lastRecordedLocator = locator;
   return true;
 }
 
@@ -2061,8 +2112,10 @@ export async function processCommand(state, cmd, options = {}) {
   if (c === "IG") {
     const recordLocator = resolveRecordedLocator(state);
     if (recordLocator) {
+      const discardedSegments = computeUnrecordedTailSegments(state);
       const restored = restoreRecordedState(state, recordLocator);
       if (restored) {
+        releaseInventoryForSegments(state, discardedSegments);
         print("IGNORED");
         renderPNRLiveView(state, deps.clock).forEach(print);
         return { events, state };
@@ -2072,6 +2125,7 @@ export async function processCommand(state, cmd, options = {}) {
     // memory" (never went through ER), IG discards it outright instead of
     // requiring a Record Locator that was never created.
     if (state.activePNR) {
+      releaseInventoryForSegments(state, state.activePNR.itinerary);
       state.activePNR = null;
       state.tsts = [];
       state.recordedSnapshot = null;
@@ -2097,11 +2151,13 @@ export async function processCommand(state, cmd, options = {}) {
       print("NO RECORDED PNR");
       return { events, state };
     }
+    const discardedSegments = computeUnrecordedTailSegments(state);
     const restored = restoreRecordedState(state, recordLocator);
     if (!restored) {
       print(matchWithLocator ? "PNR NOT FOUND" : "NO RECORDED PNR");
       return { events, state };
     }
+    releaseInventoryForSegments(state, discardedSegments);
     print("RETRIEVED");
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
@@ -2112,7 +2168,11 @@ export async function processCommand(state, cmd, options = {}) {
       renderPNRLiveView(state, deps.clock).forEach(print);
       return { events, state };
     }
-    // Keep recorded store entries intact; XI only clears the active working PNR.
+    // Keep recorded store entries intact; XI only clears the active working
+    // PNR. Only the segments sold since the PNR's own last save are
+    // released -- an already-recorded segment stays sold, since the record
+    // itself is untouched and still retrievable via IR.
+    releaseInventoryForSegments(state, computeUnrecordedTailSegments(state));
     state.activePNR = null;
     state.tsts = [];
     state.recordedSnapshot = null;
@@ -2466,7 +2526,6 @@ export async function processCommand(state, cmd, options = {}) {
       pnrSnapshot: deepCopy(pnr),
       tstsSnapshot: deepCopy(state.tsts),
     };
-    state.lastRecordedLocator = pnr.recordLocator;
     print("PNR RECORDED");
     print("RECORD LOCATOR " + pnr.recordLocator);
     renderPNRLiveView(state, deps.clock).forEach(print);

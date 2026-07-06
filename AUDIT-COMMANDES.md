@@ -31,9 +31,9 @@
 | FP | ✅ | ✅ (écrase) | ⬜ | ✅ (CASH/CC regex) | ⬜ | ✅ (exigé par ET/TTP) |
 | ER | ✅ | ✅ (locator stable) | ✅ (NO ACTIVE PNR, END PNR FIRST si NM/AP/RF manquant) | ⬜ | ✅ | ✅ (valide les TST CREATED→VALIDATED) |
 | RT | ✅ | ✅ (pur) | ✅ (NO ACTIVE PNR) | ⬜ | ✅ | ⬜ |
-| IG | ✅ | ✅ | ✅ (NO RECORDED PNR si rien à annuler) | ⬜ | ✅ (bug 3 corrigé 03/07) | ⬜ |
-| IR | ✅ | ✅ | ✅ (PNR NOT FOUND / NO RECORDED PNR distincts) | ✅ (locator format) | ✅ | ⬜ |
-| XI | ✅ | ✅ (RT vide si déjà rien) | ⬜ | ✅ (variantes XIn rejetées) | ✅ (garde le recorded en store) | ⬜ |
+| IG | ✅ | ✅ | ✅ (NO RECORDED PNR si rien à annuler) | ⬜ | ❌5 **corrigé** (Mission 15 Étape 0, 06/07/2026) : résurrectait un PNR non lié via un pointeur global périmé ; sièges vendus non restitués | ⬜ |
+| IR | ✅ | ✅ | ✅ (PNR NOT FOUND / NO RECORDED PNR distincts) | ✅ (locator format) | ❌5 **corrigé** (même famille qu'IG, voir note 5) | ⬜ |
+| XI | ✅ | ✅ (RT vide si déjà rien) | ⬜ | ✅ (variantes XIn rejetées) | ✅ (garde le recorded en store) — ❌5 **corrigé** : restitue désormais les sièges non enregistrés | ⬜ |
 | QP/QD/QE/QN/QR/QS | ✅ | ✅ (idempotent QS, QE) | ✅ (NO RECORDED PNR, NO ACTIVE QUEUE, QUEUE NOT FOUND) | ✅ (format id) | ⬜ | ⬜ |
 | FXP | ✅ | ✅ (update en place, pas de doublon TST) | ✅ (NO ITINERARY) | ⬜ | ✅ | ❌3 **corrigé** : exige ≥1 NM (`NO NAME` sinon) — confirmé par Massy 05/07 |
 | FXR | ✅ | ✅ | ✅ (NO ITINERARY) | ⬜ | ✅ | ✅ n'exige PAS de NM (confirmé par Massy 05/07, distinct de FXP/FXB — contrôle retiré) |
@@ -75,6 +75,19 @@ Avec un numéro explicite, il cherche le billet par numéro sans filtrer son sta
 précis est déjà `VOID`, la commande le "revoid" silencieusement et réaffiche `TICKET VOIDED`
 comme si une action venait d'avoir lieu. **Corrigé** : billet déjà void + numéro explicite →
 `NOTHING TO CANCEL`.
+
+### ❌5 — IG/IR/XI : pointeur global périmé résurrecte un PNR non lié + sièges jamais restitués
+Signalé par Massy (06/07/2026) : « IG ne sort pas complètement du PNR et ne l'ignore pas. »
+`resolveRecordedLocator` avait un 3e niveau de repli sur `state.lastRecordedLocator`, un pointeur
+GLOBAL "dernier PNR jamais enregistré dans toute la session" — sans rapport avec le PNR actif
+courant. Scénario de reproduction : `ER` (PNR A) → `XI` → nouveau PNR B jamais enregistré → `IG`
+résurrectait A au lieu de simplement jeter B. En même temps, aucune des trois commandes ne
+restituait les sièges vendus via `SS` pour la part non enregistrée d'un PNR discarded/reverted
+(état fantôme dans `state.lastAN`). **Corrigé** : suppression du pointeur global (le seul repère
+valide est désormais le PNR actif courant, via son propre `recordLocator`) ; restitution des
+sièges scoping strictement à la « queue non enregistrée depuis le dernier ER » du PNR concerné
+(jamais celle d'un autre PNR, y compris lors d'un `IR <AUTRE-LOCATOR>`). Matrice complète et
+détail des tests dans `PROJECT_MEMORY_SIMULATEUR_AMADEUS.md` §2.2.
 
 ### ✅ NM-1 — Noms avec apostrophe/tiret rejetés (corrigé, confirmé par Massy)
 `parseNmAdultEntries` utilisait `^([A-Z]+)\/([A-Z]+)$` pour nom/prénom : n'acceptait ni apostrophe
