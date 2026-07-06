@@ -878,6 +878,53 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["CHECK FORMAT"]);
   });
 
+  it("NU corrects a passenger's name (NU<pos>/<pos><LAST>/<FIRST> TITLE)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+
+    const lines = await runCommand(state, "NU1/1SMITH/JANE MRS");
+    assert.equal(lines[0], "OK");
+    assert.equal(state.activePNR.passengers[0].lastName, "SMITH");
+    assert.equal(state.activePNR.passengers[0].firstName, "JANE");
+    assert.equal(state.activePNR.passengers[0].title, "MRS");
+    assert.ok(lines.some((l) => l.includes("SMITH/JANE MRS")));
+    assert.ok(!lines.some((l) => l.includes("DOE/JOHN")));
+  });
+
+  it("NU rejects mismatched position numbers with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "NU1/2SMITH/JANE MRS");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
+  it("NU returns ELEMENT NOT FOUND for a passenger position that doesn't exist", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "NU2/2SMITH/JANE MRS");
+    assert.deepEqual(lines, ["ELEMENT NOT FOUND"]);
+  });
+
+  it("NU returns NO ACTIVE PNR without a PNR", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "NU1/1SMITH/JANE MRS");
+    assert.deepEqual(lines, ["NO ACTIVE PNR"]);
+  });
+
+  it("NU is blocked once a ticket has been issued on the PNR", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "FP CASH");
+    await runCommand(state, "FXP");
+    await runCommand(state, "ET");
+
+    const lines = await runCommand(state, "NU1/1SMITH/JANE MRS");
+    assert.deepEqual(lines, ["NOT ALLOWED"]);
+    assert.equal(state.activePNR.passengers[0].lastName, "DOE");
+  });
+
   it("TN returns timetable lines and keeps results sellable", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");

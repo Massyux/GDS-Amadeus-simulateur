@@ -1554,6 +1554,40 @@ function handleElementModify(state, cmdUpper, deps) {
   return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
 }
 
+// NU<pos>/<pos><LASTNAME>/<FIRSTNAME>[ TITLE] -- correct a passenger's name
+// (docs/COMMANDES-MANQUANTES.md Priorite 1). The position is referenced
+// twice (before and after the slash, mirroring NM's own "1SMITH/JOHN MR"
+// convention) and must match -- a mismatch is treated as a format error
+// rather than silently picking one. Blocked once a ticket has been issued
+// on the PNR ("interdit apres emission" per the doc).
+function handleNU(state, cmdUpper, deps) {
+  const pnr = state.activePNR;
+  if (!pnr) return { error: "NO ACTIVE PNR" };
+
+  const m = cmdUpper.match(
+    /^NU(\d{1,2})\/(\d{1,2})([A-Z'-]+)\/([A-Z'-]+)(?:\s+(MR|MRS))?$/
+  );
+  if (!m) return { error: "CHECK FORMAT" };
+
+  const [, posRaw, posRepeatRaw, lastName, firstName, title] = m;
+  if (posRaw !== posRepeatRaw) return { error: "CHECK FORMAT" };
+
+  const hasIssuedTicket = (pnr.tickets || []).some(
+    (ticket) => ticket.status !== "VOID"
+  );
+  if (hasIssuedTicket) return { error: "NOT ALLOWED" };
+
+  const pos = parseInt(posRaw, 10);
+  const passenger = pnr.passengers?.[pos - 1];
+  if (!passenger) return { error: "ELEMENT NOT FOUND" };
+
+  passenger.lastName = lastName;
+  passenger.firstName = firstName;
+  if (title) passenger.title = title;
+
+  return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -2294,6 +2328,13 @@ export async function processCommand(state, cmd, options = {}) {
       print("NM2NAME1/FIRST1 NAME2/FIRST2");
       return { events, state };
     }
+    if (subject === "NU") {
+      print("HE NU");
+      print("NUn/nNAME/FIRST MR  CORRECT PASSENGER NAME");
+      print("EX: NU1/1SMITH/JOHN MR");
+      print("BLOCKED ONCE A TICKET IS ISSUED");
+      return { events, state };
+    }
     if (subject === "ER" || subject === "RT") {
       print(`HE ${subject}`);
       print(subject === "ER" ? "ER                  END AND RECORD PNR" : "RT                  DISPLAY ACTIVE PNR");
@@ -2346,6 +2387,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("DAC XXX             DECODE IATA (ex: DAC ALG)");
     print("DAN <TEXT>          ENCODE SEARCH (ex: DAN PARIS)");
     print("NM                  NAME (MR/MRS optional, CHD/INF)");
+    print("NUn/nNAME/FIRST     CORRECT NAME (HE NU for syntax)");
     print("AP                  CONTACT");
     print("APE                 EMAIL CONTACT");
     print("OP                  OPTION/REMINDER");
@@ -2689,6 +2731,16 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("XE")) {
     const result = handleXE(state, c, deps.clock);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("NU")) {
+    const result = handleNU(state, c, deps);
     if (result.error) {
       print(result.error);
       return { events, state };
