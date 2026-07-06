@@ -8,6 +8,13 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // Confirmed rolldown-vite 7.2.5 was leaving a stale dist/index.html from
+    // an earlier build in place instead of the default emptyOutDir behavior
+    // - production served the old file (Vite's default <title>frontend</title>)
+    // even after several rebuilds. Force it explicitly.
+    emptyOutDir: true,
+  },
   resolve: {
     alias: {
       "@simulateur/core": path.resolve(
