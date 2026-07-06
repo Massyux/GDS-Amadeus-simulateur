@@ -1647,6 +1647,53 @@ function handleSIArnk(state, cmdUpper, deps) {
   return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
 }
 
+function formatTimetableLine(item) {
+  return `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
+    String(item.flightNo),
+    4,
+    "0"
+  )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`;
+}
+
+// Pagination is CORE state (state.lastDisplay), not something the UI
+// recomputes (docs/COMMANDES-MANQUANTES.md Priorite 1, MD/MU/MT/MB
+// "principe d'architecture"). A paginated command stores its header
+// (always shown) and item lines (one per result), then only the current
+// page's slice is ever printed -- unlike the old behavior of dumping every
+// page in one go.
+function startPagedDisplay(state, { type, header, itemLines, pageSize = 5 }) {
+  state.lastDisplay = { type, header, itemLines, pageSize, page: 1 };
+  return renderCurrentDisplayPage(state);
+}
+
+function renderCurrentDisplayPage(state) {
+  const display = state.lastDisplay;
+  if (!display) return [];
+  const totalPages = Math.max(1, Math.ceil(display.itemLines.length / display.pageSize));
+  const lines = [...display.header];
+  if (totalPages > 1) {
+    lines.push(`PAGE ${display.page}/${totalPages}`);
+  }
+  const start = (display.page - 1) * display.pageSize;
+  lines.push(...display.itemLines.slice(start, start + display.pageSize));
+  return lines;
+}
+
+// MD/MU/MT/MB -- scroll the current paginated display. Boundaries clamp
+// (MD on the last page / MU on the first just reprint it) rather than
+// erroring: real Amadeus wording for that edge case isn't confirmed, and
+// clamping is the simplest, safest default (CONSTITUTION SS8).
+function handleDisplayNav(state, direction) {
+  const display = state.lastDisplay;
+  if (!display) return { error: "NO ACTIVE DISPLAY" };
+  const totalPages = Math.max(1, Math.ceil(display.itemLines.length / display.pageSize));
+  if (direction === "down") display.page = Math.min(display.page + 1, totalPages);
+  else if (direction === "up") display.page = Math.max(display.page - 1, 1);
+  else if (direction === "top") display.page = 1;
+  else if (direction === "bottom") display.page = totalPages;
+  return { lines: renderCurrentDisplayPage(state) };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -1720,36 +1767,11 @@ async function handleTN(state, cmdUpper, deps) {
 
   state.lastAN = { query: { from, to, ddmmm, dow }, results: normalized };
 
-  const lines = [];
-  lines.push(`TN${ddmmm}${from}${to}`);
-  lines.push(`** AMADEUS TIMETABLE - TN ** ${from}-${to}`);
-  const pageSize = 5;
-  const totalPages = Math.ceil(normalized.length / pageSize);
-  if (totalPages > 1) {
-    for (let page = 1; page <= totalPages; page++) {
-      lines.push(`PAGE ${page}/${totalPages}`);
-      const pageItems = normalized.slice((page - 1) * pageSize, page * pageSize);
-      pageItems.forEach((item) => {
-        lines.push(
-          `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
-            String(item.flightNo),
-            4,
-            "0"
-          )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
-        );
-      });
-    }
-  } else {
-    normalized.forEach((item) => {
-      lines.push(
-        `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
-          String(item.flightNo),
-          4,
-          "0"
-        )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
-      );
-    });
-  }
+  const lines = startPagedDisplay(state, {
+    type: "TN",
+    header: [`TN${ddmmm}${from}${to}`, `** AMADEUS TIMETABLE - TN ** ${from}-${to}`],
+    itemLines: normalized.map(formatTimetableLine),
+  });
   return { lines };
 }
 
@@ -1826,36 +1848,11 @@ async function handleSN(state, cmdUpper, deps) {
 
   state.lastAN = { query: { from, to, ddmmm, dow }, results: normalized };
 
-  const lines = [];
-  lines.push(`SN${ddmmm}${from}${to}`);
-  lines.push(`** AMADEUS SCHEDULE - SN ** ${from}-${to}`);
-  const pageSize = 5;
-  const totalPages = Math.ceil(normalized.length / pageSize);
-  if (totalPages > 1) {
-    for (let page = 1; page <= totalPages; page++) {
-      lines.push(`PAGE ${page}/${totalPages}`);
-      const pageItems = normalized.slice((page - 1) * pageSize, page * pageSize);
-      pageItems.forEach((item) => {
-        lines.push(
-          `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
-            String(item.flightNo),
-            4,
-            "0"
-          )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
-        );
-      });
-    }
-  } else {
-    normalized.forEach((item) => {
-      lines.push(
-        `${item.lineNo}  ${padR(item.airline, 2)} ${padL(
-          String(item.flightNo),
-          4,
-          "0"
-        )}  ${item.dateDDMMM}  ${item.from}${item.to}  ${item.depTime}-${item.arrTime} ${item.dow}`
-      );
-    });
-  }
+  const lines = startPagedDisplay(state, {
+    type: "SN",
+    header: [`SN${ddmmm}${from}${to}`, `** AMADEUS SCHEDULE - SN ** ${from}-${to}`],
+    itemLines: normalized.map(formatTimetableLine),
+  });
   return { lines };
 }
 
@@ -2059,6 +2056,7 @@ export function createInitialState() {
   return {
     activePNR: null,
     lastAN: null,
+    lastDisplay: null,
     tsts: [],
     lastTstId: 0,
     lastTicketSeq: 0,
@@ -2361,6 +2359,7 @@ export async function processCommand(state, cmd, options = {}) {
     "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
     "HELP NOT FOUND",
+    "NO ACTIVE DISPLAY",
   ]);
   const events = [];
   const error = (text) => events.push({ type: "error", text: String(text) });
@@ -2478,6 +2477,14 @@ export async function processCommand(state, cmd, options = {}) {
       print(`EX: ${subject}26DECALGPAR`);
       return { events, state };
     }
+    if (subject === "MD" || subject === "MU" || subject === "MT" || subject === "MB") {
+      print(`HE ${subject}`);
+      print("MD                  MOVE DOWN (NEXT PAGE)");
+      print("MU                  MOVE UP (PREVIOUS PAGE)");
+      print("MT                  MOVE TOP (FIRST PAGE)");
+      print("MB                  MOVE BOTTOM (LAST PAGE)");
+      return { events, state };
+    }
     if (subject === "APE" || subject === "OP") {
       print(`HE ${subject}`);
       if (subject === "APE") print("APE-EMAIL@DOMAIN.TLD ADD EMAIL CONTACT");
@@ -2500,6 +2507,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("ANXXXYYY/ddMMM      AVAILABILITY (ex: ANALGPAR/26DEC)");
     print("TNddMMMXXXYYY       TIMETABLE (ex: TN26DECALGPAR)");
     print("SNddMMMXXXYYY       SCHEDULE (ex: SN26DECALGPAR)");
+    print("MD/MU/MT/MB         SCROLL LAST DISPLAY (HE MD for syntax)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
@@ -2583,6 +2591,17 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("SN")) {
     const result = await handleSN(state, c, deps);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines.forEach(print);
+    return { events, state };
+  }
+
+  if (c === "MD" || c === "MU" || c === "MT" || c === "MB") {
+    const direction = { MD: "down", MU: "up", MT: "top", MB: "bottom" }[c];
+    const result = handleDisplayNav(state, direction);
     if (result.error) {
       print(result.error);
       return { events, state };

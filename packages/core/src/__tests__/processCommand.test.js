@@ -1158,11 +1158,100 @@ describe("processCommand", () => {
     );
   });
 
-  it("TN shows pagination when results exceed one page", async () => {
+  it("TN shows only the first page when results exceed one page (pagination is core state, not a one-shot dump)", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");
     assert.ok(lines.some((line) => line.startsWith("PAGE 1/")));
-    assert.ok(lines.some((line) => line.startsWith("PAGE 2/")));
+    assert.ok(!lines.some((line) => line.startsWith("PAGE 2/")));
+    assert.ok(state.lastDisplay);
+    assert.equal(state.lastDisplay.type, "TN");
+    assert.equal(state.lastDisplay.page, 1);
+    assert.ok(state.lastDisplay.itemLines.length > state.lastDisplay.pageSize);
+  });
+
+  it("MD scrolls to the next page of the last paginated display", async () => {
+    const state = createInitialState();
+    await runCommand(state, "TN26DECALGPAR");
+    const totalPages = Math.ceil(
+      state.lastDisplay.itemLines.length / state.lastDisplay.pageSize
+    );
+    assert.ok(totalPages > 1);
+
+    const mdLines = await runCommand(state, "MD");
+    assert.ok(mdLines.some((line) => line.startsWith("PAGE 2/")));
+    assert.equal(state.lastDisplay.page, 2);
+    // Header lines stay present on every page.
+    assert.ok(mdLines.some((line) => line.startsWith("TN26DECALGPAR")));
+  });
+
+  it("MD clamps at the last page instead of erroring", async () => {
+    const state = createInitialState();
+    await runCommand(state, "TN26DECALGPAR");
+    const totalPages = Math.ceil(
+      state.lastDisplay.itemLines.length / state.lastDisplay.pageSize
+    );
+    for (let i = 0; i < totalPages + 2; i++) {
+      await runCommand(state, "MD");
+    }
+    assert.equal(state.lastDisplay.page, totalPages);
+  });
+
+  it("MU scrolls back to the previous page and clamps at the first", async () => {
+    const state = createInitialState();
+    await runCommand(state, "TN26DECALGPAR");
+    await runCommand(state, "MD");
+    assert.equal(state.lastDisplay.page, 2);
+
+    const muLines = await runCommand(state, "MU");
+    assert.ok(muLines.some((line) => line.startsWith("PAGE 1/")));
+    assert.equal(state.lastDisplay.page, 1);
+
+    await runCommand(state, "MU");
+    assert.equal(state.lastDisplay.page, 1);
+  });
+
+  it("MB jumps to the last page and MT jumps back to the first", async () => {
+    const state = createInitialState();
+    await runCommand(state, "TN26DECALGPAR");
+    const totalPages = Math.ceil(
+      state.lastDisplay.itemLines.length / state.lastDisplay.pageSize
+    );
+
+    const mbLines = await runCommand(state, "MB");
+    assert.ok(mbLines.some((line) => line.startsWith(`PAGE ${totalPages}/`)));
+    assert.equal(state.lastDisplay.page, totalPages);
+
+    const mtLines = await runCommand(state, "MT");
+    assert.ok(mtLines.some((line) => line.startsWith("PAGE 1/")));
+    assert.equal(state.lastDisplay.page, 1);
+  });
+
+  it("MD/MU/MT/MB return NO ACTIVE DISPLAY when nothing is paginated yet", async () => {
+    for (const cmd of ["MD", "MU", "MT", "MB"]) {
+      const state = createInitialState();
+      const lines = await runCommand(state, cmd);
+      assert.deepEqual(lines, ["NO ACTIVE DISPLAY"]);
+    }
+  });
+
+  it("SN also drives the same paginated display state as TN", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "SN26DECALGPAR");
+    assert.ok(state.lastDisplay);
+    assert.equal(state.lastDisplay.type, "SN");
+    if (Math.ceil(state.lastDisplay.itemLines.length / state.lastDisplay.pageSize) > 1) {
+      assert.ok(lines.some((line) => line.startsWith("PAGE 1/")));
+    }
+  });
+
+  it("MD/MU/MT/MB are exact matches -- a longer command with the same prefix is never intercepted (family non-collision, lesson from Mission 04)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "TN26DECALGPAR");
+    // "MDX" is not a real command, but it starts with "MD" -- must not be
+    // swallowed by the display-nav dispatch (which requires an exact "MD").
+    const lines = await runCommand(state, "MDX");
+    assert.notDeepEqual(lines, ["NO ACTIVE DISPLAY"]);
+    assert.equal(state.lastDisplay.page, 1);
   });
 
   it("returns invalid format for a malformed AN", async () => {
