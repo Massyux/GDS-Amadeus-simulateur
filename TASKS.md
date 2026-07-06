@@ -13,10 +13,17 @@ fidélité ET) ; **Mission 16 commandes 1/6, 2/6 et 3/6 closes** (`MD`/`MU`/`MT`
 
 **Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes, démarrer à la **commande 4/6**
 (`RT` partiels : `RTN`, `RTI`, `RTA`, `RTK`, `RTG`, `RTR`, `RTF` — filtres d'affichage du PNR
-actif). Continuer le protocole de non-régression de Mission 15/16 (suite + typecheck + lint après
-CHAQUE commande, un commit par commande, push). Vigilance famille (leçon Mission 04) : vérifier
-que `RTx` ne collisionne pas avec `RT` seul (déjà géré) ni avec un futur préfixe ; après la
-commande 4/6 reste la commande 5/6 (`RE`/`RE2`, état core historique de saisie).
+actif). **Point bloquant avant de coder** : contrairement à `AC`/`SC`/`ACR` (qui ont reçu une
+spec complète et non ambiguë de l'architecte avant cette session), la mission ne détaille PAS ce
+que chaque suffixe filtre exactement. Confiance raisonnable sur `RTN` (noms), `RTI` (itinéraire),
+`RTR` (remarques) ; incertitude réelle sur `RTA`, `RTK`, `RTG`, `RTF` (lettres ambiguës sans
+mapping donné — deviner serait inventer une syntaxe Amadeus non vérifiée, contraire à la règle du
+projet). Proposer à l'architecte d'ajouter une §Spec RT partiels analogue à celle d'AC/SC/ACR
+avant de coder cette commande, plutôt que de deviner. Continuer ensuite le protocole de
+non-régression habituel (suite + typecheck + lint après CHAQUE sous-commande, un commit par
+sous-commande, push). Vigilance famille (leçon Mission 04) : vérifier que `RTx` ne collisionne pas
+avec `RT` seul (déjà géré) ni avec un futur préfixe ; après la commande 4/6 reste la commande 5/6
+(`RE`/`RE2`, état core historique de saisie).
 
 ## Fait (par session, datée)
 
