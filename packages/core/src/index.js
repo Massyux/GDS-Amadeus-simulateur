@@ -1358,6 +1358,153 @@ async function handleSSLongSell(state, cmdUpper, deps) {
   return { lines };
 }
 
+// SB<...> -- rebook an existing segment (docs/COMMANDES-MANQUANTES.md
+// Priorite 1): class (SBY6), date (SB12APR7), or flight (SBBA194*3),
+// referencing the segment by its RT element number (same numbering XE
+// already uses). Exact real Amadeus grammar not independently confirmed --
+// implemented from the architect's 3 worked examples, flagged "a verifier"
+// in docs/COMMANDES-MANQUANTES.md / AUDIT-COMMANDES.md pending Massy.
+async function handleSB(state, cmdUpper, deps) {
+  const pnr = state.activePNR;
+  if (!pnr) return { error: "NO ACTIVE PNR" };
+
+  let mode = null;
+  let newClass = null;
+  let newDateToken = null;
+  let newAirline = null;
+  let newFlightNoRaw = null;
+  let segNo = null;
+
+  let m = cmdUpper.match(/^SB([A-Z])(\d{1,2})$/);
+  if (m) {
+    mode = "class";
+    newClass = m[1];
+    segNo = parseInt(m[2], 10);
+  } else {
+    m = cmdUpper.match(/^SB(\d{1,2}[A-Z]{3})(\d{1,2})$/);
+    if (m) {
+      mode = "date";
+      newDateToken = m[1];
+      segNo = parseInt(m[2], 10);
+    } else {
+      m = cmdUpper.match(/^SB([A-Z]{2})(\d{1,4})\*(\d{1,2})$/);
+      if (m) {
+        mode = "flight";
+        newAirline = m[1];
+        newFlightNoRaw = m[2];
+        segNo = parseInt(m[3], 10);
+      }
+    }
+  }
+  if (!mode) return { error: "CHECK FORMAT" };
+
+  const elements = buildElementIndex(state, deps.clock);
+  const target = elements.find(
+    (e) => e.elementNo === segNo && e.kind === "SEG"
+  );
+  if (!target) return { error: "ELEMENT NOT FOUND" };
+  const segment = pnr.itinerary[target.index];
+  if (isSegmentCancelledStatus(segment.status)) {
+    return { error: "ELEMENT NOT FOUND" };
+  }
+
+  const displayIndex = buildSegmentDisplayIndexByItineraryIndex(
+    pnr,
+    deps.clock
+  ).get(target.index);
+  const lockedByTst = (state.tsts || []).some(
+    (tst) => Array.isArray(tst.segments) && tst.segments.includes(displayIndex)
+  );
+  if (lockedByTst) return { error: "NOT ALLOWED - TST SEGMENT" };
+
+  const targetAirline = mode === "flight" ? newAirline : segment.airline;
+  const targetFlightNo =
+    mode === "flight" ? parseInt(newFlightNoRaw, 10) : segment.flightNo;
+  const targetClass = mode === "class" ? newClass : segment.classCode;
+  const dateToken = mode === "date" ? newDateToken : segment.dateDDMMM;
+
+  const dateObj = parseDDMMM(dateToken, deps?.clock);
+  if (!dateObj) return { error: "CHECK DATE" };
+  const ddmmm = formatDDMMM(dateObj);
+  const dow = dayOfWeek2(dateObj);
+
+  // Reuse the already-loaded availability context when it already covers
+  // this exact route/date (so any OTHER segment sold from the same
+  // context keeps its own decremented seat count) -- only fetch a fresh
+  // one when it doesn't match (e.g. a date rebook targeting a new day).
+  const cachedContextMatches =
+    state.lastAN &&
+    state.lastAN.query &&
+    state.lastAN.query.from === segment.from &&
+    state.lastAN.query.to === segment.to &&
+    state.lastAN.query.ddmmm === ddmmm;
+
+  let results;
+  if (cachedContextMatches) {
+    results = state.lastAN.results;
+  } else if (
+    deps?.availability &&
+    typeof deps.availability.searchAvailability === "function"
+  ) {
+    const external = await deps.availability.searchAvailability({
+      from: segment.from,
+      to: segment.to,
+      ddmmm,
+      dow,
+    });
+    if (!Array.isArray(external)) return { error: "CHECK FORMAT" };
+    results = external;
+  } else {
+    results = buildOfflineAvailability({
+      from: segment.from,
+      to: segment.to,
+      ddmmm,
+      dow,
+    });
+  }
+
+  const targetItem = results.find(
+    (r) => r.airline === targetAirline && Number(r.flightNo) === targetFlightNo
+  );
+  if (!targetItem) return { error: "NOT IN TABLE" };
+
+  const cls = targetItem.bookingClasses.find((x) => x.code === targetClass);
+  if (!cls) return { error: "CHECK CLASS OF SERVICE" };
+  if (cls.seats <= 0) return { error: "NO SEATS" };
+  if (segment.paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
+
+  // Validated -- release the old segment's inventory using whatever
+  // availability context state.lastAN still holds (best effort, same
+  // pattern as IG/IR/XI restitution), THEN switch to the new context and
+  // sell into it, so a same-context release never gets clobbered by the
+  // rebook's own state.lastAN update below.
+  releaseInventoryForSegments(state, [segment]);
+  segment.status = "HX";
+
+  state.lastAN = {
+    query: { from: segment.from, to: segment.to, ddmmm, dow },
+    results,
+  };
+  cls.seats -= segment.paxCount;
+
+  const newSeg = {
+    airline: targetItem.airline,
+    flightNo: targetItem.flightNo,
+    classCode: targetClass,
+    dateDDMMM: targetItem.dateDDMMM,
+    from: targetItem.from,
+    to: targetItem.to,
+    depTime: targetItem.depTime,
+    arrTime: targetItem.arrTime,
+    status: "HK",
+    paxCount: segment.paxCount,
+  };
+  pnr.itinerary.push(newSeg);
+
+  const lines = ["OK", ...renderPNRLiveView(state, deps.clock)];
+  return { lines };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -2055,7 +2202,7 @@ export async function processCommand(state, cmd, options = {}) {
     if (!subject) {
       print("HELP - AVAILABLE COMMANDS");
       print("AN/TN/SN            AVAILABILITY AND SCHEDULE");
-      print("SS / XE             SELL OR CANCEL SEGMENTS");
+      print("SS / SB / XE        SELL, REBOOK OR CANCEL SEGMENTS");
       print("NM AP APE RF ER RT  PNR BUILD AND DISPLAY");
       print("FXP FXX FXR FXB     PRICING");
       print("ET TTP TWD TWX      TICKETING");
@@ -2075,6 +2222,14 @@ export async function processCommand(state, cmd, options = {}) {
       print("EX: SS1Y1");
       print("SSAABBBBCddMMMXXXYYYn  LONG SELL (NO PRIOR AN)");
       print("EX: SSAF950C12DECCDGBRU1");
+      return { events, state };
+    }
+    if (subject === "SB") {
+      print("HE SB");
+      print("SBCn                REBOOK CLASS (ex: SBY6)");
+      print("SBddMMMn            REBOOK DATE (ex: SB12APR7)");
+      print("SBAABBBB*n          REBOOK FLIGHT (ex: SBBA194*3)");
+      print("n = SEGMENT'S RT ELEMENT NUMBER");
       return { events, state };
     }
     if (subject === "NM") {
@@ -2126,6 +2281,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("SNddMMMXXXYYY       SCHEDULE (ex: SN26DECALGPAR)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
+    print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
     print("XE1                 CANCEL SEGMENT");
     print("IG                  IGNORE PNR");
     print("IRXXXXXX            RETRIEVE PNR");
@@ -2446,6 +2602,16 @@ export async function processCommand(state, cmd, options = {}) {
     const result = isLongSell
       ? await handleSSLongSell(state, c, deps)
       : handleSS(state, c, deps.clock);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("SB")) {
+    const result = await handleSB(state, c, deps);
     if (result.error) {
       print(result.error);
       return { events, state };

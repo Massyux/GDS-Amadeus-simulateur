@@ -603,6 +603,148 @@ describe("processCommand", () => {
     assert.equal(cls.seats, initialSeats);
   });
 
+  it("SB rebooks a segment's class (SB<class><segment>), releasing the old seat and selling the new one", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const ySeats = item.bookingClasses.find((c) => c.code === "Y").seats;
+    const mSeats = item.bookingClasses.find((c) => c.code === "M").seats;
+
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const rtBefore = await runCommand(state, "RT");
+    const segLine = getRtSegmentLines(rtBefore)[0];
+    const segNo = parseInt(segLine.trim().split(/\s+/)[0], 10);
+
+    const sbLines = await runCommand(state, `SBM${segNo}`);
+    assert.equal(sbLines[0], "OK");
+
+    const cls = state.lastAN.results.find((r) => r.lineNo === 1).bookingClasses;
+    assert.equal(cls.find((c) => c.code === "Y").seats, ySeats);
+    assert.equal(cls.find((c) => c.code === "M").seats, mSeats - 1);
+
+    assert.equal(state.activePNR.itinerary.length, 2);
+    assert.equal(state.activePNR.itinerary[0].status, "HX");
+    assert.equal(state.activePNR.itinerary[1].status, "HK");
+    assert.equal(state.activePNR.itinerary[1].classCode, "M");
+  });
+
+  it("SB rebooks a segment's date (SB<date><segment>)", async () => {
+    // The offline generator re-randomizes flight numbers per date, so a
+    // real cross-date same-flight rebook isn't guaranteed to exist there.
+    // A custom provider that echoes back whichever date is queried lets
+    // this test verify the rebook mechanics deterministically instead.
+    const fakeDeps = {
+      deps: {
+        availability: {
+          searchAvailability: async ({ ddmmm }) => [
+            {
+              lineNo: 1,
+              airline: "ZZ",
+              flightNo: 9999,
+              from: "ALG",
+              to: "PAR",
+              dateDDMMM: ddmmm,
+              dow: "TH",
+              depTime: "1010",
+              arrTime: "1210",
+              bookingClasses: [{ code: "Y", seats: 9 }],
+            },
+          ],
+        },
+      },
+    };
+
+    const state = createInitialState();
+    await processCommand(state, "AN26DECALGPAR", fakeDeps);
+    await processCommand(state, "SS1Y1", fakeDeps);
+    await processCommand(state, "NM1DOE/JOHN MR", fakeDeps);
+    const rt = await processCommand(state, "RT", fakeDeps);
+    const rtLines = rt.events.map((event) => event.text);
+    const segNo = parseInt(
+      getRtSegmentLines(rtLines)[0].trim().split(/\s+/)[0],
+      10
+    );
+
+    const sbResult = await processCommand(state, `SB27DEC${segNo}`, fakeDeps);
+    const sbLines = sbResult.events.map((event) => event.text);
+    assert.equal(sbLines[0], "OK");
+    assert.equal(state.activePNR.itinerary[1].dateDDMMM, "27DEC");
+    assert.equal(state.activePNR.itinerary[1].classCode, "Y");
+    assert.equal(state.activePNR.itinerary[1].airline, "ZZ");
+    assert.equal(state.activePNR.itinerary[0].status, "HX");
+    assert.equal(state.activePNR.itinerary[1].status, "HK");
+  });
+
+  it("SB rebooks a segment's flight (SB<airline><flight>*<segment>)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const original = state.lastAN.results.find((r) => r.lineNo === 1);
+    const another = state.lastAN.results.find(
+      (r) => r.lineNo !== 1 && r.airline !== original.airline
+    );
+    assert.ok(another);
+
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const rtBefore = await runCommand(state, "RT");
+    const segNo = parseInt(
+      getRtSegmentLines(rtBefore)[0].trim().split(/\s+/)[0],
+      10
+    );
+
+    const sbLines = await runCommand(
+      state,
+      `SB${another.airline}${another.flightNo}*${segNo}`
+    );
+    assert.equal(sbLines[0], "OK");
+    assert.equal(state.activePNR.itinerary[1].airline, another.airline);
+    assert.equal(state.activePNR.itinerary[1].flightNo, another.flightNo);
+    assert.equal(state.activePNR.itinerary[1].classCode, "Y");
+  });
+
+  it("SB rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    const lines = await runCommand(state, "SBXYZ");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
+  it("SB returns NO ACTIVE PNR without a PNR", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "SBY1");
+    assert.deepEqual(lines, ["NO ACTIVE PNR"]);
+  });
+
+  it("SB returns ELEMENT NOT FOUND for an out-of-range or non-segment element", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+
+    const outOfRange = await runCommand(state, "SBY99");
+    assert.deepEqual(outOfRange, ["ELEMENT NOT FOUND"]);
+
+    // Element 1 is the passenger name, not a segment.
+    const wrongKind = await runCommand(state, "SBY1");
+    assert.deepEqual(wrongKind, ["ELEMENT NOT FOUND"]);
+  });
+
+  it("SB blocks rebooking a segment locked by a TST", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "FXP");
+
+    const rt = await runCommand(state, "RT");
+    const segNo = parseInt(getRtSegmentLines(rt)[0].trim().split(/\s+/)[0], 10);
+
+    const sbLines = await runCommand(state, `SBM${segNo}`);
+    assert.deepEqual(sbLines, ["NOT ALLOWED - TST SEGMENT"]);
+  });
+
   it("TN returns timetable lines and keeps results sellable", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");
