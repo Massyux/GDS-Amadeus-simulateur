@@ -831,7 +831,13 @@ function renderPNRLiveView(state, clock) {
     if (element.kind === "SEG") {
       const segment = pnr.itinerary[element.index];
       if (!segment) continue;
-      lines.push(`${padL(n, 2)} ${segmentLineForPNR(segment)}`);
+      const line =
+        segment.type === "ARNK"
+          ? isSegmentCancelledStatus(segment.status)
+            ? `ARNK ${segment.status}`
+            : "ARNK"
+          : segmentLineForPNR(segment);
+      lines.push(`${padL(n, 2)} ${line}`);
       n++;
       continue;
     }
@@ -1620,6 +1626,20 @@ function handleDL(state, cmdUpper, deps) {
   return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
 }
 
+// SI ARNK -- neutral continuity segment for an "arrival unknown" gap in the
+// itinerary (docs/COMMANDES-MANQUANTES.md Priorite 1). No flight/date/city
+// data: just an itinerary placeholder, appended after whatever segments
+// already exist (real usage: add it right after noticing the gap, before
+// selling the next, disconnected leg).
+function handleSIArnk(state, cmdUpper, deps) {
+  if (!/^SI\s*ARNK$/.test(cmdUpper)) return { error: "CHECK FORMAT" };
+
+  ensurePNR(state);
+  state.activePNR.itinerary.push({ type: "ARNK", status: "HK", paxCount: 1 });
+
+  return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
+}
+
 async function handleTN(state, cmdUpper, deps) {
   let dateObj = null;
   let from = null;
@@ -2374,6 +2394,12 @@ export async function processCommand(state, cmd, options = {}) {
       print("OTHER ELEMENTS: USE XE (ALREADY A TRUE DELETE)");
       return { events, state };
     }
+    if (subject === "SI") {
+      print("HE SI");
+      print("SI ARNK             CONTINUITY GAP (ARRIVAL UNKNOWN)");
+      print("NEUTRAL ITINERARY PLACEHOLDER, NO FLIGHT/DATE");
+      return { events, state };
+    }
     if (subject === "ER" || subject === "RT") {
       print(`HE ${subject}`);
       print(subject === "ER" ? "ER                  END AND RECORD PNR" : "RT                  DISPLAY ACTIVE PNR");
@@ -2421,6 +2447,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("n/TEXT              MODIFY RM/OSI/SSR/OP/TKTL (HE MODIFY for syntax)");
     print("XE1                 CANCEL SEGMENT");
     print("DLn                 DELETE SEGMENT (HE DL for syntax)");
+    print("SI ARNK             CONTINUITY GAP (HE SI for syntax)");
     print("IG                  IGNORE PNR");
     print("IRXXXXXX            RETRIEVE PNR");
     print("XI                  CANCEL ACTIVE PNR");
@@ -2781,6 +2808,16 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c.startsWith("DL")) {
     const result = handleDL(state, c, deps);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("SI")) {
+    const result = handleSIArnk(state, c, deps);
     if (result.error) {
       print(result.error);
       return { events, state };

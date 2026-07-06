@@ -1010,6 +1010,69 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["CHECK FORMAT"]);
   });
 
+  it("SI ARNK adds a neutral continuity segment to the itinerary", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "SI ARNK");
+    assert.equal(lines[0], "OK");
+    assert.ok(lines.some((l) => l.trim().endsWith("ARNK")));
+    assert.equal(state.activePNR.itinerary.length, 1);
+    assert.equal(state.activePNR.itinerary[0].type, "ARNK");
+  });
+
+  it("SI ARNK coexists with a real segment in RT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "SI ARNK");
+
+    const rt = await runCommand(state, "RT");
+    assert.equal(getRtSegmentLines(rt).length, 1);
+    assert.ok(rt.some((l) => l.trim().endsWith("ARNK")));
+    assert.equal(state.activePNR.itinerary.length, 2);
+  });
+
+  it("SI ARNK rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "SIFOO");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
+  it("an ARNK segment can be cancelled via XE (shows HX, same as a real segment)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "SI ARNK");
+
+    const rtBefore = await runCommand(state, "RT");
+    const arnkLine = rtBefore.find((l) => l.trim().endsWith("ARNK"));
+    const arnkNo = parseInt(arnkLine.trim().split(/\s+/)[0], 10);
+
+    const xeLines = await runCommand(state, `XE${arnkNo}`);
+    assert.equal(xeLines[0], "OK");
+    assert.ok(state.activePNR.itinerary.some((seg) => seg.type === "ARNK" && seg.status === "HX"));
+  });
+
+  it("an ARNK segment can be truly removed via DL", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "SI ARNK");
+
+    const rtBefore = await runCommand(state, "RT");
+    const arnkLine = rtBefore.find((l) => l.trim().endsWith("ARNK"));
+    const arnkNo = parseInt(arnkLine.trim().split(/\s+/)[0], 10);
+
+    const dlLines = await runCommand(state, `DL${arnkNo}`);
+    assert.equal(dlLines[0], "OK");
+    assert.equal(state.activePNR.itinerary.length, 1);
+    assert.ok(!state.activePNR.itinerary.some((seg) => seg.type === "ARNK"));
+  });
+
   it("TN returns timetable lines and keeps results sellable", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "TN26DECALGPAR");
