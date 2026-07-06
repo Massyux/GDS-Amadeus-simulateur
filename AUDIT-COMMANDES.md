@@ -33,7 +33,7 @@
 | RM | ✅ | ✅ | ⬜ | ✅ (vide rejeté) | ⬜ | ⬜ |
 | OP | ✅ | ✅ | ⬜ | ✅ (date/format) | ⬜ | ⬜ |
 | RF | ✅ | ✅ (écrase, correct) | ⬜ | ✅ (vide, `RF+` rejeté) | ⬜ | ✅ (exigé par ER) |
-| TKTL | ✅ | ✅ (écrase) | ⬜ | ✅ (date) | ⬜ | ⬜ |
+| TKTL / TKOK / TKXL (famille TK complétée Mission 15) | ✅ (3 formes) | ✅ (écrase — un seul élément TK par PNR, `TKOK` après `TKTL` remplace, n'additionne pas) | ⬜ | ✅ (date pour TL/XL, pas de date pour OK) | ⬜ | ✅ compatible XE/DL (`cancellableKinds`) et modification par n° (`NOT ALLOWED` sur la date d'un TKOK, qui n'en a pas) |
 | FP | ✅ | ✅ (écrase) | ⬜ | ✅ (CASH/CC regex) | ⬜ | ✅ (exigé par ET/TTP) |
 | ER | ✅ | ✅ (locator stable) | ✅ (NO ACTIVE PNR, END PNR FIRST si NM/AP/RF manquant) | ⬜ | ✅ | ✅ (valide les TST CREATED→VALIDATED) |
 | RT | ✅ | ✅ (pur) | ✅ (NO ACTIVE PNR) | ⬜ | ✅ | ⬜ |

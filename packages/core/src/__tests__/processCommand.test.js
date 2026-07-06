@@ -377,7 +377,7 @@ describe("processCommand", () => {
     const state = createInitialState();
     await runCommand(state, "NM1DOE/JOHN MR");
     const tktlLines = await runCommand(state, "TKTL/26DEC");
-    assert.equal(state.activePNR.tktl, "26DEC");
+    assert.deepEqual(state.activePNR.tk, { kind: "TL", date: "26DEC" });
     assert.ok(tktlLines.some((line) => line.includes("TKTL/26DEC")));
 
     const rtLines = await runCommand(state, "RT");
@@ -392,6 +392,54 @@ describe("processCommand", () => {
         (event) => event.type === "error" && event.text === "CHECK DATE"
       )
     );
+  });
+
+  it("TKOK sets an OK-to-ticket marker with no date", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "TKOK");
+    assert.deepEqual(state.activePNR.tk, { kind: "OK", date: null });
+    assert.ok(lines.some((line) => line.includes("TKOK")));
+  });
+
+  it("TKXL sets a cancel-if-not-ticketed date", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "TKXL/26DEC");
+    assert.deepEqual(state.activePNR.tk, { kind: "XL", date: "26DEC" });
+    assert.ok(lines.some((line) => line.includes("TKXL/26DEC")));
+  });
+
+  it("returns CHECK DATE for an invalid TKXL date", async () => {
+    const state = createInitialState();
+    const result = await processCommand(state, "TKXL31FEB");
+    assert.ok(
+      result.events.some(
+        (event) => event.type === "error" && event.text === "CHECK DATE"
+      )
+    );
+  });
+
+  it("only one TK element exists per PNR: TKOK after TKTL replaces it, doesn't add a second element", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "TKTL/26DEC");
+    const rtAfterOk = await runCommand(state, "TKOK");
+
+    assert.ok(!rtAfterOk.some((line) => line.includes("TKTL")));
+    assert.equal(rtAfterOk.filter((line) => line.includes("TKOK")).length, 1);
+    assert.deepEqual(state.activePNR.tk, { kind: "OK", date: null });
+  });
+
+  it("TKOK cannot be modified by date via <n>/<ddMMM> (no date to change)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "TKOK");
+    const rt = await runCommand(state, "RT");
+    const n = findElementNo(rt, "TKOK");
+
+    const lines = await runCommand(state, `${n}/26DEC`);
+    assert.deepEqual(lines, ["NOT ALLOWED"]);
   });
 
   it("sets FP CASH and shows it in RT", async () => {

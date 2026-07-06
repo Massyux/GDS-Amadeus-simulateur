@@ -653,7 +653,7 @@ function ensurePNR(state) {
       osi: [],
       remarks: [],
       options: [],
-      tktl: null,
+      tk: null,
       fp: null,
       tickets: [],
       receipts: [],
@@ -668,7 +668,7 @@ function ensurePNR(state) {
     state.activePNR.osi ||= [];
     state.activePNR.remarks ||= [];
     state.activePNR.options ||= [];
-    state.activePNR.tktl ||= null;
+    state.activePNR.tk ||= null;
     state.activePNR.fp ||= null;
     state.activePNR.tickets ||= [];
     state.activePNR.receipts ||= [];
@@ -788,7 +788,7 @@ function rebuildPnrElements(pnr, clock) {
     elements.push({ kind: "OP", index });
   });
 
-  if (pnr.tktl) elements.push({ kind: "TKTL" });
+  if (pnr.tk) elements.push({ kind: "TK" });
   if (pnr.fp) elements.push({ kind: "FP" });
   pnr.tickets.forEach((_, index) => {
     elements.push({ kind: "TKT", index });
@@ -870,8 +870,14 @@ function renderPNRLiveView(state, clock) {
       n++;
       continue;
     }
-    if (element.kind === "TKTL" && pnr.tktl) {
-      lines.push(`${padL(n, 2)} TKTL/${pnr.tktl}`);
+    if (element.kind === "TK" && pnr.tk) {
+      const line =
+        pnr.tk.kind === "OK"
+          ? "TKOK"
+          : pnr.tk.kind === "XL"
+            ? `TKXL/${pnr.tk.date}`
+            : `TKTL/${pnr.tk.date}`;
+      lines.push(`${padL(n, 2)} ${line}`);
       n++;
       continue;
     }
@@ -985,7 +991,7 @@ function buildElementIndex(state, clock) {
       continue;
     }
     if (
-      entry.kind === "TKTL" ||
+      entry.kind === "TK" ||
       entry.kind === "FP" ||
       entry.kind === "RF" ||
       entry.kind === "RECLOC"
@@ -1015,7 +1021,7 @@ function cancelElements(state, elements) {
   const rmIndexes = [];
   const opIndexes = [];
   let cancelRf = false;
-  let cancelTktl = false;
+  let cancelTk = false;
   let cancelFp = false;
 
   for (const element of elements) {
@@ -1033,8 +1039,8 @@ function cancelElements(state, elements) {
       rmIndexes.push(element.index);
     } else if (element.kind === "OP") {
       opIndexes.push(element.index);
-    } else if (element.kind === "TKTL") {
-      cancelTktl = true;
+    } else if (element.kind === "TK") {
+      cancelTk = true;
     } else if (element.kind === "FP") {
       cancelFp = true;
     } else if (element.kind === "RF") {
@@ -1060,7 +1066,7 @@ function cancelElements(state, elements) {
   opIndexes.sort((a, b) => b - a).forEach((idx) => {
     if (idx >= 0 && idx < pnr.options.length) pnr.options.splice(idx, 1);
   });
-  if (cancelTktl) pnr.tktl = null;
+  if (cancelTk) pnr.tk = null;
   if (cancelFp) pnr.fp = null;
   if (cancelRf) pnr.rf = null;
 }
@@ -1514,7 +1520,7 @@ async function handleSB(state, cmdUpper, deps) {
 // <elementNo>/<newValue> -- modify a free-text/date PNR element in place,
 // referenced by its RT element number (docs/COMMANDES-MANQUANTES.md
 // Priorite 1: "5/NOUVEAU TEXTE", "8/12JUL"). Scoped to the element kinds
-// that are plain free text or a bare date (RM, OSI, SSR, OP, TKTL) --
+// that are plain free text or a bare date (RM, OSI, SSR, OP, TK) --
 // segments are rebooked via SB (already more explicit about which
 // dimension changes) and names via a future NU command, not this one;
 // every other kind (PAX, SEG, AP, FP, RF, TKT, ITR, RECLOC) returns
@@ -1549,10 +1555,11 @@ function handleElementModify(state, cmdUpper, deps) {
     } else {
       option.text = newValue;
     }
-  } else if (target.kind === "TKTL") {
+  } else if (target.kind === "TK") {
+    if (pnr.tk.kind === "OK") return { error: "NOT ALLOWED" };
     const dateObj = parseDDMMM(newValue, deps.clock);
     if (!dateObj) return { error: "CHECK DATE" };
-    pnr.tktl = formatDDMMM(dateObj);
+    pnr.tk.date = formatDDMMM(dateObj);
   } else {
     return { error: "NOT ALLOWED" };
   }
@@ -1596,7 +1603,7 @@ function handleNU(state, cmdUpper, deps) {
 
 // DL<n> -- TRUE deletion of a segment (docs/COMMANDES-MANQUANTES.md
 // Priorite 1: "vs XE qui annule"). Scoped to segments only: every other
-// element kind (RM/OSI/SSR/OP/AP/APE/TKTL/FP/RF) is already truly removed
+// element kind (RM/OSI/SSR/OP/AP/APE/TK/FP/RF) is already truly removed
 // by XE's cancelElements (splice/null, not a historized marker) -- there is
 // no real "vs XE" distinction left to make for those, so DL on a non-SEG
 // element returns NOT ALLOWED and points at XE instead. Reuses XE's own
@@ -1944,7 +1951,7 @@ function handleXE(state, cmdUpper, clock) {
     "OSI",
     "RM",
     "OP",
-    "TKTL",
+    "TK",
     "FP",
     "RF",
     "PAX",
@@ -2370,7 +2377,7 @@ export async function processCommand(state, cmd, options = {}) {
     if (subject === "MODIFY") {
       print("HE MODIFY");
       print("n/TEXT              MODIFY RM/OSI/SSR/OP TEXT BY RT ELEMENT #");
-      print("n/ddMMM             MODIFY OP/TKTL DATE BY RT ELEMENT #");
+      print("n/ddMMM             MODIFY OP/TKTL/TKXL DATE BY RT ELEMENT #");
       print("EX: 5/NEW REMARK TEXT");
       return { events, state };
     }
@@ -2444,7 +2451,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
-    print("n/TEXT              MODIFY RM/OSI/SSR/OP/TKTL (HE MODIFY for syntax)");
+    print("n/TEXT              MODIFY RM/OSI/SSR/OP/TK (HE MODIFY for syntax)");
     print("XE1                 CANCEL SEGMENT");
     print("DLn                 DELETE SEGMENT (HE DL for syntax)");
     print("SI ARNK             CONTINUITY GAP (HE SI for syntax)");
@@ -2459,6 +2466,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("APE                 EMAIL CONTACT");
     print("OP                  OPTION/REMINDER");
     print("RF                  SIGNATURE (RFMM)");
+    print("TKTL/TKOK/TKXL      TICKETING TIME LIMIT / OK / CANCEL DATE");
     print("FXP/FXX/FXR/FXB     PRICING");
     print("ER                  END PNR");
     print("RT                  DISPLAY PNR (same as live)");
@@ -3067,7 +3075,36 @@ export async function processCommand(state, cmd, options = {}) {
       print("CHECK DATE");
       return { events, state };
     }
-    pnr.tktl = formatDDMMM(parsed);
+    pnr.tk = { kind: "TL", date: formatDDMMM(parsed) };
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  // TKOK / TKXL complete the TK family alongside TKTL
+  // (docs/COMMANDES-MANQUANTES.md Priorite 1) -- "un seul element TK par
+  // PNR": each one simply overwrites pnr.tk, same as the other single-value
+  // elements (RF, FP).
+  if (c === "TKOK") {
+    ensurePNR(state);
+    state.activePNR.tk = { kind: "OK", date: null };
+    renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("TKXL")) {
+    ensurePNR(state);
+    const pnr = state.activePNR;
+    const tkxlMatch = c.match(/^TKXL\/?(\d{1,2}[A-Z]{3})$/);
+    if (!tkxlMatch) {
+      print("CHECK FORMAT");
+      return { events, state };
+    }
+    const parsed = parseDDMMM(tkxlMatch[1], deps.clock);
+    if (!parsed) {
+      print("CHECK DATE");
+      return { events, state };
+    }
+    pnr.tk = { kind: "XL", date: formatDDMMM(parsed) };
     renderPNRLiveView(state, deps.clock).forEach(print);
     return { events, state };
   }

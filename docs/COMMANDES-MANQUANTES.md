@@ -33,7 +33,7 @@ notre `FQN` (dans le vrai système, FQN affiche les notes tarifaires d'une ligne
 | `MN` / `MY` | Même dispo au jour suivant / précédent | Relance le dernier AN décalé d'un jour |
 | `AC` / `ACR` | Modifier le dernier affichage dispo : `AC18MAY`, `AC/CF`, `ACR` (retour) | Garde les critères du dernier AN, applique le delta, réaffiche |
 | `RT` partiels | `RTN` (noms), `RTI`/`RTA` (itinéraire), `RTK` (billetterie), `RTG` (services), `RTR` (remarques) | Filtres d'affichage du PNR actif |
-| `TKOK` / `TKXL` | Compléter TKTL : billeter maintenant / date limite d'annulation | Élément TK, un seul par PNR, formats datés |
+| ~~`TKOK` / `TKXL`~~ **fait Mission 15 (06/07/2026)** | Compléter TKTL : billeter maintenant / date limite d'annulation | ✅ Fait : refactor de `pnr.tktl` (simple date) vers `pnr.tk = { kind: "TL"\|"XL"\|"OK", date }` — un seul élément TK par PNR (poser `TKOK` après `TKTL` remplace l'élément, n'en ajoute pas un second). `TKOK` sans date ; `TKXL/ddMMM` même format que `TKTL/ddMMM`. Compatible XE/DL/modification par n° (bloqué `NOT ALLOWED` pour tenter de modifier la date d'un `TKOK`, qui n'en a pas) |
 
 ## Priorité 2 — environnement & utilitaires de l'agent (rapides à faire, très « vrai Amadeus »)
 
