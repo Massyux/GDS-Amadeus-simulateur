@@ -7,8 +7,19 @@
 ## En cours
 
 **Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION)** : `15 → 16 → 17 → 13 →
-18 → 19 → 20` puis retour à 07. **Mission 15 close (06/07/2026, 8/8 commandes)**, enchaînement
-immédiat sur **MISSION-16** dans la même session, comme l'exige la règle 1 de la chaîne.
+18 → 19 → 20` puis retour à 07. **Mission 15 close (06/07/2026, 8/8 commandes + Étape 0)**, tout
+poussé sur `main`, CI verte, production vérifiée.
+
+**Reprise exacte (limite de session atteinte après la clôture de la Mission 15)** : ouvrir
+`missions/MISSION-16.md` (déjà lu, pas encore commencée — aucun code écrit) et démarrer à
+l'**Étape 1** de sa propre liste (`MD`/`MU`/`MT`/`MB`). Point d'architecture à poser en premier
+(demandé explicitement par la mission) : `state.lastDisplay` (type, critères, position) comme
+état CORE — pas de l'UI — avant de brancher les commandes dessus. Suivre le même protocole de
+non-régression que Mission 15 (suite + typecheck + lint après CHAQUE commande, un commit par
+commande, push). Vigilance famille (leçon Mission 04, rappelée par la mission elle-même) :
+vérifier qu'aucun des nouveaux préfixes (`MD`/`MU`/`MT`/`MB`/`MN`/`MY`/`AC`/`ACR`/`RE`) ne
+collisionne avec des préfixes existants (`RF`, `RT`, etc.) — test golden de non-collision pour
+chaque nouveau préfixe.
 
 ## Fait (par session, datée)
 
