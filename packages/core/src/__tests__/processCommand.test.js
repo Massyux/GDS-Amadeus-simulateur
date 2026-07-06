@@ -1254,6 +1254,49 @@ describe("processCommand", () => {
     assert.equal(state.lastDisplay.page, 1);
   });
 
+  it("MN relaunches the last availability search shifted one day forward", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const mnLines = await runCommand(state, "MN");
+    assert.ok(mnLines.some((line) => line.startsWith("AN27DECALGPAR")));
+    assert.equal(state.lastAN.query.ddmmm, "27DEC");
+  });
+
+  it("MY relaunches the last availability search shifted one day back", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const myLines = await runCommand(state, "MY");
+    assert.ok(myLines.some((line) => line.startsWith("AN25DECALGPAR")));
+    assert.equal(state.lastAN.query.ddmmm, "25DEC");
+  });
+
+  it("MN/MY chain and stay addressable by SS afterward", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "MN");
+    await runCommand(state, "MN");
+    assert.equal(state.lastAN.query.ddmmm, "28DEC");
+
+    const ss = await runCommand(state, "SS1Y1");
+    assert.equal(ss[0], "OK");
+    assert.equal(state.activePNR.itinerary[0].dateDDMMM, "28DEC");
+  });
+
+  it("MN/MY also relaunch as an AN display even if the last search was a TN", async () => {
+    const state = createInitialState();
+    await runCommand(state, "TN26DECALGPAR");
+    const mnLines = await runCommand(state, "MN");
+    assert.ok(mnLines.some((line) => line.includes("AMADEUS AVAILABILITY - AN")));
+  });
+
+  it("MN/MY return NO ACTIVE DISPLAY without a prior availability search", async () => {
+    const state = createInitialState();
+    const mnLines = await runCommand(state, "MN");
+    assert.deepEqual(mnLines, ["NO ACTIVE DISPLAY"]);
+    const myLines = await runCommand(state, "MY");
+    assert.deepEqual(myLines, ["NO ACTIVE DISPLAY"]);
+  });
+
   it("returns invalid format for a malformed AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "ANXYZ");

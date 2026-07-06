@@ -1245,6 +1245,20 @@ async function handleAN(state, cmdUpper, deps, options = {}) {
   return { lines };
 }
 
+// MN/MY -- relaunch the last availability search shifted a day forward/back
+// (docs/COMMANDES-MANQUANTES.md Priorite 1). Reuses state.lastAN.query
+// (from/to/date), which AN/TN/SN/SS long sell/SB all populate -- so this
+// re-displays as a real AN, even if the last thing shown was e.g. a TN.
+async function handleMoveDay(state, deps, deltaDays) {
+  if (!state.lastAN || !state.lastAN.query) return { error: "NO ACTIVE DISPLAY" };
+  const { from, to, ddmmm } = state.lastAN.query;
+  const dateObj = parseDDMMM(ddmmm, deps.clock);
+  if (!dateObj) return { error: "NO ACTIVE DISPLAY" };
+  dateObj.setDate(dateObj.getDate() + deltaDays);
+  const newDdmmm = formatDDMMM(dateObj);
+  return handleAN(state, `AN${newDdmmm}${from}${to}`, deps);
+}
+
 function handleSS(state, cmdUpper, clock) {
   if (!state.lastAN || !state.lastAN.results || state.lastAN.results.length === 0) {
     return { error: "NO AVAILABILITY" };
@@ -2485,6 +2499,12 @@ export async function processCommand(state, cmd, options = {}) {
       print("MB                  MOVE BOTTOM (LAST PAGE)");
       return { events, state };
     }
+    if (subject === "MN" || subject === "MY") {
+      print(`HE ${subject}`);
+      print("MN                  SAME AVAILABILITY, NEXT DAY");
+      print("MY                  SAME AVAILABILITY, PREVIOUS DAY");
+      return { events, state };
+    }
     if (subject === "APE" || subject === "OP") {
       print(`HE ${subject}`);
       if (subject === "APE") print("APE-EMAIL@DOMAIN.TLD ADD EMAIL CONTACT");
@@ -2508,6 +2528,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("TNddMMMXXXYYY       TIMETABLE (ex: TN26DECALGPAR)");
     print("SNddMMMXXXYYY       SCHEDULE (ex: SN26DECALGPAR)");
     print("MD/MU/MT/MB         SCROLL LAST DISPLAY (HE MD for syntax)");
+    print("MN/MY               SAME AVAILABILITY NEXT/PREVIOUS DAY");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
@@ -2607,6 +2628,16 @@ export async function processCommand(state, cmd, options = {}) {
       return { events, state };
     }
     result.lines.forEach(print);
+    return { events, state };
+  }
+
+  if (c === "MN" || c === "MY") {
+    const result = await handleMoveDay(state, deps, c === "MN" ? 1 : -1);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines?.forEach(print);
     return { events, state };
   }
 
