@@ -36,7 +36,7 @@
 | 11 | Site de vente + licences par poste | Phase 8 | esquisse |
 | 12 | Mode « données réelles » AN/SN via API Amadeus (provider + proxy serverless) | v1.x | esquisse |
 | 13 | Liste d'attente réaliste HL/UC/KK/KL + ETK/ERK (confirmé Massy, mission 03) | v1.x | esquisse |
-| 15 | Servicing du PNR actif : SS long sell, SB, modif par n°, NU, DL, SI ARNK, TKOK/TKXL + corrections fidélité ET & VOID→TWD/TWX | v1.x | voir docs/COMMANDES-MANQUANTES.md |
+| 15 | Servicing du PNR actif : SS long sell, SB, modif par n°, NU, DL, SI ARNK, TKOK/TKXL + corrections fidélité ET & VOID→TWD/TWX | v1.x | fait (06/07/2026) |
 | 16 | Navigation & affichages : MD/MU/MT/MB, MN/MY, AC/ACR, RT partiels, RE | v1.x | voir docs/COMMANDES-MANQUANTES.md |
 | 17 | Utilitaires agent : DC/DNA/DNE/DB, DD/DF, DO, DM (+ JI/JO à valider) | v1.x | voir docs/COMMANDES-MANQUANTES.md |
 | 18 | Sièges : SM / ST / SX | v1.x | voir docs/COMMANDES-MANQUANTES.md |

@@ -212,10 +212,15 @@ modifiée ici doit rester couverte par un test avant merge (voir méthode de tra
   05/07/2026 — avant cela, tarifiait sans aucun passager)
 
 **Ticketing**
-- ET / TTP (émission), VOID (annulation billet émis), ITR-EML (envoi reçu itinéraire)
+- ET / TTP (émission), TWD / TWX (affichage / annulation billet émis — renommé depuis VOID en
+  Mission 15, 06/07/2026, voir §9), ITR-EML (envoi reçu itinéraire)
 
 Hors scope niveau 1-2 (pas encore implémenté / pas dans ce périmètre figé) : toute commande non
-listée ci-dessus.
+listée ci-dessus. Depuis le 06/07/2026, une chaîne d'implémentation v1.x (missions 15-20, voir
+`missions/README.md` et `docs/COMMANDES-MANQUANTES.md`) ajoute des commandes AU-DELÀ de ce
+périmètre figé (SS long sell, SB, NU, DL, SI ARNK, TKOK/TKXL à date) — ce §5 reste la référence du
+périmètre v1.0 originel, ne pas le réécrire à chaque commande ajoutée : voir `AUDIT-COMMANDES.md`
+(grille à jour commande par commande) et `TASKS.md` pour l'état vivant de la chaîne v1.x.
 
 ---
 
@@ -401,16 +406,47 @@ Interdit :
 - `scripts/generate-keys.mjs` : outil Node autonome pour Massy (génération + CSV clés en clair,
   gitignored).
 
+### 06/07/2026 — Mission 15 (servicing du PNR actif — chaîne d'implémentation v1.x)
+- **Étape 0, bug critique signalé par Massy** : « IG ne sort pas complètement du PNR et ne
+  l'ignore pas. » Racine : `resolveRecordedLocator` avait un repli sur un pointeur global
+  (`state.lastRecordedLocator`) déconnecté du PNR actif courant, pouvant résurrectir un PNR
+  antérieur sans rapport après `ER` (PNR A) → `XI` → nouveau PNR B jamais enregistré → `IG`.
+  Pointeur supprimé, résolution scopée strictement au PNR actif. Même famille : IG/IR/XI ne
+  restituaient jamais les sièges vendus (`SS`) lors d'un discard/rollback — corrigé, restitution
+  scopée à la part non enregistrée depuis le dernier `ER` du PNR concerné (jamais celle d'un
+  autre PNR). Matrice d'état complète en §2.2 ci-dessus.
+- **8 commandes ajoutées** (détail exhaustif dans `TASKS.md` et `AUDIT-COMMANDES.md`) : VOID
+  retiré au profit de `TWD`/`TWX` (affichage/annulation billet) ; `SS` long sell
+  (`SS<cie><vol><classe><date><villes><pax>`, alimente `state.lastAN` comme un AN implicite) ;
+  `SB` rebooking classe/date/vol (référence le segment par son n° d'élément RT, comme XE —
+  **syntaxe non confirmée par expérience terrain**, à vérifier) ; modification par n°
+  (`n/valeur`, périmètre réduit aux éléments texte/date libres RM/OSI/SSR/OP/TKTL) ; `NU`
+  correction de nom (bloqué après émission) ; `DL` suppression réelle de segment (périmètre
+  réduit aux segments — tout le reste est déjà réellement supprimé par XE, voir
+  `cancelElements`) ; `SI ARNK` (élément neutre de continuité) ; `TKOK`/`TKXL` complétant TKTL
+  (refactor `pnr.tktl` → `pnr.tk = {kind, date}`, un seul élément TK par PNR).
+- **Point non traité, à trancher** : la correction de fidélité `ET` (`ET` traité aujourd'hui
+  comme `TTP` — émission de billet — alors que le vrai `ET` = End Transaction, jumeau de `ER`,
+  sans émettre de billet) est mentionnée dans `docs/COMMANDES-MANQUANTES.md` et le libellé de
+  Mission 15, mais **absente de la liste numérotée réelle de `MISSION-15.md`** — non traitée pour
+  ne pas élargir le périmètre de ma propre initiative (CONSTITUTION §6). Voir `TASKS.md` Backlog.
+- Suite core passée de 137 à 192 tests (+55), toutes vertes après chaque commande (protocole de
+  non-régression strict : suite complète + typecheck + lint après CHAQUE commande, pas seulement
+  en fin de mission). Web (22) + e2e (10) + production vérifiés en fin de mission.
+- **Enchaînement immédiat sur Mission 16** dans la même session (règle de la chaîne
+  d'implémentation, `missions/README.md`).
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
-(déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2) et **Phase 3 (offre commerciale v1)
-close** : accès par clé en production, page d'accueil FR/EN.
-Prochaine étape : mission 07 (lancement pilote + traitement des retours, Phase 4) ou toute autre
-priorité que Massy souhaite donner — voir `missions/README.md`. Point notable en Backlog pour une
-mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, chantier business plus
-large qu'un correctif de message).
+Missions 01 à 06 et 15 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
+(déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre commerciale v1)
+close** (accès par clé en production, page d'accueil FR/EN), et **chaîne d'implémentation v1.x en
+cours** (missions 15→16→17→13→18→19→20, décision Massy du 06/07/2026).
+Prochaine étape : **Mission 16** (navigation & affichages), enchaînée immédiatement sans arrêt de
+session, selon la règle de la chaîne dans `missions/README.md`. Points notables en Backlog pour
+une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, Mission 03) ; correction
+de fidélité `ET` (voir Mission 15 ci-dessus, à trancher avec l'architecte/Massy).
 
 ---
 

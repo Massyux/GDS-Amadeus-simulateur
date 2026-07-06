@@ -6,9 +6,62 @@
 
 ## En cours
 
-_(aucune — Mission 05 close, voir ci-dessous)_
+**Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION)** : `15 → 16 → 17 → 13 →
+18 → 19 → 20` puis retour à 07. **Mission 15 close (06/07/2026, 8/8 commandes)**, enchaînement
+immédiat sur **MISSION-16** dans la même session, comme l'exige la règle 1 de la chaîne.
 
 ## Fait (par session, datée)
+
+### 06/07/2026 — Mission 15 (servicing du PNR actif — chaîne d'implémentation)
+- **Étape 0 (bug critique signalé par Massy, traité en premier)** : « IG ne sort pas complètement
+  du PNR et ne l'ignore pas. » Cause racine : `resolveRecordedLocator` avait un repli sur
+  `state.lastRecordedLocator`, un pointeur GLOBAL déconnecté du PNR actif courant — après
+  ER (PNR A) → XI → nouveau PNR B jamais enregistré → IG résurrectait A au lieu de jeter B. Pointeur
+  supprimé ; résolution scopée strictement au PNR actif. Même famille : IG/IR/XI ne restituaient
+  jamais les sièges vendus via SS lors d'un discard/rollback — corrigé (restitution scoping à la
+  part non enregistrée depuis le dernier ER, jamais celle d'un autre PNR). Matrice d'état complète
+  documentée dans `PROJECT_MEMORY_SIMULATEUR_AMADEUS.md` §2.2. 137→141 tests.
+- **1/8 — VOID→TWD/TWX** : `VOID` retiré du dispatcher, remplacé par `TWD` (affichage, format
+  minimal — richesse réelle de l'écran non modélisée, marqué « à vérifier ») et `TWX` (annulation,
+  logique VOID conservée). 141→143 tests.
+- **2/8 — SS long sell** : `SS<compagnie><vol><classe><date><villes><pax>` vend directement sans
+  AN préalable ; alimente `state.lastAN` comme un AN implicite (sièges partagés avec un SS
+  numérique ultérieur, restitution IG/IR/XI déjà couverte). 143→151 tests.
+- **3/8 — SB rebooking** : classe (`SBY6`), date (`SB12APR7`), vol (`SBBA194*3`) — référence le
+  segment par son numéro d'élément RT (même convention que XE). **Syntaxe non confirmée par
+  expérience terrain**, déduite des 3 exemples de `docs/COMMANDES-MANQUANTES.md` — marqué
+  « à vérifier ». Ancien segment `HX`, nouveau `HK`, inventaire libéré/re-décrémenté sans écraser
+  d'autres sièges déjà vendus sur le même contexte. Bloqué par `NOT ALLOWED - TST SEGMENT` (même
+  règle que XE). 151→158 tests.
+- **4/8 — Modification par n°** (`n/valeur`) : périmètre réduit aux éléments texte/date libres
+  (RM/OSI/SSR/OP/TKTL) — `4/2` (sièges) et `2/HK` (statut segment) volontairement pas faits
+  (redondants avec SB, voir `docs/COMMANDES-MANQUANTES.md`). `NOT ALLOWED` pour tout autre type
+  d'élément. 158→170 tests.
+- **5/8 — NU** correction de nom : position référencée deux fois (`NU1/1SMITH/JOHN MR`), doit
+  correspondre sinon `CHECK FORMAT`. Bloqué après émission d'un billet (`NOT ALLOWED`). 170→175.
+- **6/8 — DL** suppression de segment : en relisant `cancelElements` (logique XE), tous les autres
+  types d'éléments sont déjà réellement supprimés par XE (pas juste historisés) — `DL` n'a donc de
+  sens réel QUE pour les segments (`NOT ALLOWED` pour tout le reste, rediriger vers XE). Mêmes
+  garde-fous que XE (`NOT ALLOWED - TST SEGMENT`, `NOT ALLOWED - LAST SEGMENT`), restitution
+  d'inventaire. 175→182 tests.
+- **7/8 — SI ARNK** : élément d'itinéraire neutre (aucune détection automatique de trou de
+  continuité n'existait — rien à « supprimer » comme avertissement). Compatible XE/DL comme un
+  vrai segment. 182→187 tests.
+- **8/8 — TKOK/TKXL** : refactor de `pnr.tktl` (date simple) vers `pnr.tk = {kind, date}` — un
+  seul élément TK par PNR (poser `TKOK` après `TKTL` remplace, n'additionne pas). 187→192 tests.
+- **Écart de fidélité NON traité, à trancher** : `docs/COMMANDES-MANQUANTES.md` et le libellé de
+  Mission 15 dans `missions/README.md` mentionnent aussi la correction de `ET` (traité aujourd'hui
+  comme une émission de billet, alors qu'en vrai Amadeus `ET` = End Transaction, jumeau de `ER`,
+  et seul `TTP` émet). **Mais la liste numérotée de `missions/MISSION-15.md` §Commandes à
+  implémenter ne contient PAS ce point** (8 items listés, ET absent) — periomètre non élargi de ma
+  propre initiative (CONSTITUTION §6). Signalé pour arbitrage : implique un changement de
+  comportement significatif (ET n'émettrait plus de billet), qui casserait une bonne partie des
+  tests de cette session utilisant `ET` comme raccourci pour « émettre un billet ». Proposé comme
+  item dédié d'une mission future (voir Backlog ci-dessous).
+- Suites : core 137→192 (+55), typecheck/lint verts après chaque commande, web (22) + e2e (10)
+  verts en fin de mission, production vérifiée (`/api/verify-key` répond toujours correctement
+  après déploiement — mission 100% `packages/core`, pas de changement web/functions).
+- **Enchaînement immédiat sur MISSION-16** dans la même session (règle de la chaîne).
 
 ### 06/07/2026 — Mission 06 (accès par clé + habillage commercial v1)
 - Décisions Massy en début de session : canal « demander un accès » = e-mail
@@ -160,3 +213,14 @@ _(aucune — Mission 05 close, voir ci-dessous)_
   Détail dans `docs/ERREURS-AMADEUS.md`. Non traité dans Mission 03 (hors périmètre message).
 - **Formulations encore à vérifier** (21 messages, sans urgence, aucun impact fonctionnel connu
   au-delà du texte affiché) : voir la table complète dans `docs/ERREURS-AMADEUS.md`.
+- **Incohérence fonctionnelle confirmée, à arbitrer (correction fidélité `ET`)** : `ET` est traité
+  aujourd'hui exactement comme `TTP` (émission de billet). Le vrai Amadeus : `ET` = End
+  Transaction (valide/enregistre le PNR sans le réafficher, jumeau de `ER`) ; seul `TTP` émet un
+  billet. Mentionné dans `docs/COMMANDES-MANQUANTES.md` (« 2 écarts de fidélité ») et dans le
+  libellé de Mission 15 (`missions/README.md`), mais **absent de la liste numérotée des 8
+  commandes de `missions/MISSION-15.md`** — périmètre non élargi de ma propre initiative
+  (CONSTITUTION §6), le point n'a donc pas été traité dans cette mission. Impact si corrigé : `ET`
+  ne créerait plus de billet ; casserait toute logique/tests qui utilisent `ET` comme raccourci
+  « émettre un billet » (fait dans plusieurs tests golden existants et dans les nouveaux tests
+  Mission 15 — NU/TWX/DL). À trancher avec l'architecte/Massy : mission dédiée ou ajout explicite
+  à une mission future, pas une correction incidente en passant.
