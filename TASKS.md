@@ -7,21 +7,52 @@
 ## En cours
 
 **Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION, ALLÈGEMENT 07/07/2026)** :
-**Mission 16 est CLOSE** (toutes commandes : Étape 0 ET, `MD`/`MU`/`MT`/`MB`, `MN`/`MY`,
-`AC`/`SC`/`ACR`, `RE`/`RE2` ; `RT` partiels reportés en v2 par décision de Massy, non-collision
-testée). Chaîne réduite : `fin 16 → 17 réduite (DC+DNA+DD) → 13 → 19 réduite (magasin PNR +
-RT locator/nom) → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 sont
-reportés en v2. Tout poussé sur `main`, 6 suites vertes (237 tests core, 3 data, 22 web, 10 e2e,
-lint et typecheck propres).
+**Mission 16 est CLOSE** (toutes commandes) et **Mission 17 réduite est CLOSE** (`DD`, `DC`,
+`DNA` — DO/DF/DNE/DB/DM et JI/JO reportés en v2). Chaîne réduite : `fin 17 → 13 → 19 réduite
+(magasin PNR + RT locator/nom) → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de
+17/19/20 sont reportés en v2. Tout poussé sur `main`, 6 suites vertes (247 tests core, 9 data,
+22 web, 10 e2e, lint et typecheck propres).
 
-**Reprise exacte** : ouvrir `missions/MISSION-17.md` en entier, démarrer par la commande `DC`
-(encodage/décodage pays), périmètre réduit à `DC`+`DNA`+`DD` uniquement (DO/DF/DNE/DB/DM et
-JI/JO reportés — voir README §ALLÈGEMENT). Protocole de non-régression habituel : suite core +
-typecheck + lint après CHAQUE commande, un commit par commande, push ; rituel complet (6 suites +
-doc) à la fin de la mission, puis enchaîner immédiatement sur Mission 13 (inchangée), puis
-Mission 19 réduite (magasin PNR + `RT` locator/nom seulement).
+**Reprise exacte** : ouvrir `missions/MISSION-13.md` en entier (inchangée — statuts & liste
+d'attente réaliste HL/UC/KK/KL + ETK/ERK, confirmé par Massy comme un vrai écart business en
+Mission 03). Protocole de non-régression habituel : suite core + typecheck + lint après CHAQUE
+commande, un commit par commande, push ; rituel complet (6 suites + doc) à la fin de la mission,
+puis enchaîner immédiatement sur Mission 19 réduite (magasin PNR + `RT` locator/nom seulement,
+RH/SP/EF/RTAXR/RRN/RRI/RRP reportés).
 
 ## Fait (par session, datée)
+
+### 07/07/2026 — Mission 17 réduite (DD, DC, DNA — utilitaires agent, clôture de la mission)
+- **DD** (calculateur de dates, pur calcul) : `DDddMMM` (date + jour de semaine),
+  `DDddMMM/±n` (décalage signé depuis une date donnée), `DD±n` (décalage signé depuis
+  aujourd'hui). Réutilise les helpers de date déjà présents (`ddmmmToDate`, `formatDDMMM`,
+  `dayOfWeek2`), même convention année courante sans rollover que le reste du moteur.
+  `CHECK DATE` sur date invalide (`DD31FEB`). Un code ville seul (`DDPAR`, un des exemples
+  donnés par la mission elle-même) ne correspond à aucune des formes implémentées → `CHECK
+  FORMAT` : décision documentée plutôt que devinée (une variante "heure locale par ville"
+  aurait demandé une donnée de fuseau horaire absente du projet, ce qui aurait contredit la
+  note "pur calcul, aucune donnée externe" de la doc). Sortie exacte (libellés `FROM`/`TO`)
+  marquée à vérifier terrain avec Massy — logique de calcul fiable et testée.
+- **DC** (pays/nationalité) et **DNA** (compagnies) : nouvelles tables dans `packages/data`
+  (`InMemoryStore.loadCountriesFromArray`/`loadAirlinesFromArray` + `cmdDC`/`cmdDNA`,
+  `createCountryProvider`/`createAirlineProvider`), chargées à la demande côté `Terminal.jsx`
+  comme `locations` pour DAC/DAN. `DC` reprend la dualité decode-par-code/encode-par-texte de
+  DAC/DAN en une seule commande ; `DNA` ajoute une 3e forme (code numérique de billetterie),
+  conforme aux exemples de la mission (`DNA DELTA`/`DNA AF`/`DNA 057`). Nouvelles données
+  publiques (codes IATA pays/compagnies, pas une règle métier Amadeus) : `countries.json` (20
+  pays, dont DZ/FR/MA/TN cohérents avec le focus Algérie du projet) et `airlines.json` (13
+  compagnies, dont les 6 déjà utilisées par le provider de disponibilité AH/AF/TK/PC/SV/AT) —
+  à compléter si besoin, non exhaustif par choix (CONSTITUTION §7).
+- `resolveDeps` étendu pour accepter `deps.countries`/`deps.airlines` (même contrat que
+  `deps.locations` : objet avec une méthode `lookup`), sinon `COUNTRY/AIRLINE PROVIDER NOT
+  CONFIGURED`. `HELP`/`HE DD`/`HE DC`/`HE DNA` documentés.
+- 237→247 tests core (dont DD/DC/DNA + non-collision), 3→9 tests `packages/data`. Build web
+  vérifié (`countries.json`/`airlines.json` bien copiés dans `dist/data/`), vérification
+  manuelle bout-en-bout des 3 commandes avec les vraies données. **Mission 17 réduite close** :
+  rituel complet exécuté (6 suites vertes : 247 core, 9 data, 22 web, 10 e2e, lint et typecheck
+  propres).
+- **Hors périmètre de cette mission (reporté en v2, décision Massy 07/07/2026)** : `DO`, `DF`,
+  `DNE`, `DB`, `DM`, `JI`/`JO` — voir `docs/COMMANDES-MANQUANTES.md` §Priorité 2.
 
 ### 07/07/2026 — Mission 16, commande 6/6 (RE/RE2 — clôture de la mission)
 - Nouvel état CORE `state.commandHistory: string[]` (comme `state.lastDisplay`) : historique des

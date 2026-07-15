@@ -470,19 +470,38 @@ Interdit :
   `RT` locator/nom seulement) → Mission 07 (pilote). Mission 18 (sièges) et le reste de
   17/19/20 sont entièrement reportés en v2.
 
+### 07/07/2026 — Mission 17 réduite (DD, DC, DNA — utilitaires de l'agent)
+- `DD` (calculateur de dates, pur calcul, aucune donnée externe) : `DDddMMM`, `DDddMMM/±n`,
+  `DD±n` — réutilise les helpers de date déjà en place (`ddmmmToDate`, `formatDDMMM`,
+  `dayOfWeek2`), même convention "année courante, pas de rollover" que le reste du moteur.
+  Un code ville seul (`DDPAR`, cité comme exemple par la mission elle-même) ne matche aucune
+  forme implémentée → `CHECK FORMAT` : décision documentée (pas devinée) pour éviter d'inventer
+  une variante "heure locale" qui aurait nécessité une donnée de fuseau horaire absente du
+  projet. Wording exact (`FROM`/`TO`) marqué à vérifier terrain avec Massy.
+- `DC` (pays/nationalité) et `DNA` (compagnies) : nouvelles tables `packages/data`
+  (`countries.json`, `airlines.json`, chargées à la demande comme `locations` pour DAC/DAN via
+  `deps.countries`/`deps.airlines`, même contrat `lookup()`). `DC` reprend la dualité
+  decode-par-code/encode-par-texte de DAC/DAN ; `DNA` ajoute une 3e forme (code numérique de
+  billetterie). Données publiques IATA (pas une règle métier Amadeus à vérifier) ; le jeu de
+  compagnies inclut les 6 déjà utilisées par le provider de disponibilité (AH/AF/TK/PC/SV/AT).
+- 237→247 tests core, 3→9 tests `packages/data`. `resolveDeps` étendu pour accepter
+  `deps.countries`/`deps.airlines`. **Mission 17 réduite CLOSE** : 6 suites vertes (247 core,
+  9 data, 22 web, 10 e2e, lint et typecheck propres), build web vérifié (JSON copiés dans
+  `dist/data/`). DO/DF/DNE/DB/DM et JI/JO **reportés en v2** (décision Massy 07/07/2026).
+  Enchaînement immédiat sur Mission 13.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06, 15 et 16 sont closes (07/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0
-atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre commerciale
-v1) close** (accès par clé en production, page d'accueil FR/EN), et **chaîne d'implémentation
-v1.x en cours, allégée le 07/07/2026** (triage Massy + architecte, `missions/README.md`
-§ALLÈGEMENT) : `fin 16 → 17 réduite (DC+DNA+DD) → 13 → 19 réduite (magasin PNR + RT locator/nom)
+Missions 01 à 06, 15, 16 et 17 réduite sont closes (07/07/2026 — voir §9 et `TASKS.md`). **Jalon
+v1.0 atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre
+commerciale v1) close** (accès par clé en production, page d'accueil FR/EN), et **chaîne
+d'implémentation v1.x en cours, allégée le 07/07/2026** (triage Massy + architecte,
+`missions/README.md` §ALLÈGEMENT) : `fin 17 → 13 → 19 réduite (magasin PNR + RT locator/nom)
 → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 entièrement reportés en v2.
-Prochaine étape : **Mission 17 réduite** (`DC`/`DNA`/`DD` uniquement), enchaînée immédiatement
-sans arrêt de session, selon la règle de la chaîne dans `missions/README.md`. Point notable en
-Backlog pour une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, Mission
-03) — traité par Mission 13, plus loin dans la chaîne.
+Prochaine étape : **Mission 13** (statuts & liste d'attente réaliste HL/UC/KK/KL + ETK/ERK,
+inchangée), enchaînée immédiatement sans arrêt de session, selon la règle de la chaîne dans
+`missions/README.md`.
 
 ---
 

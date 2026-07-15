@@ -39,12 +39,12 @@ notre `FQN` (dans le vrai système, FQN affiche les notes tarifaires d'une ligne
 
 | Commande | Rôle | Logique |
 |---|---|---|
-| `JI` / `JO` | Se connecter / déconnecter d'une zone de travail (1er geste appris en formation) | État session ; JD existe déjà ; bloquer les commandes hors sign-in est un choix pédagogique fort |
-| `DC` | Encoder/décoder pays et nationalités (`DC FRANCE`, `DC GB`) | Table de données pays |
-| `DNA` | Encoder/décoder une compagnie (`DNA DELTA`, `DNA 057`) | Table compagnies (code 2 lettres + n° billetterie) |
-| `DNE` | Encoder/décoder un type d'appareil (`DNE AIRBUS`, `DNE 343`) | Table appareils |
-| `DB` | Points d'embarquement d'une ville multi-aéroports (`DB LON`) | Depuis packages/data |
-| `DD` | Calculs de dates/heures (`DD19JUL`, `DD15MAR/-35`, `DDPAR`) | Pur calcul, aucune donnée externe |
+| `JI` / `JO` | Se connecter / déconnecter d'une zone de travail (1er geste appris en formation) | **Reporté en v2 (décision Massy 07/07/2026)** |
+| ~~`DC`~~ **fait Mission 17 (07/07/2026)** | Encoder/décoder pays et nationalités (`DC FRANCE`, `DC GB`) | ✅ Fait : nouvelle table `packages/data` (`countries.json`, code/nom/nationalité), même dualité encode/texte-recherche vs decode/code que DAC/DAN, en une seule commande. `NO MATCH` si aucune correspondance |
+| ~~`DNA`~~ **fait Mission 17 (07/07/2026)** | Encoder/décoder une compagnie (`DNA DELTA`, `DNA 057`) | ✅ Fait : nouvelle table `packages/data` (`airlines.json`, code IATA 2 lettres + n° billetterie + nom), 3 formes d'entrée (nom, code 2 lettres, code numérique) |
+| `DNE` | Encoder/décoder un type d'appareil (`DNE AIRBUS`, `DNE 343`) | **Reporté en v2 (décision Massy 07/07/2026)** |
+| `DB` | Points d'embarquement d'une ville multi-aéroports (`DB LON`) | **Reporté en v2 (décision Massy 07/07/2026)** |
+| ~~`DD`~~ **fait Mission 17 (07/07/2026)** | Calculs de dates/heures (`DD19JUL`, `DD15MAR/-35`, `DDPAR`) | ✅ Fait, pur calcul : `DDddMMM` (date + jour), `DDddMMM/±n` (décalage depuis une date), `DD±n` (décalage depuis aujourd'hui). `DDPAR` (ville seule) ne correspond à aucune de ces formes → `CHECK FORMAT` (comportement réel d'un éventuel format ville non implémenté, à vérifier si besoin un jour — cohérent avec la note "aucune donnée externe" de cette ligne). Sortie exacte (libellés `FROM`/`TO`) non confirmée caractère pour caractère avec le vrai système — logique de calcul fiable, wording à vérifier terrain |
 | `DF` | Calculatrice (`DF 20*30`) | Pur calcul |
 | `DO` | Détails d'un vol (`DO2` depuis AN, `DOAF2418/28NOV`) | Provider dispo étendu (escales, appareil, durées) |
 | `DM` | Temps de connexion minimum d'un aéroport (`DMFRA`) | Table MCT simple |

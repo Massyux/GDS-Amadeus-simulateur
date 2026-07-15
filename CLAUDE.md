@@ -203,7 +203,7 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   que possible du vrai logiciel
 - ⚠️ Recréer l'apparence "à la main" (pas de captures d'écran ni d'assets réels Amadeus copiés),
   garder un disclaimer de non-affiliation — risque IP distinct du sujet du nom (trade dress)
-- [x] **Chaîne d'implémentation v1.x — Mission 15 close + Mission 16 close (07/07/2026)** :
+- [x] **Chaîne d'implémentation v1.x — Missions 15, 16 et 17 réduite closes (07/07/2026)** :
   décision Massy du 06/07/2026 de compléter TOUTES les commandes manquantes avant le pilote,
   chaîne allégée le 07/07/2026 (triage Massy + architecte, voir `missions/README.md`
   §ALLÈGEMENT et §CHAÎNE D'IMPLÉMENTATION, `docs/COMMANDES-MANQUANTES.md`). Mission 15
@@ -216,12 +216,15 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   suivant/précédent), `AC`/`SC`/`ACR` (modifier/inverser le dernier affichage, spec architecte à
   8 règles déterministes), `RE`/`RE2` (rappel des dernières entrées, état CORE
   `state.commandHistory`). `RT` partiels **reportés en v2** (décision Massy 06/07/2026, spec
-  conservée dans `MISSION-16.md` pour plus tard). Détail complet dans `TASKS.md`. Chaîne
-  restante réduite : Mission 17 = `DC`+`DNA`+`DD` seulement (DO/DF/DNE/DB/DM et JI/JO reportés),
-  Mission 18 (sièges SM/ST/SX) **entièrement reportée en v2**, Mission 19 = magasin PNR +
-  `RT` locator/nom seulement (RH, SP/EF/RTAXR, RRN/RRI/RRP reportés), Mission 20 entièrement
-  reportée en v2. Enchaînement immédiat sur Mission 17 réduite (règle de la chaîne, pas d'arrêt
-  entre missions du chantier).
+  conservée dans `MISSION-16.md` pour plus tard). Mission 17 réduite (utilitaires agent) :
+  `DD` (calculateur de dates, pur calcul), `DC` (pays/nationalité) et `DNA` (compagnies) —
+  ces deux dernières via de nouvelles tables `packages/data` (`countries.json`,
+  `airlines.json`), même architecture DI que `deps.locations` pour DAC/DAN. DO/DF/DNE/DB/DM et
+  JI/JO **reportés en v2**. Détail complet dans `TASKS.md`. Chaîne restante réduite : Mission 18
+  (sièges SM/ST/SX) **entièrement reportée en v2**, Mission 19 = magasin PNR + `RT` locator/nom
+  seulement (RH, SP/EF/RTAXR, RRN/RRI/RRP reportés), Mission 20 entièrement reportée en v2.
+  Enchaînement immédiat sur Mission 13 (règle de la chaîne, pas d'arrêt entre missions du
+  chantier).
 
 **Phase 6 — Moteur d'exercices et quiz**
 - Scénarios guidés type "fais-moi une réservation de X à Y", "annule le billet numéro ..."
