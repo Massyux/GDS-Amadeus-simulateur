@@ -24,4 +24,5 @@
    des HL/KK aussi) et PROJECT_MEMORY §2
 
 Tests golden : chaque transition de la matrice de statuts + interactions IG/ER/XE/SB.
-Clôture : 6 suites vertes + rituel + enchaîner sur MISSION-18.
+Clôture : 6 suites vertes + rituel + enchaîner directement sur MISSION-19 (la 18 est
+reportée en v2, décision Massy 07/07/2026).

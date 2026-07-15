@@ -2,6 +2,11 @@
 
 **Chaîne d'implémentation, maillon 6/7** · Détail : `docs/COMMANDES-MANQUANTES.md` §Priorité 3
 
+> **PÉRIMÈTRE RÉDUIT (triage Massy 07/07/2026)** : implémenter UNIQUEMENT les étapes 1 à 3
+> (magasin de PNR, RT par locator, RT par nom avec liste de similitude). Les étapes 4-6
+> (RH, SP/EF/RTAXR, RRN/RRI/RRP) sont reportées en v2. Après cette mission → MISSION-07
+> (pilote), la mission 20 est entièrement reportée.
+
 C'est le maillon le plus structurant : le simulateur passe de « un PNR actif » à « un vrai
 fichier de réservations » (persistant dans la session de travail via packages/data ; la
 persistance navigateur/localStorage est un choix à valider avec Massy en début de session).

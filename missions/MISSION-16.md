@@ -22,8 +22,11 @@ d'abord, le faire valider par les tests, puis brancher les commandes dessus.
 3. `AC` — modifier le dernier affichage dispo : date (`AC18MAY`), heure (`AC1845`), classe
    (`AC/CF`), villes (`ACBCNFRA`), delta jours (`AC3`, `AC-5`) ; `SC` équivalent pour SN
 4. `ACR` — vols retour du dernier affichage
-5. `RT` partiels : `RTN`, `RTI`, `RTA`, `RTK`, `RTG`, `RTR`, `RTF` (filtres du PNR actif)
-6. `RE` / `RE2` — rappel des dernières entrées (état core : historique de saisie)
+5. ~~`RT` partiels~~ — **REPORTÉS en v2 par décision de Massy (06/07/2026)** : ne pas
+   implémenter. La spec ci-dessous reste dans ce fichier pour le jour où ils reviendront.
+   Conserver uniquement les tests de non-collision du dispatcher (RT vs futur RT <locator>).
+6. `RE` / `RE2` — rappel des dernières entrées (état core : historique de saisie) — sous
+   réserve du triage de Massy en cours
 
 ## Spec AC / SC / ACR (arbitrée par l'architecte, 06/07/2026 — source : guide §Air, Change Entries)
 
@@ -50,6 +53,36 @@ Erreurs réutilisées : `NOT IN TABLE` (ville inconnue), `CHECK DATE`, `CHECK CL
 Point marqué « à vérifier terrain » (Massy) : comportement exact quand on tape `AC` après un
 affichage schedule (le guide distingue AC=dispo / SC=schedule ; implémenter : chaque commande
 produit son type d'affichage à partir de la même dernière recherche).
+
+## Spec RT partiels (arbitrée par l'architecte, 06/07/2026 — source : guide §PNR, Displaying a Partial PNR)
+
+Suffixes officiels retenus (adaptés aux éléments existant dans NOTRE PNR — les suffixes du
+vrai système sans équivalent chez nous sont hors périmètre) :
+
+| Entrée | Affiche uniquement |
+|---|---|
+| `RTN` | Éléments noms (RTNR du vrai système = hors périmètre) |
+| `RTA` | Segments aériens seuls (SANS les ARNK) |
+| `RTI` | Itinéraire complet (segments aériens + ARNK) |
+| `RTJ` | Éléments de contact (AP, APE) |
+| `RTK` | Billetterie : élément TK (TL/XL/OK) + numéros de billets (lignes FA) |
+| `RTG` | Facts généraux : SSR + OSI |
+| `RTR` | Remarques (RM) |
+| `RTF` | Éléments tarifaires du PNR : FP (et FE/FV/FM quand ils existeront) |
+| `RTO` | Éléments option (OP) |
+| `RTN,A` etc. | Combinaison par virgules = union des filtres (ex. `RTN,A,G`) |
+
+Règles de fidélité impératives :
+1. **Les numéros d'éléments sont CONSERVÉS** — identiques à ceux du RT complet, jamais
+   renumérotés (même principe que le non-renumérotage du filtre AN, décision Phase 0).
+2. L'en-tête du PNR (record locator, ligne d'entête) reste affiché ; seuls les éléments
+   sont filtrés. Filtre sans aucun élément correspondant → en-tête seul (pas d'erreur inventée).
+3. Erreurs : pas de PNR actif → même erreur que `RT` aujourd'hui.
+4. **Désambiguïsation du dispatcher (anticipe la mission 19)** : après `RT`, si le reste est
+   une lettre de la table ci-dessus ou une liste `X,Y,Z` de ces lettres → partiel ; sinon si
+   c'est un code 6 caractères alphanumériques → réservé à la récupération par record locator
+   (mission 19 — aujourd'hui : erreur propre, pas CHECK FORMAT générique, prévoir le libellé) ;
+   sinon → `CHECK FORMAT`. Tests de non-collision obligatoires (RT, RTN, RT ABC123, RTZZ).
 
 ## Points de vigilance famille (leçon mission 04)
 

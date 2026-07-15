@@ -1,5 +1,8 @@
 # MISSION 18 — Sièges : SM / ST / SX
 
+> **MISSION ENTIÈREMENT REPORTÉE EN V2 (décision Massy, 07/07/2026)** — ne pas exécuter.
+> Dans la chaîne, MISSION-13 enchaîne directement sur MISSION-19.
+
 **Chaîne d'implémentation, maillon 5/7** · Détail : `docs/COMMANDES-MANQUANTES.md` §Priorité 3
 
 1. **Modèle de carte de sièges** dans le provider sim (packages/data ou provider dédié) :

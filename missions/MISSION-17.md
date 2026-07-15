@@ -2,7 +2,11 @@
 
 **Chaîne d'implémentation, maillon 3/7** · Détail : `docs/COMMANDES-MANQUANTES.md` §Priorité 2
 
-## Question à Massy en début de session
+> **PÉRIMÈTRE RÉDUIT (triage Massy 07/07/2026)** : implémenter UNIQUEMENT `DD`, `DC`, `DNA`
+> (étapes 1, 3, 4 ci-dessous). Tout le reste (DO/DF/DNE/DB/DM, JI/JO) est reporté en v2 —
+> la question JI/JO ne se pose plus. Enchaîner ensuite directement sur MISSION-13.
+
+## Question à Massy en début de session (OBSOLÈTE — voir bandeau ci-dessus)
 
 Parcours sign-in pédagogique `JI`/`JO` : oui ou non ? (Si oui : l'étudiant doit se connecter
 avant toute commande, comme en vrai — fort pédagogiquement, mais ajoute une friction. Décision

@@ -203,17 +203,25 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   que possible du vrai logiciel
 - ⚠️ Recréer l'apparence "à la main" (pas de captures d'écran ni d'assets réels Amadeus copiés),
   garder un disclaimer de non-affiliation — risque IP distinct du sujet du nom (trade dress)
-- [x] **Chaîne d'implémentation v1.x — Mission 15 close + Mission 16 Étape 0 close (06/07/2026)** :
-  décision Massy du 06/07/2026 de compléter TOUTES les commandes manquantes avant le pilote
-  (ordre `15→16→17→13→18→19→20`, voir `missions/README.md` §CHAÎNE D'IMPLÉMENTATION et
-  `docs/COMMANDES-MANQUANTES.md`). Mission 15 (servicing du PNR actif) : bug critique IG/IR/XI
-  (pointeur global périmé + inventaire jamais restitué, signalé par Massy) corrigé en premier ;
-  8 commandes ajoutées (VOID→TWD/TWX, SS long sell, SB, modification par n°, NU, DL, SI ARNK,
-  TKOK/TKXL). Détail complet dans `TASKS.md`. Point laissé en Backlog à la clôture (correction
-  fidélité `ET`, absente de la liste numérotée de M15) tranché par l'architecte, qui l'a ajouté en
-  Étape 0 explicite de Mission 16 : `ET` partage désormais la logique de `ER` (enregistre le PNR)
-  mais sans réafficher, et n'émet plus de billet (seul `TTP` le fait). Enchaînement immédiat sur
-  l'Étape 1 de Mission 16 (règle de la chaîne, pas d'arrêt entre missions du chantier).
+- [x] **Chaîne d'implémentation v1.x — Mission 15 close + Mission 16 close (07/07/2026)** :
+  décision Massy du 06/07/2026 de compléter TOUTES les commandes manquantes avant le pilote,
+  chaîne allégée le 07/07/2026 (triage Massy + architecte, voir `missions/README.md`
+  §ALLÈGEMENT et §CHAÎNE D'IMPLÉMENTATION, `docs/COMMANDES-MANQUANTES.md`). Mission 15
+  (servicing du PNR actif) : bug critique IG/IR/XI (pointeur global périmé + inventaire jamais
+  restitué, signalé par Massy) corrigé en premier ; 8 commandes ajoutées (VOID→TWD/TWX, SS long
+  sell, SB, modification par n°, NU, DL, SI ARNK, TKOK/TKXL). Mission 16 (navigation &
+  affichages) : correction fidélité `ET` (Étape 0, tranchée par l'architecte — `ET` partage la
+  logique de `ER` mais sans réafficher et sans émettre de billet, seul `TTP` le fait) puis
+  `MD`/`MU`/`MT`/`MB` (pagination `state.lastDisplay`, état CORE), `MN`/`MY` (même dispo jour
+  suivant/précédent), `AC`/`SC`/`ACR` (modifier/inverser le dernier affichage, spec architecte à
+  8 règles déterministes), `RE`/`RE2` (rappel des dernières entrées, état CORE
+  `state.commandHistory`). `RT` partiels **reportés en v2** (décision Massy 06/07/2026, spec
+  conservée dans `MISSION-16.md` pour plus tard). Détail complet dans `TASKS.md`. Chaîne
+  restante réduite : Mission 17 = `DC`+`DNA`+`DD` seulement (DO/DF/DNE/DB/DM et JI/JO reportés),
+  Mission 18 (sièges SM/ST/SX) **entièrement reportée en v2**, Mission 19 = magasin PNR +
+  `RT` locator/nom seulement (RH, SP/EF/RTAXR, RRN/RRI/RRP reportés), Mission 20 entièrement
+  reportée en v2. Enchaînement immédiat sur Mission 17 réduite (règle de la chaîne, pas d'arrêt
+  entre missions du chantier).
 
 **Phase 6 — Moteur d'exercices et quiz**
 - Scénarios guidés type "fais-moi une réservation de X à Y", "annule le billet numéro ..."

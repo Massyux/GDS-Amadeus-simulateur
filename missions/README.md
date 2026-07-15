@@ -53,6 +53,15 @@ Implémenter TOUTES les commandes manquantes AVANT le pilote. Ordre strict :
 
 **15 → 16 → 17 → 13 → 18 → 19 → 20** — puis retour à 07 (pilote).
 
+**ALLÈGEMENT (triage Massy + architecte, 07/07/2026)** — chaîne réduite à l'essentiel :
+16 se termine par `RE` seul (RT partiels reportés) ; 17 = **DC + DNA + DD uniquement**
+(DO/DF/DNE/DB/DM et JI/JO reportés) ; 13 inchangée ; **18 (sièges SM/ST/SX) entièrement
+reportée en v2 (décision Massy 07/07)** ; 19 = **magasin PNR + RT locator/nom uniquement**
+(RH, SP/EF/RTAXR, RRN/RRI/RRP reportés) ; **20 entièrement reportée en v2**.
+Chaîne finale : fin 16 (RE) → 17 réduite → 13 → 19 réduite → mission 07 (pilote).
+Tout ce qui est reporté reste documenté dans docs/COMMANDES-MANQUANTES.md et les fichiers
+missions.
+
 Règles de la chaîne (s'ajoutent aux règles générales ci-dessus) :
 
 1. **Enchaînement sans arrêt** : quand une mission est close (rituel exécuté, tout vert),

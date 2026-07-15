@@ -6,26 +6,45 @@
 
 ## En cours
 
-**Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION)** : `15 → 16 → 17 → 13 →
-18 → 19 → 20` puis retour à 07. **Mission 15 close** ; **Mission 16 Étape 0 close** (correction
-fidélité ET) ; **Mission 16 commandes 1/6, 2/6 et 3/6 closes** (`MD`/`MU`/`MT`/`MB`, `MN`/`MY`,
-`AC`/`SC`/`ACR`) — tout poussé sur `main`, suites vertes (230 tests core).
+**Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION, ALLÈGEMENT 07/07/2026)** :
+**Mission 16 est CLOSE** (toutes commandes : Étape 0 ET, `MD`/`MU`/`MT`/`MB`, `MN`/`MY`,
+`AC`/`SC`/`ACR`, `RE`/`RE2` ; `RT` partiels reportés en v2 par décision de Massy, non-collision
+testée). Chaîne réduite : `fin 16 → 17 réduite (DC+DNA+DD) → 13 → 19 réduite (magasin PNR +
+RT locator/nom) → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 sont
+reportés en v2. Tout poussé sur `main`, 6 suites vertes (237 tests core, 3 data, 22 web, 10 e2e,
+lint et typecheck propres).
 
-**Reprise exacte** : ouvrir `missions/MISSION-16.md` §Commandes, démarrer à la **commande 4/6**
-(`RT` partiels : `RTN`, `RTI`, `RTA`, `RTK`, `RTG`, `RTR`, `RTF` — filtres d'affichage du PNR
-actif). **Point bloquant avant de coder** : contrairement à `AC`/`SC`/`ACR` (qui ont reçu une
-spec complète et non ambiguë de l'architecte avant cette session), la mission ne détaille PAS ce
-que chaque suffixe filtre exactement. Confiance raisonnable sur `RTN` (noms), `RTI` (itinéraire),
-`RTR` (remarques) ; incertitude réelle sur `RTA`, `RTK`, `RTG`, `RTF` (lettres ambiguës sans
-mapping donné — deviner serait inventer une syntaxe Amadeus non vérifiée, contraire à la règle du
-projet). Proposer à l'architecte d'ajouter une §Spec RT partiels analogue à celle d'AC/SC/ACR
-avant de coder cette commande, plutôt que de deviner. Continuer ensuite le protocole de
-non-régression habituel (suite + typecheck + lint après CHAQUE sous-commande, un commit par
-sous-commande, push). Vigilance famille (leçon Mission 04) : vérifier que `RTx` ne collisionne pas
-avec `RT` seul (déjà géré) ni avec un futur préfixe ; après la commande 4/6 reste la commande 5/6
-(`RE`/`RE2`, état core historique de saisie).
+**Reprise exacte** : ouvrir `missions/MISSION-17.md` en entier, démarrer par la commande `DC`
+(encodage/décodage pays), périmètre réduit à `DC`+`DNA`+`DD` uniquement (DO/DF/DNE/DB/DM et
+JI/JO reportés — voir README §ALLÈGEMENT). Protocole de non-régression habituel : suite core +
+typecheck + lint après CHAQUE commande, un commit par commande, push ; rituel complet (6 suites +
+doc) à la fin de la mission, puis enchaîner immédiatement sur Mission 13 (inchangée), puis
+Mission 19 réduite (magasin PNR + `RT` locator/nom seulement).
 
 ## Fait (par session, datée)
+
+### 07/07/2026 — Mission 16, commande 6/6 (RE/RE2 — clôture de la mission)
+- Nouvel état CORE `state.commandHistory: string[]` (comme `state.lastDisplay`) : historique des
+  entrées uppercasées, alimenté à chaque `processCommand` juste avant le dispatch. `RE` lui-même
+  n'est jamais enregistré (sinon un second `RE` rappellerait son propre rappel, comportement
+  confus) — toute autre commande l'est.
+- `RE` = rappelle et ré-exécute la dernière entrée ; `RE(\d{1,2})?` généralisé (`RE2`, `RE3`…, n
+  par défaut 1) plutôt que de coder seulement les deux exemples nommés — généralisation naturelle
+  à faible risque, pas une règle métier inventée. `NO PREVIOUS ENTRY` si l'historique est trop
+  court ou vide (nouveau texte ajouté à `ERROR_EVENT_TEXTS` pour classification `error`).
+- `RT` partiels (item 5/6) confirmés **reportés en v2** par décision de Massy (06/07/2026, déjà
+  actée dans `MISSION-16.md`) : aucun code ajouté, seulement des tests de non-collision prouvant
+  que le dispatcher actuel (`if (c === "RT")` en égalité stricte, fallback générique `CHECK
+  FORMAT`) laisse déjà passer `RTN`/`RT ABC123`/`RTZZ` sans collision ni crash.
+- 7 nouveaux tests (recall nominal, RE2, historique vide, historique trop court, non-ré-
+  enregistrement de RE, non-collision RE/RF, non-collision RT partiels). 230→237 tests core, tout
+  vert. `HELP`/`HE RE` documentés. `docs/COMMANDES-MANQUANTES.md` et `AUDIT-COMMANDES.md` mis à
+  jour (RE fait, RT partiels reportés).
+- **Mission 16 close** : rituel complet exécuté (6 suites vertes : 237 core, 3 data, 22 web, 10
+  e2e — la 1ère tentative web/e2e a rencontré des flakes d'environnement sans rapport avec le
+  changement, résolus par ré-exécution ; l'e2e local nécessite `VITE_FALLBACK_KEY_HASHES` en
+  variable d'environnement comme en CI, sinon un seul test d'accès par clé échoue pour une raison
+  d'environnement, pas de régression).
 
 ### 06/07/2026 — Mission 16, commande 3/6 (AC/SC/ACR — spec architecte, 8 règles déterministes)
 - L'architecte a ajouté une spec complète et non ambiguë dans `MISSION-16.md` (§Spec AC/SC/ACR),

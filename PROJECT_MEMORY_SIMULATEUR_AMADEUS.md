@@ -450,19 +450,39 @@ Interdit :
 - **Enchaînement immédiat sur l'Étape 1 de Mission 16** (`MD`/`MU`/`MT`/`MB`) dans la même
   session, règle de la chaîne d'implémentation.
 
+### 07/07/2026 — Mission 16, commande 6/6 (RE/RE2 — clôture de la mission)
+- Nouvel état CORE `state.commandHistory: string[]` (même principe que `state.lastDisplay`) :
+  chaque entrée non-`RE` est poussée avant dispatch. `RE`/`RE(\d{1,2})?` rappelle et ré-exécute
+  l'entrée demandée (n=1 par défaut) ; `RE` lui-même n'est jamais enregistré, pour qu'un second
+  `RE` rappelle toujours la même commande d'origine plutôt que son propre rappel. `NO PREVIOUS
+  ENTRY` si l'historique est vide ou plus court que demandé.
+- **`RT` partiels (item 5/6) confirmés reportés en v2** par décision de Massy (06/07/2026) :
+  aucune implémentation, seulement des tests prouvant la non-collision du dispatcher actuel
+  (`RT` en égalité stricte, fallback `CHECK FORMAT`) avec `RTN`/`RT ABC123`/`RTZZ`. La spec
+  complète (table des suffixes, règles de fidélité) reste dans `missions/MISSION-16.md` pour une
+  mission v2 future.
+- 230→237 tests core, tout vert. `HELP`/`HE RE` documentés ; `docs/COMMANDES-MANQUANTES.md` et
+  `AUDIT-COMMANDES.md` mis à jour.
+- **Mission 16 CLOSE** : rituel complet exécuté, les 6 suites vertes (237 core, 3 data, 22 web,
+  10 e2e, lint et typecheck propres). Chaîne allégée le 07/07/2026 (triage Massy + architecte,
+  voir `missions/README.md` §ALLÈGEMENT) : la suite devient Mission 17 réduite
+  (`DC`+`DNA`+`DD` seulement) → Mission 13 (inchangée) → Mission 19 réduite (magasin PNR +
+  `RT` locator/nom seulement) → Mission 07 (pilote). Mission 18 (sièges) et le reste de
+  17/19/20 sont entièrement reportés en v2.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06 et 15 sont closes (06/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**
-(déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre commerciale v1)
-close** (accès par clé en production, page d'accueil FR/EN), et **chaîne d'implémentation v1.x en
-cours** (missions 15→16→17→13→18→19→20, décision Massy du 06/07/2026). **Mission 16 Étape 0
-close** (correction fidélité ET).
-Prochaine étape : **Mission 16, Étape 1** (`MD`/`MU`/`MT`/`MB`, navigation & affichages),
-enchaînée immédiatement sans arrêt de session, selon la règle de la chaîne dans
-`missions/README.md`. Points notables en Backlog pour
-une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, Mission 03) ; correction
-de fidélité `ET` (voir Mission 15 ci-dessus, à trancher avec l'architecte/Massy).
+Missions 01 à 06, 15 et 16 sont closes (07/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0
+atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre commerciale
+v1) close** (accès par clé en production, page d'accueil FR/EN), et **chaîne d'implémentation
+v1.x en cours, allégée le 07/07/2026** (triage Massy + architecte, `missions/README.md`
+§ALLÈGEMENT) : `fin 16 → 17 réduite (DC+DNA+DD) → 13 → 19 réduite (magasin PNR + RT locator/nom)
+→ 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 entièrement reportés en v2.
+Prochaine étape : **Mission 17 réduite** (`DC`/`DNA`/`DD` uniquement), enchaînée immédiatement
+sans arrêt de session, selon la règle de la chaîne dans `missions/README.md`. Point notable en
+Backlog pour une mission future dédiée : SS liste d'attente HL/UC (confirmé par Massy, Mission
+03) — traité par Mission 13, plus loin dans la chaîne.
 
 ---
 
