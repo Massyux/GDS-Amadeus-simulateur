@@ -2276,6 +2276,7 @@ export function createInitialState() {
     activePNR: null,
     lastAN: null,
     lastDisplay: null,
+    commandHistory: [],
     tsts: [],
     lastTstId: 0,
     lastTicketSeq: 0,
@@ -2579,6 +2580,7 @@ export async function processCommand(state, cmd, options = {}) {
     "LOCATION PROVIDER NOT CONFIGURED",
     "HELP NOT FOUND",
     "NO ACTIVE DISPLAY",
+    "NO PREVIOUS ENTRY",
   ]);
   const events = [];
   const error = (text) => events.push({ type: "error", text: String(text) });
@@ -2593,6 +2595,30 @@ export async function processCommand(state, cmd, options = {}) {
   const raw = (cmd || "").trim();
   const c = raw.toUpperCase();
   if (!c) return { events, state };
+
+  // RE/RE2/... -- recall and re-run the Nth-last entry (docs/COMMANDES-
+  // MANQUANTES.md Priorite 1, missions/MISSION-16.md item 6): input
+  // history is CORE state (state.commandHistory), like state.lastDisplay.
+  // RE itself is never recorded as an entry (recalling "RE" would just
+  // recall whatever it last recalled, which is confusing) -- every other
+  // command is, right here, before dispatch.
+  const recallMatch = c.match(/^RE(\d{1,2})?$/);
+  if (!recallMatch) {
+    state.commandHistory ||= [];
+    state.commandHistory.push(c);
+  } else {
+    const n = recallMatch[1] ? parseInt(recallMatch[1], 10) : 1;
+    const history = state.commandHistory || [];
+    const target = history[history.length - n];
+    if (!target) {
+      print("NO PREVIOUS ENTRY");
+      return { events, state };
+    }
+    print(target);
+    const replay = await processCommand(state, target, options);
+    events.push(...replay.events);
+    return { events, state };
+  }
 
   if (c === "AN") {
     print("AMADEUS SELLING PLATFORM");
@@ -2726,6 +2752,12 @@ export async function processCommand(state, cmd, options = {}) {
       print("ACRhhmm / ACRddMMMhhmm  RETURN WITH TIME (+ OPTIONAL DATE)");
       return { events, state };
     }
+    if (subject === "RE") {
+      print(`HE ${subject}`);
+      print("RE                  RECALL AND RE-RUN THE LAST ENTRY");
+      print("REn                 RECALL AND RE-RUN THE Nth-LAST ENTRY (ex: RE2)");
+      return { events, state };
+    }
     if (subject === "APE" || subject === "OP") {
       print(`HE ${subject}`);
       if (subject === "APE") print("APE-EMAIL@DOMAIN.TLD ADD EMAIL CONTACT");
@@ -2774,6 +2806,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("ER                  END PNR");
     print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
     print("RT                  DISPLAY PNR (same as live)");
+    print("RE/REn              RECALL LAST/Nth-LAST ENTRY (HE RE for syntax)");
     print("TTP                 ISSUE TICKET");
     print("TWD                 DISPLAY LAST ISSUED TICKET");
     print("TWX                 VOID LAST ISSUED TICKET");

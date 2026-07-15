@@ -1519,6 +1519,64 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["CHECK FORMAT"]);
   });
 
+  it("RE recalls and re-runs the last entry", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "RE");
+    assert.ok(lines[0].startsWith("NM1DOE/JOHN MR"));
+    assert.equal(state.activePNR.passengers.length, 2);
+  });
+
+  it("RE2 recalls the entry two positions back", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "RE2");
+    assert.ok(lines[0].startsWith("AN26DECALGPAR"));
+    assert.ok(lines.some((line) => line.includes("AMADEUS AVAILABILITY - AN")));
+  });
+
+  it("RE returns NO PREVIOUS ENTRY when there is nothing to recall", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "RE");
+    assert.deepEqual(lines, ["NO PREVIOUS ENTRY"]);
+  });
+
+  it("RE3 returns NO PREVIOUS ENTRY when history is shorter than requested", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const lines = await runCommand(state, "RE3");
+    assert.deepEqual(lines, ["NO PREVIOUS ENTRY"]);
+  });
+
+  it("RE is never itself recorded as an entry (a second RE recalls the same original command)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "RE");
+    const lines = await runCommand(state, "RE");
+    assert.ok(lines[0].startsWith("NM1DOE/JOHN MR"));
+  });
+
+  it("RE does not collide with RF (family non-collision, lesson from Mission 04)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+    const lines = await runCommand(state, "RFTEST");
+    assert.notDeepEqual(lines, ["NO PREVIOUS ENTRY"]);
+    assert.equal(state.activePNR.rf, "TEST");
+  });
+
+  it("RT partials are postponed to v2 -- RT/RTN/RT<locator>/RTZZ do not collide or crash (dispatcher non-collision only, per missions/MISSION-16.md item 5)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "NM1DOE/JOHN MR");
+
+    const rt = await runCommand(state, "RT");
+    assert.ok(rt.some((line) => line.includes("DOE/JOHN")));
+
+    assert.deepEqual(await runCommand(state, "RTN"), ["CHECK FORMAT"]);
+    assert.deepEqual(await runCommand(state, "RT ABC123"), ["CHECK FORMAT"]);
+    assert.deepEqual(await runCommand(state, "RTZZ"), ["CHECK FORMAT"]);
+  });
+
   it("returns invalid format for a malformed AN", async () => {
     const state = createInitialState();
     const lines = await runCommand(state, "ANXYZ");
