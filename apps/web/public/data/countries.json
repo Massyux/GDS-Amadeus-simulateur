@@ -1,0 +1,22 @@
+[
+  { "code": "DZ", "name": "ALGERIA", "nationality": "ALGERIAN" },
+  { "code": "FR", "name": "FRANCE", "nationality": "FRENCH" },
+  { "code": "GB", "name": "UNITED KINGDOM", "nationality": "BRITISH" },
+  { "code": "US", "name": "UNITED STATES", "nationality": "AMERICAN" },
+  { "code": "MA", "name": "MOROCCO", "nationality": "MOROCCAN" },
+  { "code": "TN", "name": "TUNISIA", "nationality": "TUNISIAN" },
+  { "code": "TR", "name": "TURKEY", "nationality": "TURKISH" },
+  { "code": "SA", "name": "SAUDI ARABIA", "nationality": "SAUDI" },
+  { "code": "DE", "name": "GERMANY", "nationality": "GERMAN" },
+  { "code": "ES", "name": "SPAIN", "nationality": "SPANISH" },
+  { "code": "IT", "name": "ITALY", "nationality": "ITALIAN" },
+  { "code": "CA", "name": "CANADA", "nationality": "CANADIAN" },
+  { "code": "AE", "name": "UNITED ARAB EMIRATES", "nationality": "EMIRATI" },
+  { "code": "QA", "name": "QATAR", "nationality": "QATARI" },
+  { "code": "EG", "name": "EGYPT", "nationality": "EGYPTIAN" },
+  { "code": "BE", "name": "BELGIUM", "nationality": "BELGIAN" },
+  { "code": "NL", "name": "NETHERLANDS", "nationality": "DUTCH" },
+  { "code": "CH", "name": "SWITZERLAND", "nationality": "SWISS" },
+  { "code": "PT", "name": "PORTUGAL", "nationality": "PORTUGUESE" },
+  { "code": "SN", "name": "SENEGAL", "nationality": "SENEGALESE" }
+]

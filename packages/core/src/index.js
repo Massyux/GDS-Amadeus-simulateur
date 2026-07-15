@@ -2368,6 +2368,14 @@ function resolveDeps(options = {}) {
       };
     }
   }
+  const resolvedCountries =
+    provided.countries && typeof provided.countries.lookup === "function"
+      ? provided.countries
+      : null;
+  const resolvedAirlines =
+    provided.airlines && typeof provided.airlines.lookup === "function"
+      ? provided.airlines
+      : null;
   return {
     availability: provided.availability || defaults.availability,
     timetable:
@@ -2378,6 +2386,8 @@ function resolveDeps(options = {}) {
     clock: resolvedClock,
     rng: resolvedRng,
     locations: resolvedLocations,
+    countries: resolvedCountries,
+    airlines: resolvedAirlines,
   };
 }
 
@@ -2578,6 +2588,8 @@ export async function processCommand(state, cmd, options = {}) {
     "NO RECORDED PNR",
     "NO FORM OF PAYMENT",
     "LOCATION PROVIDER NOT CONFIGURED",
+    "COUNTRY PROVIDER NOT CONFIGURED",
+    "AIRLINE PROVIDER NOT CONFIGURED",
     "HELP NOT FOUND",
     "NO ACTIVE DISPLAY",
     "NO PREVIOUS ENTRY",
@@ -2629,6 +2641,57 @@ export async function processCommand(state, cmd, options = {}) {
   if (c === "JD") {
     const now = deps.clock.now();
     print(new Date(now).toDateString().toUpperCase());
+    return { events, state };
+  }
+
+  // DD -- date calculator (docs/COMMANDES-MANQUANTES.md Priorite 2, mission
+  // MISSION-17.md perimetre reduit). Pure calculation, no external data: a
+  // date alone (DD19JUL), a date shifted by a signed day offset
+  // (DD15MAR/-35), or a signed offset from today alone (DD-30). A bare city
+  // code (ex. DDPAR, one of the mission's own examples) matches none of
+  // these shapes and falls through to CHECK FORMAT -- exact wording of the
+  // output is a fidelity point not yet confirmed with Massy (à vérifier).
+  if (c.startsWith("DD")) {
+    const rest = c.slice(2);
+    const withDate = rest.match(/^(\d{1,2}[A-Z]{3})(?:\/([+-]\d{1,3}))?$/);
+    const offsetOnly = rest.match(/^([+-]\d{1,3})$/);
+
+    if (withDate) {
+      const base = ddmmmToDate(withDate[1], deps.clock);
+      if (!base) {
+        print("CHECK DATE");
+        return { events, state };
+      }
+      if (withDate[2]) {
+        const delta = parseInt(withDate[2], 10);
+        const result = new Date(
+          base.getFullYear(),
+          base.getMonth(),
+          base.getDate() + delta
+        );
+        print(`FROM ${formatDDMMM(base)}  ${dayOfWeek2(base)}`);
+        print(`TO   ${formatDDMMM(result)}  ${dayOfWeek2(result)}`);
+      } else {
+        print(`${formatDDMMM(base)}  ${dayOfWeek2(base)}`);
+      }
+      return { events, state };
+    }
+
+    if (offsetOnly) {
+      const delta = parseInt(offsetOnly[1], 10);
+      const now = getClockNow(deps.clock);
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const result = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + delta
+      );
+      print(`FROM ${formatDDMMM(today)}  ${dayOfWeek2(today)}`);
+      print(`TO   ${formatDDMMM(result)}  ${dayOfWeek2(result)}`);
+      return { events, state };
+    }
+
+    print("CHECK FORMAT");
     return { events, state };
   }
 
@@ -2722,6 +2785,26 @@ export async function processCommand(state, cmd, options = {}) {
       print(`EX: ${subject}26DECALGPAR`);
       return { events, state };
     }
+    if (subject === "DD") {
+      print(`HE ${subject}`);
+      print("DDddMMM             DATE + DAY OF WEEK (ex: DD19JUL)");
+      print("DDddMMM/+n / /-n    SHIFT DATE BY n DAYS (ex: DD15MAR/-35)");
+      print("DD+n / DD-n         SHIFT TODAY BY n DAYS (ex: DD-30)");
+      return { events, state };
+    }
+    if (subject === "DC") {
+      print(`HE ${subject}`);
+      print("DC XX               DECODE COUNTRY CODE (ex: DC GB)");
+      print("DC TEXT             ENCODE COUNTRY NAME (ex: DC FRANCE)");
+      return { events, state };
+    }
+    if (subject === "DNA") {
+      print(`HE ${subject}`);
+      print("DNA XX              DECODE AIRLINE CODE (ex: DNA AF)");
+      print("DNA nnn             DECODE NUMERIC CODE (ex: DNA 057)");
+      print("DNA TEXT            ENCODE AIRLINE NAME (ex: DNA DELTA)");
+      return { events, state };
+    }
     if (subject === "MD" || subject === "MU" || subject === "MT" || subject === "MB") {
       print(`HE ${subject}`);
       print("MD                  MOVE DOWN (NEXT PAGE)");
@@ -2795,6 +2878,9 @@ export async function processCommand(state, cmd, options = {}) {
     print("XI                  CANCEL ACTIVE PNR");
     print("DAC XXX             DECODE IATA (ex: DAC ALG)");
     print("DAN <TEXT>          ENCODE SEARCH (ex: DAN PARIS)");
+    print("DD                  DATE CALCULATOR (HE DD for syntax)");
+    print("DC                  COUNTRY/NATIONALITY (HE DC for syntax)");
+    print("DNA                 AIRLINE (HE DNA for syntax)");
     print("NM                  NAME (MR/MRS optional, CHD/INF)");
     print("NUn/nNAME/FIRST     CORRECT NAME (HE NU for syntax)");
     print("AP                  CONTACT");
@@ -2844,6 +2930,50 @@ export async function processCommand(state, cmd, options = {}) {
     }
     try {
       const lines = await deps.locations.searchByText(text);
+      if (!Array.isArray(lines)) {
+        print("CHECK FORMAT");
+        return { events, state };
+      }
+      lines.forEach(print);
+    } catch (e) {
+      print("CHECK FORMAT");
+    }
+    return { events, state };
+  }
+
+  // DC -- country/nationality encode-decode (docs/COMMANDES-MANQUANTES.md
+  // Priorite 2). Same encode/decode duality as DAC/DAN kept in one command,
+  // per the mission's own examples (DC FRANCE / DC GB).
+  if (c.startsWith("DC")) {
+    const text = raw.slice(2).trim();
+    if (!deps.countries) {
+      print("COUNTRY PROVIDER NOT CONFIGURED");
+      return { events, state };
+    }
+    try {
+      const lines = await deps.countries.lookup(text);
+      if (!Array.isArray(lines)) {
+        print("CHECK FORMAT");
+        return { events, state };
+      }
+      lines.forEach(print);
+    } catch (e) {
+      print("CHECK FORMAT");
+    }
+    return { events, state };
+  }
+
+  // DNA -- airline encode-decode (docs/COMMANDES-MANQUANTES.md Priorite 2).
+  // Per the mission's own examples (DNA DELTA / DNA AF / DNA 057), three
+  // input shapes: name search, 2-char IATA code, or numeric ticketing code.
+  if (c.startsWith("DNA")) {
+    const text = raw.slice(3).trim();
+    if (!deps.airlines) {
+      print("AIRLINE PROVIDER NOT CONFIGURED");
+      return { events, state };
+    }
+    try {
+      const lines = await deps.airlines.lookup(text);
       if (!Array.isArray(lines)) {
         print("CHECK FORMAT");
         return { events, state };

@@ -146,10 +146,101 @@ describe("processCommand", () => {
     assert.ok(lines.includes("LEGACY PROVIDER"));
   });
 
+  it("uses deps.countries provider for DC (decode and encode)", async () => {
+    const state = createInitialState();
+    const provider = {
+      lookup: async (text) => [`DC ${text.toUpperCase()}`, "PROVIDER OK"],
+    };
+    const dc = await processCommand(state, "DC FRANCE", {
+      deps: { countries: provider },
+    });
+    assert.ok(dc.events.map((e) => e.text).includes("PROVIDER OK"));
+  });
+
+  it("returns explicit error when DC provider is missing", async () => {
+    const state = createInitialState();
+    const dc = await processCommand(state, "DC FRANCE");
+    assert.ok(
+      dc.events.some(
+        (event) =>
+          event.type === "error" &&
+          event.text === "COUNTRY PROVIDER NOT CONFIGURED"
+      )
+    );
+  });
+
+  it("uses deps.airlines provider for DNA (decode and encode)", async () => {
+    const state = createInitialState();
+    const provider = {
+      lookup: async (text) => [`DNA ${text.toUpperCase()}`, "PROVIDER OK"],
+    };
+    const dna = await processCommand(state, "DNA DELTA", {
+      deps: { airlines: provider },
+    });
+    assert.ok(dna.events.map((e) => e.text).includes("PROVIDER OK"));
+  });
+
+  it("returns explicit error when DNA provider is missing", async () => {
+    const state = createInitialState();
+    const dna = await processCommand(state, "DNA DELTA");
+    assert.ok(
+      dna.events.some(
+        (event) =>
+          event.type === "error" &&
+          event.text === "AIRLINE PROVIDER NOT CONFIGURED"
+      )
+    );
+  });
+
   it("returns a date for JD", async () => {
     const state = createInitialState();
     const [line] = await runCommand(state, "JD");
     assert.match(line, /^[A-Z]{3} [A-Z]{3} \d{1,2} \d{4}$/);
+  });
+
+  it("DDddMMM returns the date with its day of week", async () => {
+    const state = createInitialState();
+    const fixedClock = { deps: { clock: { now: () => new Date(2026, 0, 1) } } };
+    const lines = (
+      await processCommand(state, "DD19JUL", fixedClock)
+    ).events.map((e) => e.text);
+    assert.deepEqual(lines, ["19JUL  SU"]);
+  });
+
+  it("DDddMMM/-n shifts the given date backward by n days", async () => {
+    const state = createInitialState();
+    const fixedClock = { deps: { clock: { now: () => new Date(2026, 0, 1) } } };
+    const lines = (
+      await processCommand(state, "DD15MAR/-35", fixedClock)
+    ).events.map((e) => e.text);
+    assert.deepEqual(lines, ["FROM 15MAR  SU", "TO   08FEB  SU"]);
+  });
+
+  it("DD+n/DD-n shifts today by n days", async () => {
+    const state = createInitialState();
+    const fixedClock = { deps: { clock: { now: () => new Date(2026, 0, 1) } } };
+    const lines = (
+      await processCommand(state, "DD-1", fixedClock)
+    ).events.map((e) => e.text);
+    assert.deepEqual(lines, ["FROM 01JAN  TH", "TO   31DEC  WE"]);
+  });
+
+  it("DD rejects an invalid date with CHECK DATE", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "DD31FEB");
+    assert.deepEqual(lines, ["CHECK DATE"]);
+  });
+
+  it("DD rejects a bare city code (DDPAR) with CHECK FORMAT -- not a valid date-calculator shape", async () => {
+    const state = createInitialState();
+    const lines = await runCommand(state, "DDPAR");
+    assert.deepEqual(lines, ["CHECK FORMAT"]);
+  });
+
+  it("DD rejects malformed input with CHECK FORMAT", async () => {
+    const state = createInitialState();
+    assert.deepEqual(await runCommand(state, "DD"), ["CHECK FORMAT"]);
+    assert.deepEqual(await runCommand(state, "DD19JUL/"), ["CHECK FORMAT"]);
   });
 
   it("uses deps.clock.now for JD output", async () => {

@@ -1,0 +1,15 @@
+[
+  { "code": "AH", "numeric": "124", "name": "AIR ALGERIE" },
+  { "code": "AF", "numeric": "057", "name": "AIR FRANCE" },
+  { "code": "TK", "numeric": "235", "name": "TURKISH AIRLINES" },
+  { "code": "PC", "numeric": "250", "name": "PEGASUS AIRLINES" },
+  { "code": "SV", "numeric": "065", "name": "SAUDI ARABIAN AIRLINES" },
+  { "code": "AT", "numeric": "147", "name": "ROYAL AIR MAROC" },
+  { "code": "DL", "numeric": "006", "name": "DELTA AIR LINES" },
+  { "code": "AA", "numeric": "001", "name": "AMERICAN AIRLINES" },
+  { "code": "BA", "numeric": "125", "name": "BRITISH AIRWAYS" },
+  { "code": "LH", "numeric": "220", "name": "LUFTHANSA" },
+  { "code": "EK", "numeric": "176", "name": "EMIRATES" },
+  { "code": "QR", "numeric": "157", "name": "QATAR AIRWAYS" },
+  { "code": "TU", "numeric": "083", "name": "TUNISAIR" }
+]

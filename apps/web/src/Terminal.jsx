@@ -1,7 +1,12 @@
 // CODEX ACCESS TEST
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
-import { createInMemoryStore, createLocationProvider } from "@simulateur/data";
+import {
+  createInMemoryStore,
+  createLocationProvider,
+  createCountryProvider,
+  createAirlineProvider,
+} from "@simulateur/data";
 import PNRRenderer from "./PNRRenderer.jsx";
 
 const NEAR_BOTTOM_THRESHOLD_PX = 40;
@@ -181,6 +186,14 @@ export default function Terminal() {
   if (!locationProviderRef.current) {
     locationProviderRef.current = createLocationProvider(storeRef.current);
   }
+  const countryProviderRef = useRef(null);
+  if (!countryProviderRef.current) {
+    countryProviderRef.current = createCountryProvider(storeRef.current);
+  }
+  const airlineProviderRef = useRef(null);
+  if (!airlineProviderRef.current) {
+    airlineProviderRef.current = createAirlineProvider(storeRef.current);
+  }
   const coreStateRef = useRef(createInitialState());
 
   const availRows = useMemo(() => {
@@ -234,12 +247,20 @@ export default function Terminal() {
       ) {
         await storeRef.current.loadFromUrl?.().catch(() => {});
       }
+      if (cmdUpper.startsWith("DC")) {
+        await storeRef.current.loadCountriesFromUrl?.().catch(() => {});
+      }
+      if (cmdUpper.startsWith("DNA")) {
+        await storeRef.current.loadAirlinesFromUrl?.().catch(() => {});
+      }
       const { events, state } = await processCommand(
         coreStateRef.current,
         trimmedCmd,
         {
           deps: {
             locations: locationProviderRef.current,
+            countries: countryProviderRef.current,
+            airlines: airlineProviderRef.current,
           },
         }
       );
