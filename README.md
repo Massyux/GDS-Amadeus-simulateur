@@ -61,3 +61,24 @@ définie pour que la validation se fasse côté navigateur. Moins robuste (les h
 le bundle livré, potentiellement extractibles hors-ligne) — solution de secours pilote uniquement,
 documentée dans `CLAUDE.md`. Vide par défaut, donc inactive tant qu'elle n'est pas configurée
 explicitement.
+
+## Mesure d'audience (Mission 07, pilote)
+
+Cloudflare Web Analytics (gratuit, sans cookies, aucune bannière de consentement nécessaire) est
+prêt côté code mais **inactif par défaut** — activé uniquement en configurant une variable
+d'environnement, sans toucher au code :
+
+1. Dashboard Cloudflare → **Web Analytics** → ajouter le site → copier le **jeton** (token) fourni
+   (pas besoin du snippet complet, juste le token).
+2. Projet Pages `gds-amadeus-simulateur` → Settings → Environment variables → ajouter
+   `VITE_CF_BEACON_TOKEN` avec ce jeton → redéployer.
+
+Tant que cette variable n'est pas définie, aucun script Cloudflare n'est chargé (aucun appel
+réseau externe, y compris en local/CI).
+
+## Feedback pilote
+
+Un bouton discret « Feedback » (coin bas-droit de l'accueil et du terminal) ouvre un mailto
+pré-rempli (version + écran d'origine) vers l'adresse de contact du projet. Le guide de démarrage
+rapide (bouton « ? » coin bas-gauche) est accessible aux mêmes deux endroits, imprimable, et
+rappelle la séquence complète de réservation.

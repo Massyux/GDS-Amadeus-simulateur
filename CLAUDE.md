@@ -187,6 +187,15 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
 **Phase 4 — Lancement test**
 - Groupe pilote restreint (étudiants tourisme / audience TikTok FikraDZ si pertinent)
 - Itération sur retours avant lancement large
+- [x] **Mission 07 Partie A close (07/07/2026)** — préparation technique : analytics Cloudflare
+  Web Analytics sans cookies (`apps/web/src/analytics.js`, actif seulement si Massy configure
+  `VITE_CF_BEACON_TOKEN` sur Cloudflare Pages — inactif par défaut, aucun script externe chargé
+  tant que ce n'est pas fait) ; bouton Feedback discret (mailto pré-rempli version+écran) sur
+  l'accueil et le terminal ; guide de démarrage rapide FR/EN imprimable (bouton « ? », mêmes deux
+  emplacements), listant les commandes de base et la séquence complète AN→SS→NM→AP→RF→ER. Le
+  terminal lui-même reste en anglais Amadeus-authentique (non touché). Détail dans `TASKS.md`.
+- [ ] **Mission 07 Partie B** (checklist opérationnelle Massy — génération/configuration des
+  clés, recrutement de 5-15 pilotes, suivi dans `docs/PILOTE.md`) : pas encore lancée.
 
 **Phase 5 — Fidélité ~99% avec le vrai Amadeus Selling Platform**
 - [x] Pré-requis (Mission 02, 05/07/2026) : audit métier commande par commande, 5 bugs corrigés

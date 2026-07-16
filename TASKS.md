@@ -6,17 +6,48 @@
 
 ## En cours
 
-**Chaîne d'implémentation allégée (missions/README.md §ALLÈGEMENT 07/07/2026) — CHAÎNE TERMINÉE** :
-**Missions 16, 17 réduite, 13 et 19 réduite sont CLOSES**. Mission 18 (sièges SM/ST/SX) et le
-reste de 17/19/20 restent reportés en v2 (voir `docs/COMMANDES-MANQUANTES.md`). Tout poussé sur
-`main`, 6 suites vertes (268 tests core, 9 data, 22 web, 10 e2e, lint et typecheck propres).
+**Chaîne d'implémentation v1.x TERMINÉE** (missions 16, 17 réduite, 13, 19 réduite closes ;
+mission 18 et le reste de 17/19/20 reportés en v2). **Mission 07 Partie A close** (préparation
+technique du pilote) : analytics Cloudflare sans cookies (inactif tant que
+`VITE_CF_BEACON_TOKEN` n'est pas configuré), bouton Feedback discret, guide de démarrage rapide
+FR/EN. Tout poussé sur `main`, 6 suites vertes (268 core, 9 data, 30 web, 12 e2e, lint et
+typecheck propres).
 
-**Reprise exacte** : la chaîne d'implémentation v1.x est terminée. Prochaine étape : **Mission
-07** (lancement pilote + traitement des retours, Phase 4) — lire `missions/MISSION-07.md` s'il
-existe déjà (l'architecte doit d'abord le détailler, marqué "esquisse" dans
-`missions/README.md`), sinon attendre que l'architecte le rédige avant de démarrer.
+**Reprise exacte** : Partie A de Mission 07 est terminée côté code. La suite (Partie B) est une
+checklist **opérationnelle pour Massy** (générer les clés, les configurer sur Cloudflare,
+recruter 5-15 pilotes, consigner les retours dans `docs/PILOTE.md`) — pas une tâche Claude Code.
+Prochaine session Claude Code : soit une correction de bug remontée par un pilote (boucle
+corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habituel), soit la
+prochaine mission une fois le pilote conclu.
 
 ## Fait (par session, datée)
+
+### 07/07/2026 — Mission 07 Partie A (préparation technique du pilote)
+- **Analytics Cloudflare sans cookies** : nouveau module `apps/web/src/analytics.js`
+  (`initAnalytics()`, appelé une fois dans `main.jsx`) qui injecte le beacon Cloudflare
+  UNIQUEMENT si `VITE_CF_BEACON_TOKEN` est configuré (variable Cloudflare Pages) — même
+  convention que `VITE_FALLBACK_KEY_HASHES` : vide par défaut, donc inactif (aucun script
+  externe chargé, aucun appel réseau) tant que Massy ne configure pas la variable lui-même.
+  Documenté dans `README.md` §Mesure d'audience.
+- **Bouton Feedback** (`FeedbackButton.jsx`) : discret, coin bas-droit, présent sur l'accueil et
+  le terminal (les deux emplacements demandés par la mission). Mailto pré-rempli avec version
+  (`1.0.0-pilot`) et écran d'origine dans l'objet, vers l'adresse de contact déjà utilisée pour
+  « Demander un accès ». FR/EN via le dictionnaire i18n existant.
+- **Guide de démarrage rapide** (`QuickStartGuide.jsx`) : bouton « ? » discret, coin bas-gauche,
+  même deux emplacements. Overlay listant les commandes de base (AN/SS/NM/AP/RF/ER/RT/HELP) et
+  la séquence complète de réservation, FR/EN, imprimable (bouton dédié + règles `@media print`
+  qui masquent tout le reste de l'interface). `Terminal.jsx` lit la langue déjà choisie via
+  `useLang()` (persistée en localStorage depuis l'accueil) sans dupliquer d'état — le terminal
+  lui-même reste en anglais Amadeus-authentique, seule cette enveloppe est traduite (décision
+  confirmée le 05/07/2026, non remise en cause).
+- Tests : 8 nouveaux tests Vitest (`analytics.test.js`, `FeedbackButton.test.jsx`,
+  `QuickStartGuide.test.jsx`) + 1 nouveau scénario Playwright (`e2e/pilot.spec.js`, guide +
+  feedback accessibles depuis l'accueil ET le terminal). 22→30 tests web, 10→12 tests e2e.
+  **Mission 07 Partie A close** : 6 suites vertes (268 core, 9 data, 30 web, 12 e2e, lint et
+  typecheck propres), build vérifié.
+- **Partie B (checklist opérationnelle Massy)** : génération des clés, configuration
+  `ACCESS_KEY_HASHES`/`VITE_CF_BEACON_TOKEN` sur Cloudflare, recrutement des pilotes, tenue de
+  `docs/PILOTE.md` — hors périmètre Claude Code, pas d'action prise ici.
 
 ### 07/07/2026 — Mission 19 réduite (magasin de PNR + RT locator/nom, clôture de la chaîne)
 - **Question de persistance posée en début de session** (comme demandé explicitement par la

@@ -545,20 +545,36 @@ Interdit :
   9 data, 22 web, 10 e2e, lint et typecheck propres). **Chaîne d'implémentation v1.x terminée**
   (missions/README.md §ALLÈGEMENT) — prochaine étape : Mission 07 (pilote).
 
+### 07/07/2026 — Mission 07 Partie A (préparation technique du pilote, Phase 4)
+- Analytics Cloudflare sans cookies (`apps/web/src/analytics.js`), inactif par défaut, activé
+  uniquement si Massy configure `VITE_CF_BEACON_TOKEN` sur Cloudflare Pages (même convention que
+  `VITE_FALLBACK_KEY_HASHES`) — aucun script externe chargé tant que ce n'est pas fait.
+- Bouton Feedback discret (`FeedbackButton.jsx`, mailto pré-rempli version+écran) et guide de
+  démarrage rapide FR/EN imprimable (`QuickStartGuide.jsx`, bouton « ? ») sur l'accueil et le
+  terminal. `Terminal.jsx` lit la langue déjà choisie via `useLang()` (persistée depuis
+  l'accueil) — le terminal lui-même reste en anglais Amadeus-authentique, non touché.
+- 8 nouveaux tests Vitest + 1 nouveau scénario Playwright (`e2e/pilot.spec.js`). 22→30 tests web,
+  10→12 tests e2e. **Mission 07 Partie A CLOSE** : 6 suites vertes (268 core, 9 data, 30 web,
+  12 e2e, lint et typecheck propres), build vérifié.
+- Partie B (checklist opérationnelle Massy : clés, recrutement pilotes, `docs/PILOTE.md`) reste
+  à faire, hors périmètre Claude Code.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06, 15, 16, 17 réduite, 13 et 19 réduite sont closes (07/07/2026 — voir §9 et
-`TASKS.md`). **Jalon v1.0 atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2),
-**Phase 3 (offre commerciale v1) close** (accès par clé en production, page d'accueil FR/EN), et
-**chaîne d'implémentation v1.x TERMINÉE** (triage Massy + architecte du 07/07/2026,
-`missions/README.md` §ALLÈGEMENT) : missions 15→16→17 réduite→13→19 réduite toutes closes.
-Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 (dont RH, SP/EF/RTAXR, RRN/RRI/RRP)
-entièrement reportés en v2. Prochaine étape : **Mission 07** (lancement pilote + traitement des
-retours, Phase 4) — la mission n'est encore qu'une esquisse dans `missions/README.md`,
-l'architecte doit la détailler avant de commencer. Point notable en Backlog : interaction
-FXP/TTP avec un segment `HL`/`UC` non confirmé, non demandée par Mission 13, à trancher si
-besoin.
+Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, et **Mission 07 Partie A
+(préparation technique du pilote) est close** (07/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0
+atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre
+commerciale v1) close**, **chaîne d'implémentation v1.x TERMINÉE** (missions 15→16→17
+réduite→13→19 réduite). Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 (dont RH,
+SP/EF/RTAXR, RRN/RRI/RRP) entièrement reportés en v2.
+Prochaine étape : **Mission 07 Partie B**, une checklist **opérationnelle pour Massy** (générer
+les clés, configurer `ACCESS_KEY_HASHES`/`VITE_CF_BEACON_TOKEN` sur Cloudflare, recruter 5-15
+pilotes, consigner les retours dans `docs/PILOTE.md`) — pas une tâche Claude Code. La session
+Claude Code suivante sera soit une correction de bug remontée par un pilote (boucle corrective
+de `MISSION-07.md`, protocole habituel), soit la mission suivante une fois le pilote conclu.
+Points notables en Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission
+13, non demandée, à trancher si besoin).
 
 ---
 
