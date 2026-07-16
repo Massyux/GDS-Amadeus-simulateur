@@ -2351,6 +2351,7 @@ export function createInitialState() {
     lastTicketSeq: 0,
     pnrStore: {},
     recordedSnapshot: null,
+    pnrSearchList: null,
     queueStore: {},
     activeQueue: null,
     currentQueueItem: null,
@@ -2685,6 +2686,61 @@ function restoreRecordedState(state, locator) {
   return true;
 }
 
+// RT <locator> / RT/<nom> / RT<AA><nnnn>/<ddMMM>-<nom> (docs/COMMANDES-
+// MANQUANTES.md Priorite 3, mission 19 reduite, etapes 2-3 seulement:
+// magasin de PNR + retrieve, RH/SP/EF/RTAXR/RRN/RRI/RRP reportes en v2).
+// Persistance en memoire pour la session de travail uniquement (valide
+// avec Massy 07/07/2026, pas de localStorage) -- state.pnrStore existe
+// deja (alimente par recordPnr/ER/ET/ERK/ETK), cette mission l'expose via
+// RT en plus de IR.
+function findRecordedPnrsByName(state, nameQuery) {
+  const store = state.pnrStore || {};
+  const query = String(nameQuery || "").trim().toUpperCase();
+  const matches = [];
+  for (const [locator, entry] of Object.entries(store)) {
+    const snapshot = entry.pnrSnapshot;
+    if (!snapshot) continue;
+    const hasMatch = (snapshot.passengers || []).some((p) =>
+      String(p.lastName || "").toUpperCase().includes(query)
+    );
+    if (hasMatch) matches.push({ locator, snapshot });
+  }
+  return matches;
+}
+
+function filterRecordedPnrsByFlight(matches, airline, flightNo, ddmmm) {
+  return matches.filter(({ snapshot }) =>
+    (snapshot.itinerary || []).some(
+      (seg) =>
+        seg.airline === airline &&
+        seg.flightNo === flightNo &&
+        seg.dateDDMMM === ddmmm
+    )
+  );
+}
+
+function formatPnrSearchListLine(index, locator, snapshot) {
+  const namesPart = (snapshot.passengers || [])
+    .map((p) =>
+      p.title ? `${p.lastName}/${p.firstName} ${p.title}` : `${p.lastName}/${p.firstName}`
+    )
+    .join(", ");
+  return `${index}  ${namesPart}  ${locator}`;
+}
+
+// Shared by every successful RT resolution path (direct locator, single
+// name match, or a list selection): same discard/restore/release sequence
+// IR already uses, so the M15 transactional matrix ("IG jette les modifs,
+// pas le PNR") applies identically here.
+function retrievePnrByLocator(state, locator, deps) {
+  const discardedSegments = computeUnrecordedTailSegments(state);
+  const restored = restoreRecordedState(state, locator);
+  if (!restored) return { error: "PNR NOT FOUND" };
+  releaseInventoryForSegments(state, discardedSegments);
+  state.pnrSearchList = null;
+  return { lines: ["RETRIEVED", ...renderPNRLiveView(state, deps.clock)] };
+}
+
 export async function processCommand(state, cmd, options = {}) {
   /*
    * deps contract (in options.deps):
@@ -2908,7 +2964,13 @@ export async function processCommand(state, cmd, options = {}) {
     if (subject === "ER" || subject === "RT" || subject === "ET") {
       print(`HE ${subject}`);
       if (subject === "ER") print("ER                  END AND RECORD PNR");
-      if (subject === "RT") print("RT                  DISPLAY ACTIVE PNR");
+      if (subject === "RT") {
+        print("RT                  DISPLAY ACTIVE PNR");
+        print("RT<LOCATOR>         RETRIEVE A RECORDED PNR (ex: RTABCDEF)");
+        print("RT/<NAME>           RETRIEVE BY NAME (ex: RT/DOE)");
+        print("RT<AA><n>/ddMMM-<NAME>  NARROW BY FLIGHT+DATE (ex: RTAF950/12DEC-DOE)");
+        print("RT<n> / RT0         SELECT FROM / REDISPLAY SIMILARITY LIST");
+      }
       if (subject === "ET") {
         print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
         print("DOES NOT ISSUE A TICKET -- USE TTP");
@@ -3045,6 +3107,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
     print("ERK/ETK             LIKE ER/ET, RESOLVE WAITLIST ADVICE CODES FIRST");
     print("RT                  DISPLAY PNR (same as live)");
+    print("RT<LOCATOR>/RT/<NAME>  RETRIEVE A RECORDED PNR (HE RT for syntax)");
     print("RE/REn              RECALL LAST/Nth-LAST ENTRY (HE RE for syntax)");
     print("TTP                 ISSUE TICKET");
     print("TWD                 DISPLAY LAST ISSUED TICKET");
@@ -3787,6 +3850,90 @@ export async function processCommand(state, cmd, options = {}) {
 
   if (c === "RT") {
     renderPNRLiveView(state, deps.clock).forEach(print);
+    return { events, state };
+  }
+
+  const rtLocatorMatch = c.match(/^RT\s*([A-Z]{6})$/);
+  if (rtLocatorMatch) {
+    const result = retrievePnrByLocator(state, rtLocatorMatch[1], deps);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines.forEach(print);
+    return { events, state };
+  }
+
+  const rtSelectMatch = c.match(/^RT\s*(\d{1,2})$/);
+  if (rtSelectMatch) {
+    const n = parseInt(rtSelectMatch[1], 10);
+    const pending = state.pnrSearchList;
+    if (!pending) {
+      print("NO ACTIVE DISPLAY");
+      return { events, state };
+    }
+    if (n === 0) {
+      pending.matches.forEach((m, i) =>
+        print(formatPnrSearchListLine(i + 1, m.locator, m.snapshot))
+      );
+      return { events, state };
+    }
+    const chosen = pending.matches[n - 1];
+    if (!chosen) {
+      print("PNR NOT FOUND");
+      return { events, state };
+    }
+    const result = retrievePnrByLocator(state, chosen.locator, deps);
+    if (result.error) {
+      print(result.error);
+      return { events, state };
+    }
+    result.lines.forEach(print);
+    return { events, state };
+  }
+
+  if (c.startsWith("RT/")) {
+    const nameQuery = raw.slice(3).trim();
+    if (!nameQuery) {
+      print("CHECK FORMAT");
+      return { events, state };
+    }
+    const matches = findRecordedPnrsByName(state, nameQuery);
+    if (matches.length === 0) {
+      print("PNR NOT FOUND");
+      return { events, state };
+    }
+    if (matches.length === 1) {
+      const result = retrievePnrByLocator(state, matches[0].locator, deps);
+      result.lines.forEach(print);
+      return { events, state };
+    }
+    state.pnrSearchList = { matches };
+    matches.forEach((m, i) =>
+      print(formatPnrSearchListLine(i + 1, m.locator, m.snapshot))
+    );
+    return { events, state };
+  }
+
+  const rtFlightMatch = c.match(/^RT([A-Z]{2})(\d{1,4})\/(\d{1,2}[A-Z]{3})-(.+)$/);
+  if (rtFlightMatch) {
+    const [, airline, flightNoRaw, ddmmm, nameQuery] = rtFlightMatch;
+    const flightNo = parseInt(flightNoRaw, 10);
+    const allMatches = findRecordedPnrsByName(state, nameQuery);
+    const matches = filterRecordedPnrsByFlight(allMatches, airline, flightNo, ddmmm);
+    if (matches.length === 0) {
+      print("PNR NOT FOUND");
+      return { events, state };
+    }
+    if (matches.length === 1) {
+      const result = retrievePnrByLocator(state, matches[0].locator, deps);
+      result.lines.forEach(print);
+      return { events, state };
+    }
+    state.pnrSearchList = { matches };
+    matches.forEach((m, i) =>
+      print(formatPnrSearchListLine(i + 1, m.locator, m.snapshot))
+    );
     return { events, state };
   }
 

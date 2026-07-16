@@ -3351,4 +3351,153 @@ describe("processCommand", () => {
     const segIndex = state.activePNR.itinerary.findIndex((s) => s.classCode === "Y");
     assert.equal(state.activePNR.itinerary[segIndex].status, "KK");
   });
+
+  it("RT <locator> retrieves a recorded PNR by record locator (mission 19 reduced)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    const locator = state.activePNR.recordLocator;
+
+    await runCommand(state, "XI");
+    assert.equal(state.activePNR, null);
+
+    const lines = await runCommand(state, `RT ${locator}`);
+    assert.ok(lines.some((l) => l === "RETRIEVED"));
+    assert.equal(state.activePNR.recordLocator, locator);
+    assert.ok(lines.some((l) => l.includes("DOE/JOHN")));
+  });
+
+  it("RT <locator> returns PNR NOT FOUND for an unknown locator", async () => {
+    const state = createInitialState();
+    assert.deepEqual(await runCommand(state, "RT ZZZZZZ"), ["PNR NOT FOUND"]);
+  });
+
+  it("RT/<name> retrieves directly when exactly one recorded PNR matches", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    const locator = state.activePNR.recordLocator;
+    await runCommand(state, "XI");
+
+    const lines = await runCommand(state, "RT/DOE");
+    assert.ok(lines.some((l) => l === "RETRIEVED"));
+    assert.equal(state.activePNR.recordLocator, locator);
+  });
+
+  it("RT/<name> returns PNR NOT FOUND when nothing matches", async () => {
+    const state = createInitialState();
+    assert.deepEqual(await runCommand(state, "RT/NOBODY"), ["PNR NOT FOUND"]);
+  });
+
+  it("RT/<name> shows a similarity list when several recorded PNRs share the name; RT <n> selects, RT 0 redisplays the list", async () => {
+    const state = createInitialState();
+
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    const firstLocator = state.activePNR.recordLocator;
+    await runCommand(state, "XI");
+
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JANE MRS");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    await runCommand(state, "XI");
+
+    const listLines = await runCommand(state, "RT/DOE");
+    assert.equal(listLines.length, 2);
+    assert.equal(state.activePNR, null);
+
+    const redisplayed = await runCommand(state, "RT0");
+    assert.deepEqual(redisplayed, listLines);
+
+    const selectFirst = await runCommand(state, "RT1");
+    assert.ok(selectFirst.some((l) => l === "RETRIEVED"));
+    assert.equal(state.activePNR.recordLocator, firstLocator);
+
+    // A successful selection clears the pending list -- selecting again
+    // without a fresh search must fail rather than reuse a stale one.
+    assert.deepEqual(await runCommand(state, "RT2"), ["NO ACTIVE DISPLAY"]);
+  });
+
+  it("RT <n> / RT 0 without a pending similarity list return NO ACTIVE DISPLAY", async () => {
+    const state = createInitialState();
+    assert.deepEqual(await runCommand(state, "RT1"), ["NO ACTIVE DISPLAY"]);
+    assert.deepEqual(await runCommand(state, "RT0"), ["NO ACTIVE DISPLAY"]);
+  });
+
+  it("RT<AA><flight>/<ddMMM>-<name> narrows the name search to a specific flight and date", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    const locator = state.activePNR.recordLocator;
+    await runCommand(state, "XI");
+
+    const lines = await runCommand(
+      state,
+      `RT${item.airline}${item.flightNo}/${item.dateDDMMM}-DOE`
+    );
+    assert.ok(lines.some((l) => l === "RETRIEVED"));
+    assert.equal(state.activePNR.recordLocator, locator);
+  });
+
+  it("RT<AA><flight>/<ddMMM>-<name> returns PNR NOT FOUND when the flight/date doesn't match", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    await runCommand(state, "XI");
+
+    assert.deepEqual(
+      await runCommand(state, "RTZZ9999/01JAN-DOE"),
+      ["PNR NOT FOUND"]
+    );
+  });
+
+  it("RT <locator> discards unsaved changes on the currently active PNR before switching (M15 transactional matrix)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const seatsBefore = cls.seats;
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    await runCommand(state, "ER");
+    const locator = state.activePNR.recordLocator;
+
+    // Sell a SECOND, unsaved segment on top of the recorded PNR.
+    await runCommand(state, "SS1Y1");
+    assert.equal(state.activePNR.itinerary.length, 2);
+    assert.equal(cls.seats, seatsBefore - 2);
+
+    // Retrieving the SAME PNR by locator discards the unsaved 2nd segment
+    // and restores its inventory, same rule as IR.
+    const lines = await runCommand(state, `RT ${locator}`);
+    assert.ok(lines.some((l) => l === "RETRIEVED"));
+    assert.equal(state.activePNR.itinerary.length, 1);
+    assert.equal(cls.seats, seatsBefore - 1);
+  });
 });
