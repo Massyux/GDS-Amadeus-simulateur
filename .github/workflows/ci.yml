@@ -24,11 +24,17 @@ jobs:
       - name: Typecheck (packages/core)
         run: npm --prefix packages/core run typecheck
 
+      - name: Typecheck (packages/exercises)
+        run: npm --prefix packages/exercises run typecheck
+
       - name: Test (packages/core)
         run: npm run test:core
 
       - name: Test (packages/data)
         run: npm run test:data
+
+      - name: Test (packages/exercises)
+        run: npm run test:exercises
 
       - name: Test (apps/web)
         run: npm run test:web
