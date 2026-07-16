@@ -6,12 +6,19 @@
 
 ## En cours
 
-**Chaîne d'implémentation v1.x TERMINÉE** (missions 16, 17 réduite, 13, 19 réduite closes ;
-mission 18 et le reste de 17/19/20 reportés en v2). **Mission 07 Partie A close** (préparation
-technique du pilote) : analytics Cloudflare sans cookies (inactif tant que
-`VITE_CF_BEACON_TOKEN` n'est pas configuré), bouton Feedback discret, guide de démarrage rapide
-FR/EN. Tout poussé sur `main`, 6 suites vertes (268 core, 9 data, 30 web, 12 e2e, lint et
-typecheck propres).
+**Mission 07 reportée** (décision Massy 07/07/2026, à relancer quand il le décidera) — Partie A
+reste close (voir historique ci-dessous). **Mission 08 Étape 1 close** (moteur d'exercices,
+Phase 6) : nouveau package `packages/exercises` (format JSON + `evaluate()`), aucune UI —
+c'est l'Étape 2. Tout poussé sur `main`, suites vertes (268 core, 9 data, 14 exercises, 30 web,
+12 e2e, lint et typecheck propres).
+
+**Reprise exacte** : ouvrir `missions/MISSION-08.md`, démarrer l'**Étape 2** (exercices 1-4 +
+UI minimale du mode exercice + e2e — un exercice réussi, un échoué). Le format JSON et le moteur
+`evaluate()` sont déjà spécifiés et testés (`packages/exercises`) ; l'Étape 2 écrit le CONTENU
+réel des 4 premiers exercices (FR+EN) dans `packages/exercises/content/` et branche l'UI dessus
+(entrée « Mode exercices » depuis l'accueil, panneau consigne, boutons Vérifier/Indice/
+Abandonner). Protocole habituel : suite + typecheck + lint après chaque ajout, rituel complet
+(6 suites incluant `test:exercises` + e2e) à la fin de l'étape/mission.
 
 **Reprise exacte** : Partie A de Mission 07 est terminée côté code. La suite (Partie B) est une
 checklist **opérationnelle pour Massy** (générer les clés, les configurer sur Cloudflare,
@@ -21,6 +28,41 @@ corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habi
 prochaine mission une fois le pilote conclu.
 
 ## Fait (par session, datée)
+
+### 16/07/2026 — Mission 08 Étape 1 (moteur d'exercices guidés — format + evaluate(), Phase 6)
+- Nouveau package `packages/exercises` (même architecture que `packages/core` : pur, zéro UI,
+  `// @ts-check` + JSDoc, `node --test`), dépendance vers `@simulateur/core` (réutilise
+  `createInitialState`/`processCommand` — un exercice se joue dans le VRAI moteur, aucune
+  simplification).
+- **Format JSON d'un exercice** documenté en JSDoc (`Exercise`/`Objectif`/`JalonTrace`/`Aide`
+  typedefs dans `src/index.js`) : `id`, `niveau`, `titre`/`consigne` bilingues, `seedState`
+  (état initial, fusionné sur `createInitialState()`), `objectifs[]` (critères sur l'état
+  final), `jalonsTrace[]` (commandes-clés optionnelles, jamais bloquantes), `aides[]` (indices
+  à pénalité), `bareme` implicite (points par objectif).
+- **`evaluate(exercise, finalState, commandTrace, options)`** : évalue chaque `objectif`
+  indépendamment (7 types couverts : `pnr-recorded`, `segment-count`, `route`, `passenger-name`,
+  `tst-present`, `ticket-issued`, `element-status`), `passed` = tous les objectifs `required`
+  passent (défaut : tous), `score`/`maxScore` en points, pénalité de `hintsUsed` appliquée aux
+  `aides[]` révélées dans l'ordre, plancher à 0. Type d'objectif inconnu → échec propre (pas de
+  crash, pas de faux positif silencieux). `jalonsTrace` évalué séparément (`jalonsFeedback`),
+  jamais pris en compte dans `passed` — conforme au principe du mission : évaluation par l'état
+  final, pas par la séquence exacte.
+- Tests golden (`evaluate.test.js`, 14 tests) sur un exercice fixture représentatif (réservation
+  ALG→PAR pour M. Dupont, mission 08 §Vision) : **deux chemins valides différents réussissent**
+  tous les deux (vente numérique après AN, vs long sell sans AN — la même fin d'état, deux
+  parcours) ; **un échec typique** (vol vendu mais dossier jamais nommé/enregistré) donne un
+  feedback précis objectif par objectif, pas un échec sec ; couverture unitaire des 7 types
+  d'objectif (dont statuts annulés ignorés par `segment-count`, liste d'attente `HL` via
+  `element-status`) + pénalités d'indices + type inconnu.
+- Chaîne d'outillage étendue au nouveau package (README/CLAUDE.md §Outillage déjà à jour dans
+  leur principe, appliqué ici) : `npm run test:exercises` (racine), husky pre-commit
+  (`.husky/pre-commit`), `lint-staged.config.mjs` (typecheck sur `packages/exercises/src/**/*.js`,
+  même pattern que `packages/core`). `npm install` exécuté pour enregistrer le nouveau workspace.
+- **Mission 08 Étape 1 close** : suites vertes (268 core, 9 data, **14 exercises**, 30 web,
+  12 e2e — web/e2e inchangés, cette étape ne touche aucune UI), lint et typecheck (core +
+  exercises) propres. Aucun contenu réel d'exercice encore écrit (les 10 exercices canoniques
+  sont l'Étape 2/3, pas celle-ci) — le fixture de test n'est qu'une démonstration du moteur.
+  Enchaînement sur l'Étape 2 selon la décision de Massy pour la suite de session.
 
 ### 07/07/2026 — Mission 07 Partie A (préparation technique du pilote)
 - **Analytics Cloudflare sans cookies** : nouveau module `apps/web/src/analytics.js`

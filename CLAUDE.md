@@ -255,6 +255,16 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
 **Phase 6 — Moteur d'exercices et quiz**
 - Scénarios guidés type "fais-moi une réservation de X à Y", "annule le billet numéro ..."
 - Évaluation automatique de la séquence de commandes attendue
+- [x] **Mission 08 Étape 1 close (16/07/2026)** : nouveau package pur `packages/exercises`
+  (même architecture que `packages/core`), format JSON d'exercice documenté (`titre`/`consigne`
+  bilingues, `seedState`, `objectifs[]`, `jalonsTrace[]`, `aides[]`) et moteur
+  `evaluate(exercise, finalState, commandTrace, options)` — évaluation **par l'état final**, pas
+  par la séquence exacte (deux chemins valides différents réussissent tous les deux, testé
+  golden). 7 types d'objectif couverts (`pnr-recorded`, `segment-count`, `route`,
+  `passenger-name`, `tst-present`, `ticket-issued`, `element-status`). Aucune UI, aucun contenu
+  d'exercice réel encore écrit — c'est l'Étape 2. Détail dans `TASKS.md`.
+- [ ] Étape 2 (exercices 1-4 + UI minimale + e2e), Étape 3 (exercices 5-10 + indices + barème),
+  Étape 4 (rituel de clôture final) : pas encore commencées.
 
 **Phase 7 — Assistant IA intégré**
 - Chat pour poser des questions librement
@@ -277,9 +287,11 @@ avant qu'elles arrivent sur main. D'où cette liste :
 
 **Déjà en place**
 - ESLint (`apps/web`) — lancer `npm run lint` régulièrement
-- `node --test` sur `packages/core` et `packages/data` — tests golden/invariant
+- `node --test` sur `packages/core`, `packages/data` et `packages/exercises` — tests
+  golden/invariant
 - Vitest + React Testing Library sur `apps/web` (`npm run test:web`)
-- `// @ts-check` + JSDoc sur `packages/core` (`npm --prefix packages/core run typecheck`)
+- `// @ts-check` + JSDoc sur `packages/core` et `packages/exercises`
+  (`npm --prefix <package> run typecheck`)
 - Husky + lint-staged (`.husky/pre-commit`)
 - CI GitHub Actions (`.github/workflows/ci.yml`)
 - Playwright (`npm run test:e2e`)

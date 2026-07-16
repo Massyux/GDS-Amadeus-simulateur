@@ -557,24 +557,47 @@ Interdit :
   10→12 tests e2e. **Mission 07 Partie A CLOSE** : 6 suites vertes (268 core, 9 data, 30 web,
   12 e2e, lint et typecheck propres), build vérifié.
 - Partie B (checklist opérationnelle Massy : clés, recrutement pilotes, `docs/PILOTE.md`) reste
-  à faire, hors périmètre Claude Code.
+  à faire, hors périmètre Claude Code. **Mission 07 ensuite reportée par Massy** (décision
+  07/07/2026) — la chaîne enchaîne directement sur Mission 08 (moteur d'exercices, Phase 6).
+
+### 16/07/2026 — Mission 08 Étape 1 (moteur d'exercices guidés — format + evaluate(), Phase 6)
+- Nouveau package pur `packages/exercises` (même architecture que `packages/core` :
+  `// @ts-check` + JSDoc, `node --test`), dépendant de `@simulateur/core` — un exercice se joue
+  dans le VRAI moteur (`createInitialState`/`processCommand`), aucune simplification du
+  terminal, conforme à la vision de la mission.
+- Format JSON documenté (typedefs `Exercise`/`Objectif`/`JalonTrace`/`Aide`) : `seedState` fusionné
+  sur `createInitialState()`, `objectifs[]` = critères sur l'état final (7 types :
+  `pnr-recorded`, `segment-count`, `route`, `passenger-name`, `tst-present`, `ticket-issued`,
+  `element-status`), `jalonsTrace[]` optionnel et jamais bloquant (commandes-clés attendues,
+  ex. « a utilisé AC »), `aides[]` à pénalité de score.
+- `evaluate(exercise, finalState, commandTrace, options)` : `passed` déterminé UNIQUEMENT par les
+  objectifs requis (principe du mission — évaluation par l'état final, pas par la séquence
+  exacte) ; testé golden avec un exercice fixture (réservation ALG→PAR) sur DEUX chemins valides
+  différents (vente numérique après AN vs long sell sans AN) qui réussissent tous les deux, et un
+  échec typique (vol vendu, dossier jamais enregistré) qui donne un feedback précis par objectif.
+- Outillage étendu au nouveau package : `npm run test:exercises`, husky pre-commit, lint-staged
+  (typecheck), CI GitHub Actions — même filet de sécurité que `packages/core`.
+- **Mission 08 Étape 1 CLOSE** : suites vertes (268 core, 9 data, 14 exercises, 30 web, 12 e2e —
+  web/e2e inchangés, cette étape n'a touché aucune UI), lint et typecheck propres. Aucun contenu
+  d'exercice réel écrit (c'est l'Étape 2/3) — le fixture de test est une démonstration du moteur,
+  pas du contenu livrable.
 
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, et **Mission 07 Partie A
-(préparation technique du pilote) est close** (07/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0
-atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre
-commerciale v1) close**, **chaîne d'implémentation v1.x TERMINÉE** (missions 15→16→17
-réduite→13→19 réduite). Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 (dont RH,
-SP/EF/RTAXR, RRN/RRI/RRP) entièrement reportés en v2.
-Prochaine étape : **Mission 07 Partie B**, une checklist **opérationnelle pour Massy** (générer
-les clés, configurer `ACCESS_KEY_HASHES`/`VITE_CF_BEACON_TOKEN` sur Cloudflare, recruter 5-15
-pilotes, consigner les retours dans `docs/PILOTE.md`) — pas une tâche Claude Code. La session
-Claude Code suivante sera soit une correction de bug remontée par un pilote (boucle corrective
-de `MISSION-07.md`, protocole habituel), soit la mission suivante une fois le pilote conclu.
-Points notables en Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission
-13, non demandée, à trancher si besoin).
+Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, **Mission 07 Partie A
+(préparation technique du pilote) est close** mais **Mission 07 (le pilote lui-même) est
+reportée par décision de Massy** (07/07/2026 — Partie B, checklist opérationnelle, en attente),
+et **Mission 08 Étape 1 (moteur d'exercices, format + `evaluate()`) est close** (16/07/2026 —
+voir §9 et `TASKS.md`). **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne d'implémentation
+v1.x TERMINÉE**.
+Prochaine étape : **Mission 08 Étape 2** — exercices 1-4 (contenu réel FR+EN dans
+`packages/exercises/content/`) + UI minimale du mode exercice (`apps/web`, entrée « Mode
+exercices » depuis l'accueil, panneau consigne repliable, boutons Vérifier/Indice/Abandonner,
+terminal strictement identique au mode libre) + e2e (un exercice réussi, un échoué). Puis
+Étape 3 (exercices 5-10 + indices + barème) et Étape 4 (rituel de clôture final). Points notables
+en Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission 13, non
+demandée, à trancher si besoin).
 
 ---
 
