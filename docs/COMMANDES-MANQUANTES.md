@@ -61,7 +61,7 @@ notre `FQN` (dans le vrai système, FQN affiche les notes tarifaires d'une ligne
 | `SM` / `ST` / `SX` | Plan de cabine, demande de siège (`ST/12C/P2/S5`), annulation sièges | Modèle de carte des sièges par vol + éléments SEAT dans le PNR |
 | `SO` | Segment ouvert (date non fixée) | Segment sans vol/date, statut spécifique |
 | `FFN` / `FFA` / `FFD` | Numéros de fidélité (SSR FQTV) | Table programmes + validation format |
-| Waitlist `SS…PE` + statuts HL/UC/KK/KL | Vente en liste d'attente (mission 13 déjà actée) | Statuts de segment multiples + ETK/ERK |
+| ~~Waitlist `SS…PE` + statuts HL/UC/KK/KL~~ **fait Mission 13 (07/07/2026)** | Vente en liste d'attente | ✅ Fait : modèle de statuts validé par Massy (HK/HL/KK/KL/UC/UN/NO), `SS`/SS long sell waitlistent (`HL`) au lieu de refuser sur classe pleine, `...PE` force le waitlist même si des sièges restent. Promotion déterministe FIFO validée par Massy (07/07/2026) : `XE`/`DL` libèrent l'inventaire (bug corrigé au passage — `XE` ne le faisait jamais) et promeuvent le premier `HL` du même vol en `KL`, gatée par la disponibilité réelle de SA propre classe (pas de fausse confirmation inter-classes). `ETK`/`ERK` (jumeaux de `ET`/`ER`) entérinent KK/KL→HK et suppriment UC/UN/NO (pas d'historique RH avant mission 19). `n/HK`\|`HL`\|`KK`\|`KL`\|`UC`\|`UN`\|`NO` permet de forcer un statut à la main, cohérence d'inventaire maintenue (`NO SEATS` si la classe cible n'a plus de siège) |
 | Groupes `NG` / `SS…SG` / `SP 0.x` | PNR de groupe (offre école !) | Modèle passagers non nommés + noms progressifs |
 
 ## Priorité 4 — tarifs & billetterie complets (v2, à recouper avec le manuel Fares/Ticketing)

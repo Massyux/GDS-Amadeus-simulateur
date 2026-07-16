@@ -490,18 +490,56 @@ Interdit :
   `dist/data/`). DO/DF/DNE/DB/DM et JI/JO **reportés en v2** (décision Massy 07/07/2026).
   Enchaînement immédiat sur Mission 13.
 
+### 07/07/2026 — Mission 13 (statuts de segment & liste d'attente HL/UC/KK/KL + ETK/ERK)
+- Spec validée par Massy en début de session (question posée avant de coder, comme demandé
+  explicitement par `MISSION-13.md`) : modèle de statuts HK/HL/KK/KL/UC/UN/NO tel quel ; règle
+  de promotion déterministe FIFO par vol (pas seulement par classe) validée.
+- `SS`/SS long sell : classe pleine → `HL` (waitlist) au lieu de `NO SEATS` ; `NOT ENOUGH SEATS`
+  conservé pour le vrai refus (sièges partiels insuffisants) ; `...PE` force un waitlist
+  explicite même si des sièges restent. Nouveau `segmentHoldsInventory` (seuls HK/KK/KL tiennent
+  un vrai siège) partagé par tout le moteur d'inventaire.
+- **2 bugs critiques corrigés au passage** (CONSTITUTION §3, famille de bugs — découverts en
+  creusant l'inventaire pour la promotion de liste d'attente) :
+  1. `XE`/`XEALL`/`XE`-range ne libéraient JAMAIS l'inventaire d'un segment annulé, contrairement
+     à `IG`/`DL`/`SB`/`XI` — corrigé dans `markSegmentElementsCancelled` (point de passage
+     commun). Sans ce correctif, une classe pleine restait pleine pour toujours après annulation,
+     et la promotion de liste d'attente n'aurait jamais pu se déclencher.
+  2. `handleSSLongSell` reconstruisait une disponibilité complète à CHAQUE appel (jamais de
+     cache) — un 2e long sell sur le même vol écrasait silencieusement l'inventaire déjà entamé
+     par le 1er. Corrigé en réutilisant `state.lastAN` quand le contexte correspond déjà (même
+     pattern que `SB`).
+- `promoteWaitlistOnRelease` : après `XE`/`DL`, promeut le premier `HL` du même vol (ordre du
+  tableau `itinerary`, FIFO) en `KL` — recherche sur tout le vol (choix Massy) mais la promotion
+  reste gatée par `findAvailabilityClass` sur la propre classe du `HL` : un siège libéré dans une
+  AUTRE classe ne promeut jamais un `HL` d'une classe différente (testé explicitement), aucune
+  fausse confirmation inventée.
+- `ETK`/`ERK` : jumeaux de `ET`/`ER` (égalité stricte, non-collision testée) qui résolvent
+  d'abord les codes-conseil (`applyWaitlistAdviceCodes`) : KK/KL→HK, UC/UN/NO supprimés (pas
+  d'historique RH — mission 19 future, CONSTITUTION interdit de l'inventer maintenant).
+- `n/HK`\|`HL`\|`KK`\|`KL`\|`UC`\|`UN`\|`NO` : override manuel du statut d'un segment par n°
+  d'élément RT (seule exception SEG du handler `<n>/<valeur>`, documentée) — cohérence
+  d'inventaire maintenue par `applySegmentStatusOverride` (libère en sortant d'un statut tenu,
+  consomme ou `NO SEATS` en y entrant). IG/IR/XI bénéficient automatiquement du même modèle via
+  `segmentHoldsInventory` partagé (mission item 6, testé explicitement).
+- **Hors périmètre, noté en Backlog `TASKS.md`** : interaction FXP/TTP avec un segment `HL`/`UC`
+  non confirmé — non demandé par la mission, non deviné.
+- 247→259 tests core (12 nouveaux + 1 mis à jour). **Mission 13 CLOSE** : 6 suites vertes (259
+  core, 9 data, 22 web, 10 e2e, lint et typecheck propres). Enchaînement immédiat sur Mission 19
+  réduite.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06, 15, 16 et 17 réduite sont closes (07/07/2026 — voir §9 et `TASKS.md`). **Jalon
-v1.0 atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3 (offre
-commerciale v1) close** (accès par clé en production, page d'accueil FR/EN), et **chaîne
+Missions 01 à 06, 15, 16, 17 réduite et 13 sont closes (07/07/2026 — voir §9 et `TASKS.md`).
+**Jalon v1.0 atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3
+(offre commerciale v1) close** (accès par clé en production, page d'accueil FR/EN), et **chaîne
 d'implémentation v1.x en cours, allégée le 07/07/2026** (triage Massy + architecte,
-`missions/README.md` §ALLÈGEMENT) : `fin 17 → 13 → 19 réduite (magasin PNR + RT locator/nom)
+`missions/README.md` §ALLÈGEMENT) : `fin 13 → 19 réduite (magasin PNR + RT locator/nom)
 → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 entièrement reportés en v2.
-Prochaine étape : **Mission 13** (statuts & liste d'attente réaliste HL/UC/KK/KL + ETK/ERK,
-inchangée), enchaînée immédiatement sans arrêt de session, selon la règle de la chaîne dans
-`missions/README.md`.
+Prochaine étape : **Mission 19 réduite** (magasin de PNR + `RT` par locator/nom seulement — RH,
+SP/EF/RTAXR, RRN/RRI/RRP reportés), enchaînée immédiatement sans arrêt de session, selon la
+règle de la chaîne dans `missions/README.md`. Point notable en Backlog : interaction FXP/TTP
+avec un segment `HL`/`UC` non confirmé, non demandée par Mission 13, à trancher si besoin.
 
 ---
 

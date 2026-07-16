@@ -203,7 +203,7 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   que possible du vrai logiciel
 - ⚠️ Recréer l'apparence "à la main" (pas de captures d'écran ni d'assets réels Amadeus copiés),
   garder un disclaimer de non-affiliation — risque IP distinct du sujet du nom (trade dress)
-- [x] **Chaîne d'implémentation v1.x — Missions 15, 16 et 17 réduite closes (07/07/2026)** :
+- [x] **Chaîne d'implémentation v1.x — Missions 15, 16, 17 réduite et 13 closes (07/07/2026)** :
   décision Massy du 06/07/2026 de compléter TOUTES les commandes manquantes avant le pilote,
   chaîne allégée le 07/07/2026 (triage Massy + architecte, voir `missions/README.md`
   §ALLÈGEMENT et §CHAÎNE D'IMPLÉMENTATION, `docs/COMMANDES-MANQUANTES.md`). Mission 15
@@ -220,11 +220,22 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   `DD` (calculateur de dates, pur calcul), `DC` (pays/nationalité) et `DNA` (compagnies) —
   ces deux dernières via de nouvelles tables `packages/data` (`countries.json`,
   `airlines.json`), même architecture DI que `deps.locations` pour DAC/DAN. DO/DF/DNE/DB/DM et
-  JI/JO **reportés en v2**. Détail complet dans `TASKS.md`. Chaîne restante réduite : Mission 18
-  (sièges SM/ST/SX) **entièrement reportée en v2**, Mission 19 = magasin PNR + `RT` locator/nom
-  seulement (RH, SP/EF/RTAXR, RRN/RRI/RRP reportés), Mission 20 entièrement reportée en v2.
-  Enchaînement immédiat sur Mission 13 (règle de la chaîne, pas d'arrêt entre missions du
-  chantier).
+  JI/JO **reportés en v2**. Mission 13 (statuts de segment & liste d'attente, écart business
+  confirmé par Massy en Mission 03) : spec validée par Massy en début de session (modèle
+  HK/HL/KK/KL/UC/UN/NO tel quel, promotion FIFO par vol) ; `SS`/SS long sell waitlistent (`HL`)
+  sur classe pleine au lieu de refuser, `...PE` force le waitlist explicite ; `XE`/`DL` libèrent
+  l'inventaire et promeuvent le premier `HL` du même vol en `KL` (gatée par la disponibilité
+  réelle de sa propre classe) ; `ETK`/`ERK` (jumeaux de `ET`/`ER`) entérinent KK/KL→HK et
+  suppriment UC/UN/NO ; `n/HK`\|`HL`\|`KK`\|`KL`\|`UC`\|`UN`\|`NO` permet un override manuel.
+  **2 bugs critiques corrigés au passage** (même famille, CONSTITUTION §3) : `XE` ne libérait
+  jamais l'inventaire d'un segment annulé (contrairement à IG/DL/SB/XI, découvert en creusant la
+  promotion de liste d'attente) ; `SS` long sell reconstruisait une disponibilité fraîche à
+  chaque appel au lieu de réutiliser le contexte existant (comme `SB`), écrasant silencieusement
+  l'inventaire déjà entamé sur un 2e long sell du même vol. Détail complet dans `TASKS.md`.
+  Chaîne restante réduite : Mission 18 (sièges SM/ST/SX) **entièrement reportée en v2**,
+  Mission 19 = magasin PNR + `RT` locator/nom seulement (RH, SP/EF/RTAXR, RRN/RRI/RRP reportés),
+  Mission 20 entièrement reportée en v2. Enchaînement immédiat sur Mission 19 réduite (règle de
+  la chaîne, pas d'arrêt entre missions du chantier).
 
 **Phase 6 — Moteur d'exercices et quiz**
 - Scénarios guidés type "fais-moi une réservation de X à Y", "annule le billet numéro ..."

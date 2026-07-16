@@ -7,20 +7,65 @@
 ## En cours
 
 **Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION, ALLÈGEMENT 07/07/2026)** :
-**Mission 16 est CLOSE** (toutes commandes) et **Mission 17 réduite est CLOSE** (`DD`, `DC`,
-`DNA` — DO/DF/DNE/DB/DM et JI/JO reportés en v2). Chaîne réduite : `fin 17 → 13 → 19 réduite
-(magasin PNR + RT locator/nom) → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de
-17/19/20 sont reportés en v2. Tout poussé sur `main`, 6 suites vertes (247 tests core, 9 data,
-22 web, 10 e2e, lint et typecheck propres).
+**Missions 16, 17 réduite et 13 sont CLOSES**. Chaîne réduite : `fin 13 → 19 réduite (magasin
+PNR + RT locator/nom) → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 sont
+reportés en v2. Tout poussé sur `main`, 6 suites vertes (259 tests core, 9 data, 22 web, 10 e2e,
+lint et typecheck propres).
 
-**Reprise exacte** : ouvrir `missions/MISSION-13.md` en entier (inchangée — statuts & liste
-d'attente réaliste HL/UC/KK/KL + ETK/ERK, confirmé par Massy comme un vrai écart business en
-Mission 03). Protocole de non-régression habituel : suite core + typecheck + lint après CHAQUE
-commande, un commit par commande, push ; rituel complet (6 suites + doc) à la fin de la mission,
-puis enchaîner immédiatement sur Mission 19 réduite (magasin PNR + `RT` locator/nom seulement,
-RH/SP/EF/RTAXR/RRN/RRI/RRP reportés).
+**Reprise exacte** : ouvrir `missions/MISSION-19.md` en entier, périmètre réduit aux étapes 1-3
+uniquement (magasin de PNR, `RT` par locator, `RT` par nom avec liste de similitude — RH,
+SP/EF/RTAXR, RRN/RRI/RRP reportés en v2, voir README §ALLÈGEMENT). Protocole de non-régression
+habituel : suite core + typecheck + lint après CHAQUE commande, un commit par commande, push ;
+rituel complet (6 suites + doc) à la fin de la mission, puis enchaîner sur Mission 07 (pilote).
 
 ## Fait (par session, datée)
+
+### 07/07/2026 — Mission 13 (statuts de segment & liste d'attente HL/UC/KK/KL + ETK/ERK)
+- **Spec validée par Massy en début de session** (question posée par l'assistant avant de coder,
+  comme demandé par la mission) : modèle de statuts HK/HL/KK/KL/UC/UN/NO validé tel quel ;
+  règle de promotion FIFO validée — quand une place se libère sur un vol (`XE`/`DL`), le premier
+  `HL` de CE VOL (pas seulement de la même classe) passe `KL`.
+- `SS`/SS long sell : classe pleine → segment `HL` (waitlist) au lieu du refus `NO SEATS` ; le
+  vrai refus (`NOT ENOUGH SEATS`) reste pour une demande partiellement insatisfaite. `...PE`
+  force un waitlist explicite même si des sièges restent (ex. `SS1Y1PE`). Un `HL` ne décrémente
+  jamais l'inventaire (`segmentHoldsInventory`, nouvelle fonction partagée : seuls HK/KK/KL
+  tiennent un vrai siège).
+- **Bug critique corrigé au passage** (CONSTITUTION §3, famille de bugs) : `XE` ne libérait
+  JAMAIS l'inventaire d'un segment annulé (contrairement à IG/DL/SB/XI) — une classe pleine le
+  restait pour toujours après une annulation. Corrigé dans `markSegmentElementsCancelled`
+  (point de passage commun XE/XEALL/XE-range). Détecté en creusant l'inventaire pour la
+  promotion de liste d'attente : sans ce correctif, la promotion n'aurait jamais eu l'occasion
+  de se déclencher.
+- **2e correctif du même type** : `handleSSLongSell` reconstruisait une disponibilité complète
+  à CHAQUE appel (jamais de cache), donc un 2e long sell sur le même vol écrasait silencieusement
+  l'inventaire déjà entamé par le 1er — même famille de bug que ci-dessus, cassait directement
+  le test du waitlist en long sell. Corrigé en réutilisant `state.lastAN` quand le contexte
+  correspond déjà (même pattern que `SB`).
+- Promotion `HL→KL` (`promoteWaitlistOnRelease`) : FIFO par ordre de création (ordre du tableau
+  `itinerary`, jamais réordonné), recherche sur tout le vol (choix Massy) mais la promotion
+  elle-même reste gatée par `findAvailabilityClass` sur la propre classe du `HL` — un siège
+  libéré dans une AUTRE classe ne promeut jamais un `HL` d'une classe différente (testé
+  explicitement), pas de fausse confirmation inventée.
+- `ETK`/`ERK` : jumeaux de `ET`/`ER` (mêmes égalités strictes, non-collision testée) qui
+  résolvent d'abord les codes-conseil (`applyWaitlistAdviceCodes`) : KK/KL→HK, UC/UN/NO
+  supprimés de l'itinéraire (pas d'historique RH — mission 19 future).
+  `ETK` n'affiche pas et n'émet pas de billet (comme `ET`) ; `ERK` réaffiche (comme `ER`).
+- `n/HK`\|`HL`\|`KK`\|`KL`\|`UC`\|`UN`\|`NO` (item 5) : override manuel du statut d'un segment
+  par n° d'élément RT, ajouté à `handleElementModify` (seule exception SEG de ce handler,
+  documentée). Cohérence d'inventaire maintenue par `applySegmentStatusOverride` : libère en
+  sortant d'un statut tenu, consomme (ou `NO SEATS`) en y entrant. Bloqué `NOT ALLOWED - TST
+  SEGMENT` si verrouillé par un TST (même garde que SB), `ELEMENT NOT FOUND` sur un segment déjà
+  annulé.
+- IG/IR/XI bénéficient automatiquement du même modèle (item 6) via `segmentHoldsInventory`
+  partagé dans `releaseInventoryForSegments` — testé explicitement (KK libéré correctement).
+- **Hors périmètre, noté en Backlog** : interaction FXP/TTP avec un segment `HL`/`UC` non
+  confirmé (peut-on tarifer/émettre un billet dessus ?) — non demandé par la mission, non
+  deviné, à trancher dans une session future si besoin.
+- 12 nouveaux tests dédiés (waitlist SS/PE, XE/DL + promotion FIFO, non-promotion inter-classes,
+  override manuel, ETK/ERK, IG restitution, non-collision ETK/ERK vs ET/ER) + 1 test existant
+  mis à jour pour refléter le nouveau comportement (`SS` sur classe pleine ne refuse plus).
+  247→259 tests core. **Mission 13 close** : rituel complet exécuté (6 suites vertes : 259 core,
+  9 data, 22 web, 10 e2e, lint et typecheck propres).
 
 ### 07/07/2026 — Mission 17 réduite (DD, DC, DNA — utilitaires agent, clôture de la mission)
 - **DD** (calculateur de dates, pur calcul) : `DDddMMM` (date + jour de semaine),
