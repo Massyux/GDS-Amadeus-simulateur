@@ -1461,6 +1461,19 @@ async function runAvailabilityDisplay(state, deps, criteria, displayType) {
   return { lines };
 }
 
+// Shared by SS (numeric and long sell): a full class waitlists instead of
+// refusing (docs/COMMANDES-MANQUANTES.md Priorite 3, mission 13, valide
+// avec Massy 07/07/2026), and an explicit `PE` suffix forces a waitlisted
+// entry even when seats are available (SS...PE). An HL entry never holds
+// real inventory (segmentHoldsInventory) -- only the still-genuine refusal
+// case (fewer seats than requested, both > 0) keeps NOT ENOUGH SEATS.
+function resolveSellOutcome(cls, paxCount, explicitWaitlist) {
+  if (explicitWaitlist) return { status: "HL" };
+  if (cls.seats <= 0) return { status: "HL" };
+  if (paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
+  return { status: "HK", decrement: true };
+}
+
 function handleSS(state, cmdUpper, clock) {
   if (!state.lastAN || !state.lastAN.results || state.lastAN.results.length === 0) {
     return { error: "NO AVAILABILITY" };
@@ -1468,7 +1481,7 @@ function handleSS(state, cmdUpper, clock) {
 
   ensurePNR(state);
 
-  const m = cmdUpper.match(/^SS(\d{1,2})([A-Z])(\d{0,2})$/);
+  const m = cmdUpper.match(/^SS(\d{1,2})([A-Z])(\d{0,2})(PE)?$/);
   if (!m) {
     return { error: "CHECK FORMAT" };
   }
@@ -1476,16 +1489,17 @@ function handleSS(state, cmdUpper, clock) {
   const lineNo = parseInt(m[1], 10);
   const classCode = m[2];
   const paxCount = m[3] ? parseInt(m[3], 10) : 1;
+  const explicitWaitlist = Boolean(m[4]);
 
   const item = state.lastAN.results.find((x) => x.lineNo === lineNo);
   if (!item) return { error: "NOT IN TABLE" };
 
   const cls = item.bookingClasses.find((x) => x.code === classCode);
   if (!cls) return { error: "CHECK CLASS OF SERVICE" };
-  if (cls.seats <= 0) return { error: "NO SEATS" };
-  if (paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
 
-  cls.seats -= paxCount;
+  const outcome = resolveSellOutcome(cls, paxCount, explicitWaitlist);
+  if (outcome.error) return { error: outcome.error };
+  if (outcome.decrement) cls.seats -= paxCount;
 
   const seg = {
     airline: item.airline,
@@ -1496,7 +1510,7 @@ function handleSS(state, cmdUpper, clock) {
     to: item.to,
     depTime: item.depTime,
     arrTime: item.arrTime,
-    status: "HK",
+    status: outcome.status,
     paxCount,
   };
 
@@ -1514,14 +1528,15 @@ function handleSS(state, cmdUpper, clock) {
 // restitution on IG/IR/XI.
 async function handleSSLongSell(state, cmdUpper, deps) {
   const m = cmdUpper.match(
-    /^SS([A-Z]{2})(\d{1,4})([A-Z])(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\d{1,2})$/
+    /^SS([A-Z]{2})(\d{1,4})([A-Z])(\d{1,2}[A-Z]{3})([A-Z]{3})([A-Z]{3})(\d{1,2})(PE)?$/
   );
   if (!m) {
     return { error: "CHECK FORMAT" };
   }
-  const [, airline, flightNoRaw, classCode, dateToken, from, to, paxToken] = m;
+  const [, airline, flightNoRaw, classCode, dateToken, from, to, paxToken, peFlag] = m;
   const flightNo = parseInt(flightNoRaw, 10);
   const paxCount = parseInt(paxToken, 10);
+  const explicitWaitlist = Boolean(peFlag);
 
   const dateObj = parseDDMMM(dateToken, deps?.clock);
   if (!dateObj) {
@@ -1534,8 +1549,22 @@ async function handleSSLongSell(state, cmdUpper, deps) {
   const ddmmm = formatDDMMM(dateObj);
   const dow = dayOfWeek2(dateObj);
 
+  // Reuse the already-loaded availability context when it already covers
+  // this exact route/date (same pattern as SB) -- otherwise a second long
+  // sell on the same flight would silently rebuild fresh, full inventory
+  // and discard everything already sold on it (mission 13: a full class
+  // must waitlist, which a reset-to-full class never would).
+  const cachedContextMatches =
+    state.lastAN &&
+    state.lastAN.query &&
+    state.lastAN.query.from === from &&
+    state.lastAN.query.to === to &&
+    state.lastAN.query.ddmmm === ddmmm;
+
   let results;
-  if (
+  if (cachedContextMatches) {
+    results = state.lastAN.results;
+  } else if (
     deps?.availability &&
     typeof deps.availability.searchAvailability === "function"
   ) {
@@ -1562,10 +1591,10 @@ async function handleSSLongSell(state, cmdUpper, deps) {
 
   const cls = item.bookingClasses.find((x) => x.code === classCode);
   if (!cls) return { error: "CHECK CLASS OF SERVICE" };
-  if (cls.seats <= 0) return { error: "NO SEATS" };
-  if (paxCount > cls.seats) return { error: "NOT ENOUGH SEATS" };
 
-  cls.seats -= paxCount;
+  const outcome = resolveSellOutcome(cls, paxCount, explicitWaitlist);
+  if (outcome.error) return { error: outcome.error };
+  if (outcome.decrement) cls.seats -= paxCount;
 
   ensurePNR(state);
   const seg = {
@@ -1577,7 +1606,7 @@ async function handleSSLongSell(state, cmdUpper, deps) {
     to: item.to,
     depTime: item.depTime,
     arrTime: item.arrTime,
-    status: "HK",
+    status: outcome.status,
     paxCount,
   };
   state.activePNR.itinerary.push(seg);
@@ -1736,11 +1765,13 @@ async function handleSB(state, cmdUpper, deps) {
 // <elementNo>/<newValue> -- modify a free-text/date PNR element in place,
 // referenced by its RT element number (docs/COMMANDES-MANQUANTES.md
 // Priorite 1: "5/NOUVEAU TEXTE", "8/12JUL"). Scoped to the element kinds
-// that are plain free text or a bare date (RM, OSI, SSR, OP, TK) --
-// segments are rebooked via SB (already more explicit about which
+// that are plain free text or a bare date (RM, OSI, SSR, OP, TK), plus one
+// narrow SEG exception (mission 13 item 5: a recognized status code like
+// "2/HK" or "2/HL" simulates entering an advice code by hand) -- segments
+// otherwise stay rebooked via SB (already more explicit about which
 // dimension changes) and names via a future NU command, not this one;
-// every other kind (PAX, SEG, AP, FP, RF, TKT, ITR, RECLOC) returns
-// NOT ALLOWED rather than guessing an edit grammar for it.
+// every other kind (PAX, AP, FP, RF, TKT, ITR, RECLOC) returns NOT ALLOWED
+// rather than guessing an edit grammar for it.
 function handleElementModify(state, cmdUpper, deps) {
   const m = cmdUpper.match(/^(\d{1,2})\/(.+)$/);
   if (!m) return { error: "CHECK FORMAT" };
@@ -1755,7 +1786,23 @@ function handleElementModify(state, cmdUpper, deps) {
   const target = elements.find((e) => e.elementNo === elementNo);
   if (!target) return { error: "ELEMENT NOT FOUND" };
 
-  if (target.kind === "RM") {
+  if (target.kind === "SEG") {
+    if (!SEGMENT_STATUS_CODES.has(newValue)) return { error: "NOT ALLOWED" };
+    const segment = pnr.itinerary[target.index];
+    if (isSegmentCancelledStatus(segment.status)) {
+      return { error: "ELEMENT NOT FOUND" };
+    }
+    const displayIndex = buildSegmentDisplayIndexByItineraryIndex(
+      pnr,
+      deps.clock
+    ).get(target.index);
+    const lockedByTst = (state.tsts || []).some(
+      (tst) => Array.isArray(tst.segments) && tst.segments.includes(displayIndex)
+    );
+    if (lockedByTst) return { error: "NOT ALLOWED - TST SEGMENT" };
+    const result = applySegmentStatusOverride(state, segment, newValue);
+    if (result.error) return { error: result.error };
+  } else if (target.kind === "RM") {
     pnr.remarks[target.index] = newValue;
   } else if (target.kind === "OSI") {
     pnr.osi[target.index] = newValue;
@@ -1845,6 +1892,7 @@ function handleDL(state, cmdUpper, deps) {
   const segment = pnr.itinerary[target.index];
   releaseInventoryForSegments(state, [segment]);
   pnr.itinerary.splice(target.index, 1);
+  promoteWaitlistOnRelease(state, [segment]);
 
   return { lines: ["OK", ...renderPNRLiveView(state, deps.clock)] };
 }
@@ -2097,6 +2145,16 @@ function isSegmentCancelledStatus(status) {
   return normalized === "HX" || normalized === "XX";
 }
 
+// Waitlist status model (docs/COMMANDES-MANQUANTES.md Priorite 3, mission
+// 13, valide avec Massy 07/07/2026): only a status that represents an
+// actual held seat should ever add/release real class inventory. HL
+// (waitlisted, no seat held), UC/UN/NO (rejected advice codes) and
+// HX/XX (cancelled) never held one; HK/KK/KL did.
+function segmentHoldsInventory(status) {
+  const normalized = String(status || "HK").toUpperCase();
+  return normalized === "HK" || normalized === "KK" || normalized === "KL";
+}
+
 function filterActiveSegmentElements(state, segmentElements) {
   const pnr = state.activePNR;
   if (!pnr) return [];
@@ -2143,15 +2201,26 @@ function validateSegmentCancellation(state, segmentElements, clock) {
   return { ok: true };
 }
 
+// XE/XEALL/XE-range cancellation (docs/COMMANDES-MANQUANTES.md Priorite 3,
+// mission 13): releases the segment's inventory (bug fix -- previously
+// never released, unlike IG/DL/SB/XI) and gives the waitlist engine a
+// chance to promote the next HL on the same flight, THEN marks the
+// segment(s) cancelled.
 function markSegmentElementsCancelled(state, segmentElements, cancelledStatus = "HX") {
   const pnr = state.activePNR;
   if (!pnr) return;
   const indexes = Array.from(new Set(segmentElements.map((element) => element.index)));
-  for (const index of indexes) {
-    if (index >= 0 && index < pnr.itinerary.length) {
-      pnr.itinerary[index].status = cancelledStatus;
-    }
+  const segments = indexes
+    .filter((index) => index >= 0 && index < pnr.itinerary.length)
+    .map((index) => pnr.itinerary[index]);
+  releaseInventoryForSegments(state, segments);
+  for (const segment of segments) {
+    segment.status = cancelledStatus;
   }
+  // Runs after the status flip so a released segment that was itself HL
+  // (a waitlisted entry being cancelled) can never match its own search
+  // and "promote itself".
+  promoteWaitlistOnRelease(state, segments);
 }
 
 function handleXE(state, cmdUpper, clock) {
@@ -2422,10 +2491,79 @@ function findAvailabilityClass(state, seg) {
 function releaseInventoryForSegments(state, segments) {
   if (!segments || segments.length === 0) return;
   for (const seg of segments) {
-    if (isSegmentCancelledStatus(seg.status)) continue;
+    if (!segmentHoldsInventory(seg.status)) continue;
     const cls = findAvailabilityClass(state, seg);
     if (cls) cls.seats += seg.paxCount || 1;
   }
+}
+
+// Deterministic waitlist promotion (docs/COMMANDES-MANQUANTES.md Priorite 3,
+// mission 13, valide avec Massy 07/07/2026): after a seat is released on a
+// flight (XE/DL), promote the first HL segment (creation order == array
+// order, never reordered) on that SAME flight to KL -- scoped to the
+// active PNR's own itinerary, since that is the only place this simulator
+// tracks HL entries today (no cross-PNR store until mission 19). Gated by
+// `findAvailabilityClass` on the waitlisted segment's OWN class: a release
+// on a different class leaves its seat count untouched, so nothing is
+// promoted until that specific class genuinely has a free seat -- keeps
+// the "same flight" search Massy validated without ever showing a KL that
+// isn't backed by real inventory.
+function promoteWaitlistOnRelease(state, releasedSegments) {
+  const pnr = state.activePNR;
+  if (!pnr || !releasedSegments || releasedSegments.length === 0) return;
+  for (const released of releasedSegments) {
+    if (!released.airline || !released.flightNo) continue;
+    const waitlisted = pnr.itinerary.find(
+      (seg) =>
+        seg.status === "HL" &&
+        seg.airline === released.airline &&
+        seg.flightNo === released.flightNo &&
+        seg.dateDDMMM === released.dateDDMMM
+    );
+    if (!waitlisted) continue;
+    const cls = findAvailabilityClass(state, waitlisted);
+    if (!cls || cls.seats < (waitlisted.paxCount || 1)) continue;
+    cls.seats -= waitlisted.paxCount || 1;
+    waitlisted.status = "KL";
+  }
+}
+
+// Manual segment-status override via <n>/<STATUS> (docs/COMMANDES-
+// MANQUANTES.md Priorite 3, mission 13 item 5: "2/HK", "2/HL" -- simulates
+// typing in the advice code received from the carrier). Keeps the
+// inventory invariant true: moving OFF a status that held a real seat
+// releases it, moving ONTO one that does requires (and consumes) a real
+// seat -- NO SEATS if none is left.
+const SEGMENT_STATUS_CODES = new Set(["HK", "HL", "KK", "KL", "UC", "UN", "NO"]);
+
+function applySegmentStatusOverride(state, segment, newStatus) {
+  const heldBefore = segmentHoldsInventory(segment.status);
+  const heldAfter = segmentHoldsInventory(newStatus);
+  if (heldBefore && !heldAfter) {
+    const cls = findAvailabilityClass(state, segment);
+    if (cls) cls.seats += segment.paxCount || 1;
+  } else if (!heldBefore && heldAfter) {
+    const cls = findAvailabilityClass(state, segment);
+    if (!cls || cls.seats < (segment.paxCount || 1)) return { error: "NO SEATS" };
+    cls.seats -= segment.paxCount || 1;
+  }
+  segment.status = newStatus;
+  return { ok: true };
+}
+
+// ERK/ETK -- resolve the waitlist advice codes before recording the PNR
+// (docs/COMMANDES-MANQUANTES.md Priorite 3, mission 13): KK/KL segments
+// (confirmed by the carrier, pending entry) become HK; UC/UN/NO segments
+// (rejected) are dropped outright -- no RH history yet to move them into
+// (mission 19), and CONSTITUTION forbids inventing one now.
+function applyWaitlistAdviceCodes(pnr) {
+  if (!pnr) return;
+  pnr.itinerary = pnr.itinerary.filter((seg) => {
+    const status = String(seg.status || "HK").toUpperCase();
+    if (status === "UC" || status === "UN" || status === "NO") return false;
+    if (status === "KK" || status === "KL") seg.status = "HK";
+    return true;
+  });
 }
 
 // How many of the CURRENT PNR's own itinerary segments are already covered
@@ -2720,6 +2858,8 @@ export async function processCommand(state, cmd, options = {}) {
       print("EX: SS1Y1");
       print("SSAABBBBCddMMMXXXYYYn  LONG SELL (NO PRIOR AN)");
       print("EX: SSAF950C12DECCDGBRU1");
+      print("FULL CLASS -> WAITLISTED (STATUS HL) INSTEAD OF REFUSED");
+      print("...PE                EXPLICIT WAITLIST REQUEST (ex: SS1Y1PE)");
       return { events, state };
     }
     if (subject === "SB") {
@@ -2734,7 +2874,9 @@ export async function processCommand(state, cmd, options = {}) {
       print("HE MODIFY");
       print("n/TEXT              MODIFY RM/OSI/SSR/OP TEXT BY RT ELEMENT #");
       print("n/ddMMM             MODIFY OP/TKTL/TKXL DATE BY RT ELEMENT #");
+      print("n/HK|HL|KK|KL|UC|UN|NO  SET SEGMENT STATUS BY RT ELEMENT #");
       print("EX: 5/NEW REMARK TEXT");
+      print("EX: 2/HL");
       return { events, state };
     }
     if (subject === "NM") {
@@ -2771,6 +2913,15 @@ export async function processCommand(state, cmd, options = {}) {
         print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
         print("DOES NOT ISSUE A TICKET -- USE TTP");
       }
+      return { events, state };
+    }
+    if (subject === "ERK" || subject === "ETK") {
+      print(`HE ${subject}`);
+      print(
+        `${subject}                 SAME AS ${subject === "ERK" ? "ER" : "ET"}, RESOLVES WAITLIST ADVICE CODES FIRST`
+      );
+      print("KK/KL SEGMENTS -> ENTERED AS HK");
+      print("UC/UN/NO SEGMENTS -> DROPPED");
       return { events, state };
     }
     if (subject === "FXP" || subject === "TTP") {
@@ -2868,8 +3019,9 @@ export async function processCommand(state, cmd, options = {}) {
     print("AC/SC/ACR           CHANGE OR REVERSE LAST DISPLAY (HE AC for syntax)");
     print("SSnCn[pax]          SELL (ex: SS1Y1 / SS2M2 / SS1Y)");
     print("SSAABBBBCddMMMXXXYYYn  LONG SELL (ex: SSAF950C12DECCDGBRU1)");
+    print("SS...PE             EXPLICIT WAITLIST REQUEST (HE SS for syntax)");
     print("SB                  REBOOK CLASS/DATE/FLIGHT (HE SB for syntax)");
-    print("n/TEXT              MODIFY RM/OSI/SSR/OP/TK (HE MODIFY for syntax)");
+    print("n/TEXT              MODIFY RM/OSI/SSR/OP/TK/SEG STATUS (HE MODIFY for syntax)");
     print("XE1                 CANCEL SEGMENT");
     print("DLn                 DELETE SEGMENT (HE DL for syntax)");
     print("SI ARNK             CONTINUITY GAP (HE SI for syntax)");
@@ -2891,6 +3043,7 @@ export async function processCommand(state, cmd, options = {}) {
     print("FXP/FXX/FXR/FXB     PRICING");
     print("ER                  END PNR");
     print("ET                  END TRANSACTION (LIKE ER, NO REDISPLAY)");
+    print("ERK/ETK             LIKE ER/ET, RESOLVE WAITLIST ADVICE CODES FIRST");
     print("RT                  DISPLAY PNR (same as live)");
     print("RE/REn              RECALL LAST/Nth-LAST ENTRY (HE RE for syntax)");
     print("TTP                 ISSUE TICKET");
@@ -3474,7 +3627,15 @@ export async function processCommand(state, cmd, options = {}) {
     return { events, state };
   }
 
-  if (c === "ER" || c === "ET") {
+  if (c === "ER" || c === "ET" || c === "ERK" || c === "ETK") {
+    // ERK/ETK -- twins of ER/ET that first process the waitlist advice
+    // codes (docs/COMMANDES-MANQUANTES.md Priorite 3, mission 13): KK/KL
+    // segments are entered as HK, UC/UN/NO segments are dropped entirely
+    // (no RH history yet -- mission 19). Runs before the shared recordPnr
+    // so the recorded snapshot reflects the resolved itinerary.
+    if (c === "ERK" || c === "ETK") {
+      applyWaitlistAdviceCodes(state.activePNR);
+    }
     const result = recordPnr(state, deps);
     if (result.error) {
       print(result.error);
@@ -3488,10 +3649,11 @@ export async function processCommand(state, cmd, options = {}) {
     }
     print("PNR RECORDED");
     print("RECORD LOCATOR " + result.recordLocator);
-    // ET is End Transaction, a twin of ER that does NOT redisplay the PNR
-    // (docs/COMMANDES-MANQUANTES.md "2 ecarts de fidelite" -- and unlike
-    // the old behavior, ET never issues a ticket either: TTP alone does).
-    if (c === "ER") {
+    // ET/ETK are End Transaction, twins of ER/ERK that do NOT redisplay
+    // the PNR (docs/COMMANDES-MANQUANTES.md "2 ecarts de fidelite" -- and
+    // unlike the old behavior, ET/ETK never issue a ticket either: TTP
+    // alone does).
+    if (c === "ER" || c === "ERK") {
       renderPNRLiveView(state, deps.clock).forEach(print);
     }
     return { events, state };

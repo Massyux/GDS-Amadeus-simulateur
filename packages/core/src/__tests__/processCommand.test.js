@@ -628,7 +628,7 @@ describe("processCommand", () => {
     assert.deepEqual(lines, ["CHECK CLASS OF SERVICE"]);
   });
 
-  it("SS decrements available seats so the same class cannot be oversold indefinitely", async () => {
+  it("SS decrements available seats, then waitlists (HL) once the class is full instead of refusing", async () => {
     const state = createInitialState();
     await runCommand(state, "AN26DECALGPAR");
     const item = state.lastAN.results.find((r) => r.lineNo === 1);
@@ -642,10 +642,15 @@ describe("processCommand", () => {
     assert.equal(cls.seats, 0);
     assert.equal(state.activePNR.itinerary.length, initialSeats);
 
-    // Selling once more must fail instead of creating an extra duplicate segment.
+    // Selling once more on a full class waitlists (HL) instead of refusing
+    // (docs/COMMANDES-MANQUANTES.md Priorite 3, mission 13) -- inventory
+    // stays at 0, an HL segment is added instead of an error.
     const overLines = await runCommand(state, "SS1Y1");
-    assert.deepEqual(overLines, ["NO SEATS"]);
-    assert.equal(state.activePNR.itinerary.length, initialSeats);
+    assert.equal(overLines[0], "OK");
+    assert.equal(cls.seats, 0);
+    assert.equal(state.activePNR.itinerary.length, initialSeats + 1);
+    const lastSeg = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(lastSeg.status, "HL");
   });
 
   it("SS long sell (SS<airline><flight><class><date><from><to><pax>) sells directly without a prior AN", async () => {
@@ -3075,5 +3080,275 @@ describe("processCommand", () => {
 
     const xeOne = await runCommand(state, `XE${segMatch[1]}`);
     assert.deepEqual(xeOne, ["NOT ALLOWED - LAST SEGMENT"]);
+  });
+
+  it("SS...PE explicitly waitlists (HL) even when seats are available, without decrementing inventory", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    assert.ok(cls.seats > 0);
+    const seatsBefore = cls.seats;
+
+    const lines = await runCommand(state, "SS1Y1PE");
+    assert.equal(lines[0], "OK");
+    assert.equal(cls.seats, seatsBefore);
+    const seg = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(seg.status, "HL");
+  });
+
+  it("SS long sell waitlists (HL) on a full class and supports the PE suffix", async () => {
+    const probeState = createInitialState();
+    await runCommand(probeState, "AN26DECALGPAR");
+    const item = probeState.lastAN.results[0];
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+
+    const state = createInitialState();
+    const initialSeats = cls.seats;
+    for (let i = 0; i < initialSeats; i++) {
+      const lines = await runCommand(
+        state,
+        `SS${item.airline}${item.flightNo}Y${item.dateDDMMM}${item.from}${item.to}1`
+      );
+      assert.equal(lines[0], "OK");
+    }
+    const liveCls = state.lastAN.results
+      .find((r) => r.airline === item.airline && r.flightNo === item.flightNo)
+      .bookingClasses.find((c) => c.code === "Y");
+    assert.equal(liveCls.seats, 0);
+
+    const overLines = await runCommand(
+      state,
+      `SS${item.airline}${item.flightNo}Y${item.dateDDMMM}${item.from}${item.to}1`
+    );
+    assert.equal(overLines[0], "OK");
+    let seg = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(seg.status, "HL");
+
+    const peLines = await runCommand(
+      state,
+      `SS${item.airline}${item.flightNo}Y${item.dateDDMMM}${item.from}${item.to}1PE`
+    );
+    assert.equal(peLines[0], "OK");
+    seg = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(seg.status, "HL");
+  });
+
+  it("XE releases inventory and promotes the first HL of the same flight to KL (FIFO, mission 13)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+
+    for (let i = 0; i < initialSeats; i++) {
+      await runCommand(state, "SS1Y1");
+    }
+    await runCommand(state, "SS1Y1"); // waitlisted (HL)
+    assert.equal(cls.seats, 0);
+    assert.equal(
+      state.activePNR.itinerary[state.activePNR.itinerary.length - 1].status,
+      "HL"
+    );
+
+    const rtLines = await runCommand(state, "RT");
+    const firstSegNo = findElementNo(rtLines, "HK1");
+
+    await runCommand(state, `XE${firstSegNo}`);
+
+    // The freed seat was immediately reassigned to the waitlisted entry --
+    // net inventory stays at 0, but the segment itself is now KL.
+    assert.equal(cls.seats, 0);
+    const promoted = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(promoted.status, "KL");
+  });
+
+  it("XE does not promote an HL in a DIFFERENT class than the one just released", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const yCls = item.bookingClasses.find((c) => c.code === "Y");
+    const mCls = item.bookingClasses.find((c) => c.code === "M");
+    const yInitialSeats = yCls.seats;
+    const mInitialSeats = mCls.seats;
+
+    for (let i = 0; i < yInitialSeats; i++) {
+      await runCommand(state, "SS1Y1");
+    }
+    await runCommand(state, "SS1Y1"); // Y waitlisted (HL)
+    const waitlisted = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(waitlisted.status, "HL");
+
+    for (let i = 0; i < mInitialSeats; i++) {
+      await runCommand(state, "SS1M1");
+    }
+    const rtLines = await runCommand(state, "RT");
+    const mSegNo = findElementNo(rtLines, " M ");
+    await runCommand(state, `XE${mSegNo}`);
+
+    // Releasing an M-class seat must never promote the Y-class waitlist.
+    assert.equal(waitlisted.status, "HL");
+  });
+
+  it("DL also releases inventory and promotes the waitlist (same family as XE)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+
+    for (let i = 0; i < initialSeats; i++) {
+      await runCommand(state, "SS1Y1");
+    }
+    await runCommand(state, "SS1Y1"); // waitlisted (HL)
+
+    const rtLines = await runCommand(state, "RT");
+    const firstSegNo = findElementNo(rtLines, "HK1");
+    await runCommand(state, `DL${firstSegNo}`);
+
+    const promoted = state.activePNR.itinerary[state.activePNR.itinerary.length - 1];
+    assert.equal(promoted.status, "KL");
+    assert.equal(cls.seats, 0);
+  });
+
+  it("n/HL, n/KK, n/UC etc. manually override a segment's status and keep inventory consistent", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    await runCommand(state, "SS1Y1");
+    const seatsAfterSell = cls.seats;
+
+    const rtLines = await runCommand(state, "RT");
+    const segNo = findElementNo(rtLines, "HK1");
+
+    // HK -> HL releases the held seat.
+    let lines = await runCommand(state, `${segNo}/HL`);
+    assert.equal(lines[0], "OK");
+    assert.equal(state.activePNR.itinerary[0].status, "HL");
+    assert.equal(cls.seats, seatsAfterSell + 1);
+
+    // HL -> KK re-consumes a seat.
+    lines = await runCommand(state, `${segNo}/KK`);
+    assert.equal(lines[0], "OK");
+    assert.equal(state.activePNR.itinerary[0].status, "KK");
+    assert.equal(cls.seats, seatsAfterSell);
+
+    // KK -> UC (both non/held transitions across the boundary) releases again.
+    lines = await runCommand(state, `${segNo}/UC`);
+    assert.equal(lines[0], "OK");
+    assert.equal(state.activePNR.itinerary[0].status, "UC");
+    assert.equal(cls.seats, seatsAfterSell + 1);
+  });
+
+  it("n/<status> returns NO SEATS when trying to confirm into a class with no seats left", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const initialSeats = cls.seats;
+    for (let i = 0; i < initialSeats; i++) {
+      await runCommand(state, "SS1Y1");
+    }
+    await runCommand(state, "SS1Y1"); // waitlisted (HL), last in itinerary
+
+    const rtLines = await runCommand(state, "RT");
+    const hlSegNo = findElementNo(rtLines, "HL1");
+    const lines = await runCommand(state, `${hlSegNo}/KL`);
+    assert.deepEqual(lines, ["NO SEATS"]);
+  });
+
+  it("n/<status> rejects an unrecognized value and is blocked on a cancelled segment", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    const rtLines = await runCommand(state, "RT");
+    const segNo = findElementNo(rtLines, "HK1");
+
+    assert.deepEqual(await runCommand(state, `${segNo}/FOOBAR`), ["NOT ALLOWED"]);
+
+    await runCommand(state, `XE${segNo}`);
+    assert.deepEqual(await runCommand(state, `${segNo}/HK`), ["ELEMENT NOT FOUND"]);
+  });
+
+  it("ETK enters KK/KL segments as HK, drops UC/UN/NO segments, and does not redisplay or ticket", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "SS1M1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+
+    // Element numbering is canonical (PAX, then SEG, ...), not insertion
+    // order -- both segments show "HK1" so they must be told apart by
+    // their own class code, not by hardcoded positions.
+    const rtLines = await runCommand(state, "RT");
+    const ySegNo = findElementNo(rtLines, " Y 26DEC");
+    const mSegNo = findElementNo(rtLines, " M 26DEC");
+    await runCommand(state, `${ySegNo}/KL`);
+    await runCommand(state, `${mSegNo}/UC`);
+
+    const lines = await runCommand(state, "ETK");
+    assert.ok(lines.some((l) => l.startsWith("PNR RECORDED")));
+    assert.ok(lines.some((l) => l.startsWith("RECORD LOCATOR")));
+    assert.ok(!lines.some((l) => /^FA /.test(l)));
+    assert.equal(state.activePNR.itinerary.length, 1);
+    assert.equal(state.activePNR.itinerary[0].status, "HK");
+    assert.equal(state.activePNR.itinerary[0].classCode, "Y");
+  });
+
+  it("ERK behaves like ETK but redisplays the PNR afterward", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+
+    const rtLines = await runCommand(state, "RT");
+    const segNo = findElementNo(rtLines, "HK1");
+    await runCommand(state, `${segNo}/KK`);
+
+    const lines = await runCommand(state, "ERK");
+    assert.ok(lines.some((l) => l.startsWith("PNR RECORDED")));
+    assert.ok(lines.some((l) => l.startsWith("RECORD LOCATOR")));
+    const segments = getRtSegmentLines(lines);
+    assert.equal(segments.length, 1);
+    assert.equal(getSegmentStatus(segments[0]), "HK");
+  });
+
+  it("IG restitution also releases inventory held by KK/KL segments (mission 13 item 6)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    const item = state.lastAN.results.find((r) => r.lineNo === 1);
+    const cls = item.bookingClasses.find((c) => c.code === "Y");
+    const seatsBefore = cls.seats;
+
+    await runCommand(state, "SS1Y1");
+    const rtLines = await runCommand(state, "RT");
+    const segNo = findElementNo(rtLines, "HK1");
+    await runCommand(state, `${segNo}/KL`);
+    assert.equal(cls.seats, seatsBefore - 1);
+
+    await runCommand(state, "IG");
+    assert.equal(cls.seats, seatsBefore);
+  });
+
+  it("ETK/ERK do not collide with plain ET/ER: ET alone never resolves waitlist advice codes (family non-collision, lesson from Mission 04)", async () => {
+    const state = createInitialState();
+    await runCommand(state, "AN26DECALGPAR");
+    await runCommand(state, "SS1Y1");
+    await runCommand(state, "NM1DOE/JOHN MR");
+    await runCommand(state, "AP1234567890");
+    await runCommand(state, "RFMM");
+    const rtLines = await runCommand(state, "RT");
+    const segNo = findElementNo(rtLines, "HK1");
+    await runCommand(state, `${segNo}/KK`);
+
+    const lines = await runCommand(state, "ET");
+    assert.ok(lines.some((l) => l.startsWith("PNR RECORDED")));
+    const segIndex = state.activePNR.itinerary.findIndex((s) => s.classCode === "Y");
+    assert.equal(state.activePNR.itinerary[segIndex].status, "KK");
   });
 });
