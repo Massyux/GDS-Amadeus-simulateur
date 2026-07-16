@@ -1,3 +1,6 @@
+import FeedbackButton from "./FeedbackButton.jsx";
+import QuickStartGuide from "./QuickStartGuide.jsx";
+
 const CONTACT_EMAIL = "massinissa.mehdani@gmail.com";
 
 // Static, real-rendered (not a screenshot) sample of what the terminal looks
@@ -16,6 +19,8 @@ const PREVIEW_LINES = [
 export default function Onboarding({ t, lang, onChangeLang, onHaveKey }) {
   return (
     <div className="onboarding">
+      <FeedbackButton t={t} screen="onboarding" />
+      <QuickStartGuide t={t} />
       <div className="onboarding-card">
         <div className="onboarding-langs">
           <button
