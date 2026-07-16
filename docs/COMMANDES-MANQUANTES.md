@@ -54,7 +54,7 @@ notre `FQN` (dans le vrai système, FQN affiche les notes tarifaires d'une ligne
 
 | Commande | Rôle | Logique |
 |---|---|---|
-| `RT <locator>` / `RT/<nom>` | Récupérer un PNR enregistré (par record locator, nom, vol+date) | Nécessite un magasin de PNR enregistrés (packages/data) — aujourd'hui seul le PNR actif existe |
+| ~~`RT <locator>` / `RT/<nom>`~~ **fait Mission 19 réduite (07/07/2026)** | Récupérer un PNR enregistré (par record locator, nom, vol+date) | ✅ Fait, persistance en mémoire pour la session de travail (choix validé par Massy 07/07/2026, pas de localStorage) : `state.pnrStore` déjà existant (alimenté par ER/ET/ERK/ETK) exposé via `RT<LOCATOR>`, `RT/<NOM>` et `RT<AA><vol>/<ddMMM>-<NOM>`. Liste de similitude si plusieurs correspondances (`RT<n>` sélectionne, `RT0` réaffiche), même matrice transactionnelle que IR (discard des modifs non enregistrées). `RH`, `SP`/`EF`/`RTAXR`, `RRN`/`RRI`/`RRP` reportés en v2 |
 | `SP` + `EF` + `RTAXR` | Scinder un PNR (un passager annule…), fichier associé, lien AXR | Duplication contrôlée du PNR, liens croisés |
 | `RRN` / `RRI` / `RRP` | Copier un PNR (complet / itinéraire seul / passagers seuls), options date+jours, classe | Copie transformée du PNR actif |
 | `RH` | Historique du PNR (qui a fait quoi) | Journal d'événements par PNR — s'appuyer sur l'events flow existant |

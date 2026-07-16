@@ -6,19 +6,45 @@
 
 ## En cours
 
-**Chaîne d'implémentation (missions/README.md §CHAÎNE D'IMPLÉMENTATION, ALLÈGEMENT 07/07/2026)** :
-**Missions 16, 17 réduite et 13 sont CLOSES**. Chaîne réduite : `fin 13 → 19 réduite (magasin
-PNR + RT locator/nom) → 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 sont
-reportés en v2. Tout poussé sur `main`, 6 suites vertes (259 tests core, 9 data, 22 web, 10 e2e,
-lint et typecheck propres).
+**Chaîne d'implémentation allégée (missions/README.md §ALLÈGEMENT 07/07/2026) — CHAÎNE TERMINÉE** :
+**Missions 16, 17 réduite, 13 et 19 réduite sont CLOSES**. Mission 18 (sièges SM/ST/SX) et le
+reste de 17/19/20 restent reportés en v2 (voir `docs/COMMANDES-MANQUANTES.md`). Tout poussé sur
+`main`, 6 suites vertes (268 tests core, 9 data, 22 web, 10 e2e, lint et typecheck propres).
 
-**Reprise exacte** : ouvrir `missions/MISSION-19.md` en entier, périmètre réduit aux étapes 1-3
-uniquement (magasin de PNR, `RT` par locator, `RT` par nom avec liste de similitude — RH,
-SP/EF/RTAXR, RRN/RRI/RRP reportés en v2, voir README §ALLÈGEMENT). Protocole de non-régression
-habituel : suite core + typecheck + lint après CHAQUE commande, un commit par commande, push ;
-rituel complet (6 suites + doc) à la fin de la mission, puis enchaîner sur Mission 07 (pilote).
+**Reprise exacte** : la chaîne d'implémentation v1.x est terminée. Prochaine étape : **Mission
+07** (lancement pilote + traitement des retours, Phase 4) — lire `missions/MISSION-07.md` s'il
+existe déjà (l'architecte doit d'abord le détailler, marqué "esquisse" dans
+`missions/README.md`), sinon attendre que l'architecte le rédige avant de démarrer.
 
 ## Fait (par session, datée)
+
+### 07/07/2026 — Mission 19 réduite (magasin de PNR + RT locator/nom, clôture de la chaîne)
+- **Question de persistance posée en début de session** (comme demandé explicitement par la
+  bannière PÉRIMÈTRE RÉDUIT de `MISSION-19.md`) : Massy a confirmé **en mémoire pour la session
+  de travail uniquement**, pas de localStorage — cohérent avec l'architecture actuelle
+  (`state.pnrStore`, déjà alimenté par `ER`/`ET`/`ERK`/`ETK` depuis Mission 15/13).
+- **Choix d'architecture assumé** : le magasin de PNR existait déjà côté `packages/core`
+  (`state.pnrStore`, clé = record locator, alimenté par `recordPnr`) et fonctionne, testé
+  extensivement (IG/IR/XI). Plutôt que de le migrer vers `packages/data` (refactor risqué sans
+  bénéfice fonctionnel pour ce périmètre réduit, contraire à CONSTITUTION §8 "minimiser le
+  risque de régression"), cette mission l'expose simplement via de nouvelles commandes `RT`.
+- `RT<LOCATOR>` (6 lettres) : récupère un PNR enregistré par son record locator, même sémantique
+  transactionnelle que `IR<LOCATOR>` (discard des segments non enregistrés de la session
+  courante, restitution d'inventaire) — testé explicitement.
+- `RT/<NOM>` : recherche par nom de famille (sous-chaîne, insensible à la casse) dans tous les
+  PNR enregistrés. Une seule correspondance → récupération directe. Plusieurs → liste de
+  similitude numérotée (`RT<n>` sélectionne, `RT0` réaffiche la liste). Aucune → `PNR NOT FOUND`.
+- `RT<AA><vol>/<ddMMM>-<NOM>` : même recherche par nom, filtrée en plus par vol+date exacts
+  (utile pour désambiguïser deux passagers du même nom sur des PNR différents).
+- Non-collision vérifiée avec les `RT` partiels reportés en v2 (`RTN`/`RT ABC123`/`RTZZ` restent
+  `CHECK FORMAT`, aucune régression sur les tests Mission 16).
+- `RH`, `SP`/`EF`/`RTAXR`, `RRN`/`RRI`/`RRP` **reportés en v2** (décision Massy 07/07/2026, hors
+  périmètre réduit de cette mission).
+- 259→268 tests core (9 nouveaux : retrieve par locator, par nom simple/multiple, liste
+  `RT<n>`/`RT0`, filtre vol+date, cas d'erreur, discard transactionnel). **Mission 19 réduite
+  CLOSE** : 6 suites vertes (268 core, 9 data, 22 web, 10 e2e, lint et typecheck propres).
+  **Chaîne d'implémentation v1.x terminée** (missions/README.md §ALLÈGEMENT) — prochaine étape :
+  Mission 07 (pilote).
 
 ### 07/07/2026 — Mission 13 (statuts de segment & liste d'attente HL/UC/KK/KL + ETK/ERK)
 - **Spec validée par Massy en début de session** (question posée par l'assistant avant de coder,

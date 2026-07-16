@@ -527,19 +527,38 @@ Interdit :
   core, 9 data, 22 web, 10 e2e, lint et typecheck propres). Enchaînement immédiat sur Mission 19
   réduite.
 
+### 07/07/2026 — Mission 19 réduite (magasin de PNR + RT locator/nom, clôture de la chaîne)
+- Question de persistance posée en début de session (demandée explicitement par la bannière
+  de la mission) : Massy a confirmé en mémoire pour la session de travail uniquement, pas de
+  localStorage.
+- Choix d'architecture assumé : `state.pnrStore` (packages/core) existait déjà, alimenté par
+  `ER`/`ET`/`ERK`/`ETK`, testé extensivement (IG/IR/XI) — pas de migration vers `packages/data`
+  pour ce périmètre réduit (refactor sans bénéfice fonctionnel, CONSTITUTION §8).
+- `RT<LOCATOR>` : retrouve un PNR par record locator, même matrice transactionnelle que
+  `IR<LOCATOR>` (discard des segments non enregistrés, restitution d'inventaire).
+- `RT/<NOM>` et `RT<AA><vol>/<ddMMM>-<NOM>` : recherche par nom (sous-chaîne), filtrable par
+  vol+date. Une correspondance → retrieve direct ; plusieurs → liste de similitude numérotée
+  (`RT<n>` sélectionne, `RT0` réaffiche) ; aucune → `PNR NOT FOUND`. Non-collision vérifiée avec
+  les `RT` partiels reportés en v2 (`RTN`/`RT ABC123`/`RTZZ` restent `CHECK FORMAT`).
+- `RH`, `SP`/`EF`/`RTAXR`, `RRN`/`RRI`/`RRP` **reportés en v2** (décision Massy 07/07/2026).
+- 259→268 tests core (9 nouveaux). **Mission 19 réduite CLOSE** : 6 suites vertes (268 core,
+  9 data, 22 web, 10 e2e, lint et typecheck propres). **Chaîne d'implémentation v1.x terminée**
+  (missions/README.md §ALLÈGEMENT) — prochaine étape : Mission 07 (pilote).
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
-Missions 01 à 06, 15, 16, 17 réduite et 13 sont closes (07/07/2026 — voir §9 et `TASKS.md`).
-**Jalon v1.0 atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2), **Phase 3
-(offre commerciale v1) close** (accès par clé en production, page d'accueil FR/EN), et **chaîne
-d'implémentation v1.x en cours, allégée le 07/07/2026** (triage Massy + architecte,
-`missions/README.md` §ALLÈGEMENT) : `fin 13 → 19 réduite (magasin PNR + RT locator/nom)
-→ 07 (pilote)`. Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 entièrement reportés en v2.
-Prochaine étape : **Mission 19 réduite** (magasin de PNR + `RT` par locator/nom seulement — RH,
-SP/EF/RTAXR, RRN/RRI/RRP reportés), enchaînée immédiatement sans arrêt de session, selon la
-règle de la chaîne dans `missions/README.md`. Point notable en Backlog : interaction FXP/TTP
-avec un segment `HL`/`UC` non confirmé, non demandée par Mission 13, à trancher si besoin.
+Missions 01 à 06, 15, 16, 17 réduite, 13 et 19 réduite sont closes (07/07/2026 — voir §9 et
+`TASKS.md`). **Jalon v1.0 atteint** (déploiement public fonctionnel, cf. `CLAUDE.md` Phase 2),
+**Phase 3 (offre commerciale v1) close** (accès par clé en production, page d'accueil FR/EN), et
+**chaîne d'implémentation v1.x TERMINÉE** (triage Massy + architecte du 07/07/2026,
+`missions/README.md` §ALLÈGEMENT) : missions 15→16→17 réduite→13→19 réduite toutes closes.
+Mission 18 (sièges SM/ST/SX) et le reste de 17/19/20 (dont RH, SP/EF/RTAXR, RRN/RRI/RRP)
+entièrement reportés en v2. Prochaine étape : **Mission 07** (lancement pilote + traitement des
+retours, Phase 4) — la mission n'est encore qu'une esquisse dans `missions/README.md`,
+l'architecte doit la détailler avant de commencer. Point notable en Backlog : interaction
+FXP/TTP avec un segment `HL`/`UC` non confirmé, non demandée par Mission 13, à trancher si
+besoin.
 
 ---
 

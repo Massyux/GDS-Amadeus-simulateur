@@ -203,7 +203,8 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   que possible du vrai logiciel
 - ⚠️ Recréer l'apparence "à la main" (pas de captures d'écran ni d'assets réels Amadeus copiés),
   garder un disclaimer de non-affiliation — risque IP distinct du sujet du nom (trade dress)
-- [x] **Chaîne d'implémentation v1.x — Missions 15, 16, 17 réduite et 13 closes (07/07/2026)** :
+- [x] **Chaîne d'implémentation v1.x — TERMINÉE (07/07/2026), missions 15, 16, 17 réduite, 13 et
+  19 réduite closes** :
   décision Massy du 06/07/2026 de compléter TOUTES les commandes manquantes avant le pilote,
   chaîne allégée le 07/07/2026 (triage Massy + architecte, voir `missions/README.md`
   §ALLÈGEMENT et §CHAÎNE D'IMPLÉMENTATION, `docs/COMMANDES-MANQUANTES.md`). Mission 15
@@ -232,10 +233,15 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   promotion de liste d'attente) ; `SS` long sell reconstruisait une disponibilité fraîche à
   chaque appel au lieu de réutiliser le contexte existant (comme `SB`), écrasant silencieusement
   l'inventaire déjà entamé sur un 2e long sell du même vol. Détail complet dans `TASKS.md`.
-  Chaîne restante réduite : Mission 18 (sièges SM/ST/SX) **entièrement reportée en v2**,
-  Mission 19 = magasin PNR + `RT` locator/nom seulement (RH, SP/EF/RTAXR, RRN/RRI/RRP reportés),
-  Mission 20 entièrement reportée en v2. Enchaînement immédiat sur Mission 19 réduite (règle de
-  la chaîne, pas d'arrêt entre missions du chantier).
+  Mission 19 réduite (PNR enregistrés & multi-PNR) : question de persistance posée en début de
+  session (comme demandé par la mission) — Massy a confirmé en mémoire pour la session de
+  travail uniquement, pas de localStorage. Le magasin de PNR (`state.pnrStore`) existait déjà
+  côté `packages/core` (alimenté par `ER`/`ET`/`ERK`/`ETK` depuis les missions précédentes) et a
+  été exposé via `RT<LOCATOR>`, `RT/<NOM>` et `RT<AA><vol>/<ddMMM>-<NOM>` (liste de similitude si
+  plusieurs correspondances, `RT<n>` sélectionne, `RT0` réaffiche), même matrice transactionnelle
+  que `IR`. `RH`, `SP`/`EF`/`RTAXR`, `RRN`/`RRI`/`RRP` **reportés en v2**. Mission 18 (sièges
+  SM/ST/SX) et Mission 20 **entièrement reportées en v2**. Détail complet dans `TASKS.md`.
+  **Chaîne d'implémentation terminée** — prochaine étape : Mission 07 (lancement pilote, Phase 4).
 
 **Phase 6 — Moteur d'exercices et quiz**
 - Scénarios guidés type "fais-moi une réservation de X à Y", "annule le billet numéro ..."
