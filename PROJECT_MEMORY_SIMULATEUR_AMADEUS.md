@@ -610,19 +610,44 @@ Interdit :
   critère d'acceptation de l'étape). **Mission 08 Étape 2 CLOSE** : 6 suites vertes, lint et
   typecheck propres, build web vérifié.
 
+### 24/07/2026 — Mission 08 Étape 3 (exercices 5-10 + indices/barème + polissage, Phase 6)
+- Contenu réel FR/EN des exercices 5-10 : vente directe sans AN (long sell), retrouver et
+  modifier un dossier existant (`RT` locator/nom + `SB`), corriger des erreurs (`NU`/`DL`/`XE`/
+  `IG`), tarifer et émettre (`FXP`/`FP`/`TTP`/`TWD`), liste d'attente (`SS...PE` ou classe
+  épuisée + `ETK`), dossier de synthèse complet. Même rigueur que 1-4 : chaque exercice testé
+  golden avec deux chemins valides différents ET un échec typique à feedback précis par
+  objectif ; toutes les commandes vérifiées contre le vrai moteur avant rédaction (numéros
+  d'éléments RT exacts, sièges/classes réellement disponibles sur ALG-PAR/26DEC).
+- « Chronométré » (exercice 10, mission §Contenu initial) traité comme un défi personnel dans
+  le texte de consigne uniquement — pas de minuteur applicatif ni changement d'UI, la mission ne
+  demandait ni l'un ni l'autre pour cette étape (périmètre : contenu + indices/barème/polissage).
+- **Bug réel trouvé et corrigé (famille CONSTITUTION §3)** : `applySeedState` faisait une fusion
+  superficielle (`{...state, ...exercise.seedState}`) — les objets imbriqués d'un `seedState`
+  (ex: `pnrStore`) restaient partagés par référence avec l'objet exercice importé une seule fois
+  (module JS, réutilisé par tous les étudiants/tentatives). Comme `processCommand` mute l'état en
+  place (`ER` remplace `state.pnrStore[locator]`), une première tentative sur l'exercice 6 (RT
+  locator + modification, qui seed un `pnrStore`) corrompait silencieusement l'exercice pour
+  toute tentative suivante — découvert via une pollution croisée entre deux tests golden, pas en
+  production. Corrigé avec `structuredClone(exercise.seedState)` ; test de régression dédié.
+  Deux nouveaux seeds `pnrStore`/`recordedSnapshot`/`activePNR` (exercices 6 et 7) construits en
+  suivant exactement la forme réelle produite par `recordPnr()` (vérifiée par inspection, pas
+  devinée).
+- 28→47 tests exercises (19 nouveaux). Suites core/data/web/e2e inchangées (268/9/41/14).
+  **Mission 08 Étape 3 CLOSE** : 6 suites vertes, lint et typecheck propres, build web vérifié.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
 Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, **Mission 07 Partie A
 (préparation technique du pilote) est close** mais **Mission 07 (le pilote lui-même) est
 reportée par décision de Massy** (07/07/2026 — Partie B, checklist opérationnelle, en attente),
-et **Mission 08 Étape 1 et Étape 2 (moteur d'exercices + contenu 1-4 + UI) sont closes**
-(16/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne
+et **Mission 08 Étapes 1, 2 et 3 (moteur d'exercices + contenu complet 1-10 + UI) sont closes**
+(24/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne
 d'implémentation v1.x TERMINÉE**.
-Prochaine étape : **Mission 08 Étape 3** — exercices 5-10 (contenu réel FR+EN, réutilisant
-`ExercisePicker`/`ExercisePanel` tels quels) + indices/barème + polissage FR/EN. Puis Étape 4
-(rituel de clôture final + production vérifiée). Points notables en Backlog : interaction
-FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission 13, non demandée, à trancher si besoin).
+Prochaine étape : **Mission 08 Étape 4** — rituel de clôture final : vérifier en production
+(Cloudflare Pages) que les 10 exercices sont bien jouables de bout en bout, puis clore Mission 08
+dans son ensemble. Points notables en Backlog : interaction FXP/TTP avec un segment `HL`/`UC`
+non confirmé (Mission 13, non demandée, à trancher si besoin).
 
 ---
 

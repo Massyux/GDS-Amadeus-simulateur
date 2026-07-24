@@ -274,8 +274,20 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   pas de bypass gratuit du modèle commercial Mission 06). FR/EN via le dictionnaire existant.
   Détail complet (dont le point de fidélité vérifié sur le filtre `AN.../XX`, UI-only et non un
   vrai filtre du dispatcher) dans `TASKS.md`.
-- [ ] Étape 3 (exercices 5-10 + indices + barème + polissage FR/EN), Étape 4 (rituel de clôture
-  final + production vérifiée) : pas encore commencées.
+- [x] **Mission 08 Étape 3 close (24/07/2026)** : contenu réel des exercices 5-10 FR/EN — vente
+  directe (long sell), retrouver/modifier un dossier existant (`RT` locator/nom + `SB`), corriger
+  des erreurs (`NU`/`DL`/`XE`/`IG`), tarifer et émettre (`FXP`/`FP`/`TTP`/`TWD`), liste d'attente
+  (`SS...PE` + `ETK`), dossier de synthèse complet. Même rigueur que 1-4 (deux chemins valides +
+  un échec typique par exercice, tout vérifié contre le vrai moteur avant rédaction). « Chronométré »
+  (exercice 10) traité comme un défi personnel dans le texte de consigne, pas un minuteur
+  applicatif — aucun changement d'UI pour cette étape, conforme à son périmètre décrit.
+  **Bug réel trouvé et corrigé** : `applySeedState` ne clonait pas profondément `seedState`, donc
+  les objets imbriqués (ex: `pnrStore`) restaient partagés par référence avec l'exercice importé
+  une seule fois — une première tentative pouvait corrompre l'exercice pour la suivante (`ER`
+  mute `state.pnrStore` en place). Corrigé avec `structuredClone`, testé en régression. Détail
+  complet dans `TASKS.md`.
+- [ ] Étape 4 (rituel de clôture final + vérification production des 10 exercices) : pas encore
+  commencée.
 
 **Phase 7 — Assistant IA intégré**
 - Chat pour poser des questions librement
