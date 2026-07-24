@@ -27,6 +27,7 @@ import { createInitialState } from "@simulateur/core";
  * @property {string} [from] - route: origin city code
  * @property {string} [to] - route: destination city code
  * @property {string} [airline] - route: 2-letter airline code (e.g. "AH")
+ * @property {string} [classCode] - route: booking class letter (e.g. "Y")
  * @property {string} [lastName] - passenger-name
  * @property {string} [firstName] - passenger-name
  * @property {string} [title] - passenger-name (e.g. "MR", "MRS")
@@ -71,16 +72,21 @@ function isCancelledStatus(status) {
 
 /**
  * Builds the working state an exercise starts from: createInitialState()
- * with exercise.seedState shallow-merged on top (per top-level key). No
- * exercise defined in Etape 1 needs anything deeper than that -- a seed
- * only ever pre-populates entire top-level fields (e.g. a whole recorded
- * PNR in pnrStore), never patches inside one.
+ * with exercise.seedState merged on top (per top-level key). Deep-cloned
+ * (not just shallow-spread) -- exercise objects are shared, imported-once
+ * fixtures (module-level JSON in packages/exercises/content/, a single
+ * long-lived object in the UI too), and processCommand mutates state
+ * in place (e.g. ER replaces state.pnrStore[locator] with a new snapshot).
+ * Without cloning, that mutation would land on exercise.seedState itself,
+ * corrupting the exercise for every subsequent attempt or student sharing
+ * the same imported object -- caught by a real cross-test pollution
+ * failure while writing Etape 3's ex-06/ex-07 (both seed a pnrStore).
  * @param {Exercise} exercise
  */
 export function applySeedState(exercise) {
   const state = createInitialState();
   if (!exercise || !exercise.seedState) return state;
-  return { ...state, ...exercise.seedState };
+  return { ...state, ...structuredClone(exercise.seedState) };
 }
 
 function getActiveSegments(finalState) {
@@ -126,7 +132,8 @@ function evaluateObjectif(objectif, finalState) {
           (!objectif.from || seg.from === objectif.from) &&
           (!objectif.to || seg.to === objectif.to) &&
           (!objectif.status || seg.status === objectif.status) &&
-          (!objectif.airline || seg.airline === objectif.airline)
+          (!objectif.airline || seg.airline === objectif.airline) &&
+          (!objectif.classCode || seg.classCode === objectif.classCode)
       );
     }
 

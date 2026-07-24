@@ -1,0 +1,54 @@
+{
+  "id": "ex-08-price-and-issue",
+  "niveau": 2,
+  "titre": {
+    "fr": "Tarifer et émettre",
+    "en": "Pricing and issuing"
+  },
+  "consigne": {
+    "fr": "Vendez 1 place en classe Y sur un vol Alger→Paris du 26 décembre pour M. John Doe (NM1DOE/JOHN MR), avec contact (AP1234567890), signature (RFMM) et dossier enregistré (ER). Tarifez (FXP), ajoutez un mode de paiement (FPCASH), émettez le billet (TTP), puis affichez-le (TWD).",
+    "en": "Sell 1 seat in Y class on an Algiers→Paris flight on 26 December for Mr John Doe (NM1DOE/JOHN MR), with a contact (AP1234567890), a signature (RFMM) and a recorded PNR (ER). Price it (FXP), add a form of payment (FPCASH), issue the ticket (TTP), then display it (TWD)."
+  },
+  "objectifs": [
+    {
+      "id": "obj-pnr",
+      "type": "pnr-recorded",
+      "label": { "fr": "Dossier enregistré", "en": "PNR recorded" },
+      "points": 1
+    },
+    {
+      "id": "obj-route",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "label": { "fr": "Segment ALG→PAR confirmé", "en": "Confirmed ALG→PAR segment" },
+      "points": 1
+    },
+    {
+      "id": "obj-ticket",
+      "type": "ticket-issued",
+      "label": { "fr": "Billet émis", "en": "Ticket issued" },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "TTP refuse tant qu'aucun mode de paiement (FP) n'a été posé sur le dossier.",
+        "en": "TTP refuses until a form of payment (FP) has been set on the PNR."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "FXP crée le TST ; TTP l'utilise pour émettre ; TWD affiche le billet émis sans l'annuler.",
+        "en": "FXP creates the TST; TTP uses it to issue; TWD displays the issued ticket without voiding it."
+      },
+      "penalty": 1
+    }
+  ]
+}

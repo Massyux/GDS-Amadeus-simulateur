@@ -1,0 +1,67 @@
+{
+  "id": "ex-09-waitlist",
+  "niveau": 3,
+  "titre": {
+    "fr": "Liste d'attente",
+    "en": "Waitlisting"
+  },
+  "consigne": {
+    "fr": "Affichez la disponibilité Alger→Paris du 26 décembre (AN26DECALGPAR) puis vendez 1 place en classe D sur le vol Air Algérie AH5469 (ligne 2) en forçant une demande explicite de liste d'attente (SS2D1PE) — le segment passe en statut HL. Ajoutez ensuite le nom (NM1DOE/JOHN MR), le contact (AP1234567890) et la signature (RFMM). Simulez la confirmation de la compagnie en passant le segment en KL (2/KL), puis entérinez avec ETK (au lieu de ER) pour le faire passer en HK.",
+    "en": "Display the Algiers→Paris availability for 26 December (AN26DECALGPAR) then sell 1 seat in D class on the Air Algérie AH5469 flight (line 2), forcing an explicit waitlist request (SS2D1PE) — the segment goes to HL status. Then add the name (NM1DOE/JOHN MR), the contact (AP1234567890) and the signature (RFMM). Simulate the airline's confirmation by setting the segment to KL (2/KL), then finalize with ETK (instead of ER) to bring it to HK."
+  },
+  "objectifs": [
+    {
+      "id": "obj-pnr",
+      "type": "pnr-recorded",
+      "label": { "fr": "Dossier enregistré", "en": "PNR recorded" },
+      "points": 1
+    },
+    {
+      "id": "obj-route-confirmed",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "label": {
+        "fr": "Segment entériné en HK (confirmé) après la liste d'attente",
+        "en": "Segment entered as HK (confirmed) after being waitlisted"
+      },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-pe",
+      "pattern": "PE$",
+      "label": { "fr": "A demandé explicitement la liste d'attente (PE)", "en": "Explicitly requested the waitlist (PE)" }
+    },
+    {
+      "id": "jt-kl",
+      "pattern": "/KL$",
+      "label": { "fr": "A simulé la confirmation de la compagnie (KL)", "en": "Simulated the airline's confirmation (KL)" }
+    },
+    {
+      "id": "jt-etk",
+      "pattern": "^ETK$",
+      "label": { "fr": "A utilisé ETK plutôt que ER", "en": "Used ETK rather than ER" }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "SS<ligne><classe><pax>PE force le statut HL même si des sièges restent disponibles.",
+        "en": "SS<line><class><pax>PE forces HL status even when seats are still available."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "<n° d'élément du segment>/KL simule la confirmation ; seul ETK (ou ERK) entérine KL en HK — ER seul laisse le segment en KL.",
+        "en": "<segment element number>/KL simulates the confirmation; only ETK (or ERK) turns KL into HK -- ER alone leaves it as KL."
+      },
+      "penalty": 1
+    }
+  ]
+}

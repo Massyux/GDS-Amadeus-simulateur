@@ -1,0 +1,62 @@
+{
+  "id": "ex-10-full-workflow",
+  "niveau": 3,
+  "titre": {
+    "fr": "Dossier complet de A à Z",
+    "en": "A complete PNR, start to finish"
+  },
+  "consigne": {
+    "fr": "Défi de synthèse : réservez, documentez, tarifez et émettez un billet pour M. John Doe sur un vol Alger→Paris du 26 décembre, sans aucune aide — combinez tout ce que vous avez appris (AN ou vente longue, SS, NM, AP, RF, TKTL, ER, FXP, FP, TTP). Essayez de le faire en moins de 5 minutes.",
+    "en": "Synthesis challenge: book, document, price and issue a ticket for Mr John Doe on an Algiers→Paris flight on 26 December, with no help — combine everything you've learned (AN or long sell, SS, NM, AP, RF, TKTL, ER, FXP, FP, TTP). Try to do it in under 5 minutes."
+  },
+  "objectifs": [
+    {
+      "id": "obj-pnr",
+      "type": "pnr-recorded",
+      "label": { "fr": "Dossier enregistré", "en": "PNR recorded" },
+      "points": 1
+    },
+    {
+      "id": "obj-route",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "label": { "fr": "Segment ALG→PAR confirmé", "en": "Confirmed ALG→PAR segment" },
+      "points": 1
+    },
+    {
+      "id": "obj-name",
+      "type": "passenger-name",
+      "lastName": "DOE",
+      "firstName": "JOHN",
+      "title": "MR",
+      "label": { "fr": "Nom du passager conforme", "en": "Passenger name matches" },
+      "points": 1
+    },
+    {
+      "id": "obj-tktl",
+      "type": "tk-set",
+      "kind": "TL",
+      "label": { "fr": "Limite de billetterie posée (TKTL)", "en": "Ticketing time limit set (TKTL)" },
+      "points": 1
+    },
+    {
+      "id": "obj-ticket",
+      "type": "ticket-issued",
+      "label": { "fr": "Billet émis", "en": "Ticket issued" },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "AN → SS (ou vente longue directe) → NM → AP → RF → TKTL → ER → FXP → FP → TTP.",
+        "en": "AN → SS (or a direct long sell) → NM → AP → RF → TKTL → ER → FXP → FP → TTP."
+      },
+      "penalty": 2
+    }
+  ]
+}

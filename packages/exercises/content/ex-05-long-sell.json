@@ -1,0 +1,55 @@
+{
+  "id": "ex-05-long-sell",
+  "niveau": 2,
+  "titre": {
+    "fr": "Vente directe sans disponibilité",
+    "en": "Direct sale without an availability search"
+  },
+  "consigne": {
+    "fr": "Un client connaît déjà le vol qu'il veut : Pegasus PC4773 du 26 décembre, Alger→Paris, classe Y. Vendez 1 place directement (vente longue), sans passer par AN : SSPC4773Y26DECALGPAR1.",
+    "en": "A client already knows the exact flight they want: Pegasus PC4773 on 26 December, Algiers→Paris, Y class. Sell 1 seat directly (long sell), without going through AN: SSPC4773Y26DECALGPAR1."
+  },
+  "objectifs": [
+    {
+      "id": "obj-route-pc",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "airline": "PC",
+      "label": {
+        "fr": "Segment Pegasus ALG→PAR confirmé",
+        "en": "Confirmed Pegasus ALG→PAR segment"
+      },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-longsell",
+      "pattern": "^SS[A-Z]{2}\\d",
+      "label": {
+        "fr": "A utilisé la vente longue (sans AN préalable)",
+        "en": "Used the long sell (without a prior AN)"
+      }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "Format de la vente longue : SS<compagnie><n° vol><classe><date><origine><destination><nb pax>.",
+        "en": "Long sell format: SS<airline><flight no><class><date><origin><destination><pax count>."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "SSPC4773Y26DECALGPAR1",
+        "en": "SSPC4773Y26DECALGPAR1"
+      },
+      "penalty": 2
+    }
+  ]
+}

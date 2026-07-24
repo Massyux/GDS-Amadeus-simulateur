@@ -80,6 +80,35 @@ describe("applySeedState", () => {
     // Untouched fields still come from createInitialState().
     assert.equal(state.activePNR, null);
   });
+
+  it("deep-clones seedState so mutating the returned state never leaks back into the shared exercise object", () => {
+    const exercise = {
+      id: "shared-fixture",
+      seedState: {
+        pnrStore: {
+          ABCDEF: {
+            pnrSnapshot: { recordLocator: "ABCDEF", itinerary: [{ classCode: "Y" }] },
+            tstsSnapshot: [],
+          },
+        },
+      },
+    };
+
+    const first = applySeedState(exercise);
+    // Simulate what processCommand does on ER: replace the store entry with
+    // a mutated snapshot, in place, on the returned state.
+    first.pnrStore.ABCDEF = {
+      pnrSnapshot: { recordLocator: "ABCDEF", itinerary: [{ classCode: "M" }] },
+      tstsSnapshot: [],
+    };
+
+    const second = applySeedState(exercise);
+    assert.equal(
+      second.pnrStore.ABCDEF.pnrSnapshot.itinerary[0].classCode,
+      "Y",
+      "a fresh applySeedState() call must be unaffected by a previous call's mutations"
+    );
+  });
 });
 
 describe("evaluate -- golden: two different valid solutions both pass", () => {

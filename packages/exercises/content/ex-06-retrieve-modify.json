@@ -1,0 +1,114 @@
+{
+  "id": "ex-06-retrieve-modify",
+  "niveau": 2,
+  "titre": {
+    "fr": "Retrouver et modifier un dossier",
+    "en": "Retrieve and modify a PNR"
+  },
+  "consigne": {
+    "fr": "Un dossier existe déjà sous la référence ABCDEF (Mme Anna Smith, un vol Pegasus PC4773 ALG→PAR en classe Y). Retrouvez-le avec RT ABCDEF (ou RT/SMITH), changez la classe du vol en M (SB), puis réenregistrez le dossier (ER).",
+    "en": "A PNR already exists under the reference ABCDEF (Mrs Anna Smith, a Pegasus PC4773 ALG→PAR flight in Y class). Retrieve it with RT ABCDEF (or RT/SMITH), change the flight's class to M (SB), then re-record the PNR (ER)."
+  },
+  "seedState": {
+    "pnrStore": {
+      "ABCDEF": {
+        "pnrSnapshot": {
+          "passengers": [
+            { "lastName": "SMITH", "firstName": "ANNA", "type": "ADT", "title": "MRS" }
+          ],
+          "contacts": ["AP1234567890"],
+          "emails": [],
+          "rf": "MM",
+          "recordLocator": "ABCDEF",
+          "status": "RECORDED",
+          "itinerary": [
+            {
+              "airline": "PC",
+              "flightNo": 4773,
+              "classCode": "Y",
+              "dateDDMMM": "26DEC",
+              "from": "ALG",
+              "to": "PAR",
+              "depTime": "0730",
+              "arrTime": "1130",
+              "status": "HK",
+              "paxCount": 1
+            }
+          ],
+          "ssr": [],
+          "osi": [],
+          "remarks": [],
+          "options": [],
+          "tk": null,
+          "fp": null,
+          "tickets": [],
+          "receipts": []
+        },
+        "tstsSnapshot": []
+      }
+    }
+  },
+  "objectifs": [
+    {
+      "id": "obj-pnr",
+      "type": "pnr-recorded",
+      "label": { "fr": "Dossier réenregistré", "en": "PNR re-recorded" },
+      "points": 1
+    },
+    {
+      "id": "obj-route-m",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "classCode": "M",
+      "label": {
+        "fr": "Segment repassé en classe M",
+        "en": "Segment rebooked into M class"
+      },
+      "points": 2
+    },
+    {
+      "id": "obj-name",
+      "type": "passenger-name",
+      "lastName": "SMITH",
+      "firstName": "ANNA",
+      "title": "MRS",
+      "label": {
+        "fr": "Nom du passager toujours conforme",
+        "en": "Passenger name still matches"
+      },
+      "points": 1
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-rt-locator",
+      "pattern": "^RT\\s*ABCDEF$",
+      "label": { "fr": "A retrouvé le dossier par record locator", "en": "Retrieved the PNR by record locator" }
+    },
+    {
+      "id": "jt-rt-name",
+      "pattern": "^RT/SMITH$",
+      "label": { "fr": "A retrouvé le dossier par nom", "en": "Retrieved the PNR by name" }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "RT<record locator> ou RT/<nom> retrouvent un dossier déjà enregistré.",
+        "en": "RT<record locator> or RT/<name> retrieve an already-recorded PNR."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "SB<nouvelle classe><n° d'élément du segment> change la classe (ex: SBM2).",
+        "en": "SB<new class><segment element number> changes the class (e.g. SBM2)."
+      },
+      "penalty": 1
+    }
+  ]
+}

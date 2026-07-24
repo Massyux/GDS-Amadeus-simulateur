@@ -1,0 +1,201 @@
+{
+  "id": "ex-07-fix-mistakes",
+  "niveau": 2,
+  "titre": {
+    "fr": "Corriger des erreurs",
+    "en": "Fixing mistakes"
+  },
+  "consigne": {
+    "fr": "Le dossier GHIJKL (déjà enregistré) contient deux erreurs introduites après son enregistrement : le nom du passager a été mal saisi (SMITH/JON MR au lieu de JOHN) et un second vol Pegasus PC4773 a été vendu par erreur en classe M en plus du bon vol en classe Y. Corrigez tout, soit en annulant les modifications avec IG (puisque le dossier avait déjà été enregistré correctement), soit en corrigeant à la main (NU pour le nom, DL ou XE pour retirer le segment en trop), puis réenregistrez si nécessaire.",
+    "en": "PNR GHIJKL (already recorded) has two mistakes introduced after it was recorded: the passenger's name was mistyped (SMITH/JON MR instead of JOHN) and a second Pegasus PC4773 flight was accidentally sold in M class on top of the correct Y class one. Fix everything, either by discarding the changes with IG (since the PNR had already been correctly recorded), or by fixing it by hand (NU for the name, DL or XE to remove the extra segment), then re-record if needed."
+  },
+  "seedState": {
+    "pnrStore": {
+      "GHIJKL": {
+        "pnrSnapshot": {
+          "passengers": [
+            { "lastName": "SMITH", "firstName": "JOHN", "type": "ADT", "title": "MR" }
+          ],
+          "contacts": ["AP1234567890"],
+          "emails": [],
+          "rf": "MM",
+          "recordLocator": "GHIJKL",
+          "status": "RECORDED",
+          "itinerary": [
+            {
+              "airline": "PC",
+              "flightNo": 4773,
+              "classCode": "Y",
+              "dateDDMMM": "26DEC",
+              "from": "ALG",
+              "to": "PAR",
+              "depTime": "0730",
+              "arrTime": "1130",
+              "status": "HK",
+              "paxCount": 1
+            }
+          ],
+          "ssr": [],
+          "osi": [],
+          "remarks": [],
+          "options": [],
+          "tk": null,
+          "fp": null,
+          "tickets": [],
+          "receipts": []
+        },
+        "tstsSnapshot": []
+      }
+    },
+    "recordedSnapshot": {
+      "recordLocator": "GHIJKL",
+      "pnrSnapshot": {
+        "passengers": [
+          { "lastName": "SMITH", "firstName": "JOHN", "type": "ADT", "title": "MR" }
+        ],
+        "contacts": ["AP1234567890"],
+        "emails": [],
+        "rf": "MM",
+        "recordLocator": "GHIJKL",
+        "status": "RECORDED",
+        "itinerary": [
+          {
+            "airline": "PC",
+            "flightNo": 4773,
+            "classCode": "Y",
+            "dateDDMMM": "26DEC",
+            "from": "ALG",
+            "to": "PAR",
+            "depTime": "0730",
+            "arrTime": "1130",
+            "status": "HK",
+            "paxCount": 1
+          }
+        ],
+        "ssr": [],
+        "osi": [],
+        "remarks": [],
+        "options": [],
+        "tk": null,
+        "fp": null,
+        "tickets": [],
+        "receipts": []
+      },
+      "tstsSnapshot": []
+    },
+    "activePNR": {
+      "passengers": [
+        { "lastName": "SMITH", "firstName": "JON", "type": "ADT", "title": "MR" }
+      ],
+      "contacts": ["AP1234567890"],
+      "emails": [],
+      "rf": "MM",
+      "recordLocator": "GHIJKL",
+      "status": "RECORDED",
+      "itinerary": [
+        {
+          "airline": "PC",
+          "flightNo": 4773,
+          "classCode": "Y",
+          "dateDDMMM": "26DEC",
+          "from": "ALG",
+          "to": "PAR",
+          "depTime": "0730",
+          "arrTime": "1130",
+          "status": "HK",
+          "paxCount": 1
+        },
+        {
+          "airline": "PC",
+          "flightNo": 4773,
+          "classCode": "M",
+          "dateDDMMM": "26DEC",
+          "from": "ALG",
+          "to": "PAR",
+          "depTime": "0730",
+          "arrTime": "1130",
+          "status": "HK",
+          "paxCount": 1
+        }
+      ],
+      "ssr": [],
+      "osi": [],
+      "remarks": [],
+      "options": [],
+      "tk": null,
+      "fp": null,
+      "tickets": [],
+      "receipts": []
+    }
+  },
+  "objectifs": [
+    {
+      "id": "obj-name",
+      "type": "passenger-name",
+      "lastName": "SMITH",
+      "firstName": "JOHN",
+      "title": "MR",
+      "label": { "fr": "Nom du passager corrigé", "en": "Passenger name fixed" },
+      "points": 1
+    },
+    {
+      "id": "obj-segment-count",
+      "type": "segment-count",
+      "count": 1,
+      "status": "HK",
+      "label": {
+        "fr": "Un seul segment actif (le vol en trop a été retiré)",
+        "en": "Only one active segment (the extra flight was removed)"
+      },
+      "points": 2
+    },
+    {
+      "id": "obj-route-y",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "classCode": "Y",
+      "label": {
+        "fr": "Le bon segment (classe Y) est resté actif",
+        "en": "The correct segment (Y class) stayed active"
+      },
+      "points": 1
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-ig",
+      "pattern": "^IG$",
+      "label": { "fr": "A utilisé IG pour tout annuler d'un coup", "en": "Used IG to discard everything at once" }
+    },
+    {
+      "id": "jt-nu",
+      "pattern": "^NU",
+      "label": { "fr": "A utilisé NU pour corriger le nom", "en": "Used NU to fix the name" }
+    },
+    {
+      "id": "jt-remove",
+      "pattern": "^(DL|XE)",
+      "label": { "fr": "A utilisé DL ou XE pour retirer le segment en trop", "en": "Used DL or XE to remove the extra segment" }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "Si un dossier a déjà été enregistré correctement, IG annule d'un coup toutes les modifications non enregistrées.",
+        "en": "If a PNR was already correctly recorded, IG discards every unrecorded change at once."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "Sinon : NU1/1SMITH/JOHN MR corrige le nom ; DL<n° du segment en trop> le retire complètement.",
+        "en": "Otherwise: NU1/1SMITH/JOHN MR fixes the name; DL<extra segment's element number> removes it completely."
+      },
+      "penalty": 1
+    }
+  ]
+}
