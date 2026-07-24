@@ -263,8 +263,19 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   golden). 7 types d'objectif couverts (`pnr-recorded`, `segment-count`, `route`,
   `passenger-name`, `tst-present`, `ticket-issued`, `element-status`). Aucune UI, aucun contenu
   d'exercice réel encore écrit — c'est l'Étape 2. Détail dans `TASKS.md`.
-- [ ] Étape 2 (exercices 1-4 + UI minimale + e2e), Étape 3 (exercices 5-10 + indices + barème),
-  Étape 4 (rituel de clôture final) : pas encore commencées.
+- [x] **Mission 08 Étape 2 close (16/07/2026)** : contenu réel des 4 premiers exercices FR/EN
+  (`packages/exercises/content/*.json` : lecture de disponibilité, décodage, première vente,
+  dossier complet), 2 extensions mineures de l'évaluateur (filtre `airline` sur `route`, type
+  d'objectif `tk-set`). UI mode exercice dans `apps/web` : `Terminal.jsx` réutilisable sans
+  changement visuel/comportemental en mode libre (`forwardRef`/`useImperativeHandle` +
+  `initialState` optionnel), `ExercisePicker`/`ExercisePanel` (consigne repliable, Vérifier/
+  Indice/Abandonner, résultat par objectif), entrée « Mode exercices » sur l'accueil **derrière
+  la même clé d'accès que le mode libre** (les exercices font tourner le vrai terminal complet,
+  pas de bypass gratuit du modèle commercial Mission 06). FR/EN via le dictionnaire existant.
+  Détail complet (dont le point de fidélité vérifié sur le filtre `AN.../XX`, UI-only et non un
+  vrai filtre du dispatcher) dans `TASKS.md`.
+- [ ] Étape 3 (exercices 5-10 + indices + barème + polissage FR/EN), Étape 4 (rituel de clôture
+  final + production vérifiée) : pas encore commencées.
 
 **Phase 7 — Assistant IA intégré**
 - Chat pour poser des questions librement

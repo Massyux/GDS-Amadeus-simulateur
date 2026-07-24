@@ -7,18 +7,18 @@
 ## En cours
 
 **Mission 07 reportée** (décision Massy 07/07/2026, à relancer quand il le décidera) — Partie A
-reste close (voir historique ci-dessous). **Mission 08 Étape 1 close** (moteur d'exercices,
-Phase 6) : nouveau package `packages/exercises` (format JSON + `evaluate()`), aucune UI —
-c'est l'Étape 2. Tout poussé sur `main`, suites vertes (268 core, 9 data, 14 exercises, 30 web,
-12 e2e, lint et typecheck propres).
+reste close (voir historique ci-dessous). **Mission 08 Étape 2 close** (exercices 1-4 + UI mode
+exercice, Phase 6). Tout poussé sur `main`, suites vertes (268 core, 9 data, 28 exercises, 41 web,
+14 e2e, lint et typecheck propres).
 
-**Reprise exacte** : ouvrir `missions/MISSION-08.md`, démarrer l'**Étape 2** (exercices 1-4 +
-UI minimale du mode exercice + e2e — un exercice réussi, un échoué). Le format JSON et le moteur
-`evaluate()` sont déjà spécifiés et testés (`packages/exercises`) ; l'Étape 2 écrit le CONTENU
-réel des 4 premiers exercices (FR+EN) dans `packages/exercises/content/` et branche l'UI dessus
-(entrée « Mode exercices » depuis l'accueil, panneau consigne, boutons Vérifier/Indice/
-Abandonner). Protocole habituel : suite + typecheck + lint après chaque ajout, rituel complet
-(6 suites incluant `test:exercises` + e2e) à la fin de l'étape/mission.
+**Reprise exacte** : ouvrir `missions/MISSION-08.md`, démarrer l'**Étape 3** (exercices 5-10 +
+indices/barème + polissage FR/EN) : `SS` long sell, `RT` locator + `SB`, `NU`/`XE`/`DL`/`IG`,
+`FXP`/`TTP`/`TWD`, liste d'attente `SS`/`ETK`, dossier complet chronométré. Réutiliser
+`ExercisePicker`/`ExercisePanel` tels quels (aucun changement d'UI attendu, seulement du
+contenu `packages/exercises/content/*.json` + éventuels nouveaux types d'objectif si un
+exercice l'exige, comme `tk-set` l'a été pour l'exercice 4). Protocole habituel : suite +
+typecheck + lint après chaque ajout, rituel complet (6 suites + e2e) à la fin de l'étape/mission,
+puis Étape 4 (rituel de clôture final + production vérifiée).
 
 **Reprise exacte** : Partie A de Mission 07 est terminée côté code. La suite (Partie B) est une
 checklist **opérationnelle pour Massy** (générer les clés, les configurer sur Cloudflare,
@@ -28,6 +28,47 @@ corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habi
 prochaine mission une fois le pilote conclu.
 
 ## Fait (par session, datée)
+
+### 16/07/2026 — Mission 08 Étape 2 (exercices 1-4 + UI mode exercice, Phase 6)
+- **Contenu réel des exercices 1-4** (`packages/exercises/content/*.json`, chargé via
+  `src/content.js`, ré-exporté par `src/index.js` pour garder un point d'entrée unique comme
+  `packages/core`/`packages/data`) : lecture de disponibilité (AN/MD/AC), décodage
+  (DAC/DNA/DC), première vente (AN→SS→RT), dossier complet (NM/AP/RF/TKTL/ER). Chaque exercice
+  testé par un golden qui déroule deux chemins valides différents ET un échec typique avec
+  feedback précis par objectif (14 nouveaux tests, `content.test.js`).
+- **Deux petites extensions de l'évaluateur**, nécessaires au contenu (pas un changement
+  d'architecture) : filtre `airline` sur l'objectif `route` ; nouveau type d'objectif `tk-set`
+  (vérifie qu'un TKTL/TKXL/TKOK a été posé, requis par l'exercice 4).
+- **Point de fidélité vérifié avant d'écrire le contenu** : le filtre compagnie inline
+  `AN.../XX` mentionné dans `CLAUDE.md` (Phase 0) est une fonctionnalité d'affichage côté UI
+  (`Terminal.jsx`, sélection clavier), pas une vraie commande du dispatcher `processCommand` —
+  confirmé en exécutant le moteur réel (`AN26DECALGPAR/AH` → `CHECK FORMAT`). L'exercice 1
+  utilise donc `AC/AAH` comme alternative testée, pas le filtre inline.
+- `packages/exercises/tsconfig.json` : `module`/`moduleResolution` passés à `nodenext` pour
+  supporter les import attributes JSON (`with { type: "json" }`) — vérifié compatible avec
+  `node --test` ET le pipeline Vite/Vitest d'`apps/web` avant d'écrire le contenu (risque de
+  compatibilité bundler identifié et levé en amont, pas découvert après coup).
+- **UI mode exercice** (`apps/web`) : `Terminal.jsx` rendu réutilisable sans changement visuel
+  ni comportemental en mode libre — `forwardRef` + `useImperativeHandle` (expose
+  `getState()`) et prop `initialState` optionnelle (défaut : `createInitialState()` inchangé).
+  Nouveaux composants `ExercisePicker.jsx` (liste les 4 exercices) et `ExercisePanel.jsx`
+  (panneau consigne repliable + le VRAI Terminal, inchangé, en dessous + boutons
+  Vérifier/Indice/Abandonner + écran de résultat avec feedback par objectif). Entrée « Mode
+  exercices » sur l'accueil (`Onboarding.jsx`), **derrière la même clé d'accès que le mode
+  libre** — décision : les exercices font tourner le vrai terminal complet, un bypass gratuit
+  aurait contourné le modèle commercial de la Mission 06 (`App.jsx`, `postKeyDestination`).
+  FR/EN via le dictionnaire existant (`i18n/dictionary.js`, section `exerciseMode`).
+- 2 tests unitaires Vitest ajustés/évités : le libellé d'objectif est isolé dans son propre
+  `<span>` (au lieu d'un texte JSX mêlé à l'icône ✓/✗) pour rester interrogeable par
+  `getByText` — détail de rendu, pas une règle métier.
+- 11 nouveaux tests Vitest web (`ExercisePicker.test.jsx`, `ExercisePanel.test.jsx`) + 2 dans
+  `App.test.jsx` (gating par clé, y compris le raccourci "clé déjà validée"). 2 nouveaux
+  scénarios Playwright (`e2e/exercises.spec.js`) : un exercice réussi avec feedback par
+  objectif, un exercice échoué avec feedback précis — critère d'acceptation de l'étape.
+- 28 tests exercises (14 Étape 1 + 14 nouveaux), 41 tests web (30 + 11), 14 e2e (12 + 2).
+  **Mission 08 Étape 2 CLOSE** : 6 suites vertes (268 core, 9 data, 28 exercises, 41 web,
+  14 e2e, lint et typecheck propres), build web vérifié (JSON bundlés correctement).
+  Enchaînement sur l'Étape 3 selon la décision de Massy pour la suite de session.
 
 ### 16/07/2026 — Mission 08 Étape 1 (moteur d'exercices guidés — format + evaluate(), Phase 6)
 - Nouveau package `packages/exercises` (même architecture que `packages/core` : pur, zéro UI,

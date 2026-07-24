@@ -582,22 +582,47 @@ Interdit :
   d'exercice réel écrit (c'est l'Étape 2/3) — le fixture de test est une démonstration du moteur,
   pas du contenu livrable.
 
+### 16/07/2026 — Mission 08 Étape 2 (exercices 1-4 + UI mode exercice, Phase 6)
+- Contenu réel FR/EN des 4 premiers exercices (`packages/exercises/content/*.json`, un point
+  d'entrée unique `src/content.js` ré-exporté par `src/index.js`) : lecture de disponibilité
+  (AN/MD/AC), décodage (DAC/DNA/DC), première vente (AN→SS→RT), dossier complet (NM/AP/RF/
+  TKTL/ER). Chaque exercice testé golden avec deux chemins valides différents ET un échec
+  typique à feedback précis par objectif.
+- Deux extensions mineures de l'évaluateur, nécessaires au contenu (pas un changement
+  d'architecture) : filtre `airline` sur l'objectif `route`, nouveau type d'objectif `tk-set`
+  (requis par l'exercice 4, vérifie TKTL/TKXL/TKOK posé).
+- **Point de fidélité vérifié avant d'écrire le contenu** (pas deviné) : le filtre compagnie
+  inline `AN.../XX` documenté dans `CLAUDE.md` Phase 0 est une fonctionnalité d'affichage côté
+  UI (`Terminal.jsx`), pas une vraie commande du dispatcher — confirmé en exécutant le moteur
+  réel (`AN26DECALGPAR/AH` → `CHECK FORMAT`). L'exercice 1 utilise `AC/AAH` à la place.
+  `packages/exercises/tsconfig.json` passé en `module`/`moduleResolution: "nodenext"` pour les
+  import attributes JSON, vérifié compatible avec `node --test` et le pipeline Vite/Vitest
+  d'`apps/web` avant d'écrire le contenu (risque de compatibilité bundler levé en amont).
+- UI mode exercice (`apps/web`) : `Terminal.jsx` rendu réutilisable sans changement visuel ni
+  comportemental en mode libre (`forwardRef`/`useImperativeHandle` exposant `getState()`, prop
+  `initialState` optionnelle). Nouveaux `ExercisePicker.jsx`/`ExercisePanel.jsx` (consigne
+  repliable, Vérifier/Indice/Abandonner, résultat par objectif). Entrée « Mode exercices » sur
+  l'accueil, **derrière la même clé d'accès que le mode libre** — décision retenue car les
+  exercices font tourner le vrai terminal complet, un bypass gratuit aurait contourné le modèle
+  commercial de la Mission 06 (`App.jsx`, `postKeyDestination`).
+- 268→268 core (inchangé), 14→28 exercises, 30→41 web (11 nouveaux + gating clé dans
+  `App.test.jsx`), 12→14 e2e (`e2e/exercises.spec.js` : un exercice réussi, un échoué —
+  critère d'acceptation de l'étape). **Mission 08 Étape 2 CLOSE** : 6 suites vertes, lint et
+  typecheck propres, build web vérifié.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
 Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, **Mission 07 Partie A
 (préparation technique du pilote) est close** mais **Mission 07 (le pilote lui-même) est
 reportée par décision de Massy** (07/07/2026 — Partie B, checklist opérationnelle, en attente),
-et **Mission 08 Étape 1 (moteur d'exercices, format + `evaluate()`) est close** (16/07/2026 —
-voir §9 et `TASKS.md`). **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne d'implémentation
-v1.x TERMINÉE**.
-Prochaine étape : **Mission 08 Étape 2** — exercices 1-4 (contenu réel FR+EN dans
-`packages/exercises/content/`) + UI minimale du mode exercice (`apps/web`, entrée « Mode
-exercices » depuis l'accueil, panneau consigne repliable, boutons Vérifier/Indice/Abandonner,
-terminal strictement identique au mode libre) + e2e (un exercice réussi, un échoué). Puis
-Étape 3 (exercices 5-10 + indices + barème) et Étape 4 (rituel de clôture final). Points notables
-en Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission 13, non
-demandée, à trancher si besoin).
+et **Mission 08 Étape 1 et Étape 2 (moteur d'exercices + contenu 1-4 + UI) sont closes**
+(16/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne
+d'implémentation v1.x TERMINÉE**.
+Prochaine étape : **Mission 08 Étape 3** — exercices 5-10 (contenu réel FR+EN, réutilisant
+`ExercisePicker`/`ExercisePanel` tels quels) + indices/barème + polissage FR/EN. Puis Étape 4
+(rituel de clôture final + production vérifiée). Points notables en Backlog : interaction
+FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission 13, non demandée, à trancher si besoin).
 
 ---
 
