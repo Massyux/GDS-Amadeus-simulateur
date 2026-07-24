@@ -16,7 +16,7 @@ const PREVIEW_LINES = [
   " 1 AT 100 Y1  ALG PAR SS1  15DEC",
 ];
 
-export default function Onboarding({ t, lang, onChangeLang, onHaveKey }) {
+export default function Onboarding({ t, lang, onChangeLang, onHaveKey, onExercises }) {
   return (
     <div className="onboarding">
       <FeedbackButton t={t} screen="onboarding" />
@@ -56,6 +56,9 @@ export default function Onboarding({ t, lang, onChangeLang, onHaveKey }) {
         <div className="onboarding-actions">
           <button className="onboarding-enter" type="button" onClick={onHaveKey} autoFocus>
             {t.onboarding.ctaHaveKey}
+          </button>
+          <button className="onboarding-exercises" type="button" onClick={onExercises}>
+            {t.exerciseMode.ctaExercises}
           </button>
           <a
             className="onboarding-request"

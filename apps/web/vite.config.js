@@ -21,6 +21,10 @@ export default defineConfig({
         dirname,
         "../../packages/core/src/index.js"
       ),
+      "@simulateur/exercises": path.resolve(
+        dirname,
+        "../../packages/exercises/src/index.js"
+      ),
     },
   },
   test: {

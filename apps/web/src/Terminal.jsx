@@ -1,5 +1,12 @@
 // CODEX ACCESS TEST
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createInitialState, processCommand } from "@simulateur/core";
 import {
   createInMemoryStore,
@@ -163,7 +170,7 @@ function isNearAutoFollowPosition(
   return Math.abs(anchorMidFromTop - idealMidFromTop) < thresholdPx;
 }
 
-export default function Terminal() {
+const Terminal = forwardRef(function Terminal({ initialState } = {}, ref) {
   const [entries, setEntries] = useState([
     { type: "text", text: "AMADEUS SELLING PLATFORM" },
     { type: "text", text: "TRAINING MODE" },
@@ -198,7 +205,14 @@ export default function Terminal() {
   if (!airlineProviderRef.current) {
     airlineProviderRef.current = createAirlineProvider(storeRef.current);
   }
-  const coreStateRef = useRef(createInitialState());
+  const coreStateRef = useRef(initialState || createInitialState());
+  useImperativeHandle(
+    ref,
+    () => ({
+      getState: () => coreStateRef.current,
+    }),
+    []
+  );
   const [lang] = useLang();
   const t = dictionary[lang];
 
@@ -585,4 +599,6 @@ export default function Terminal() {
       </div>
     </div>
   );
-}
+});
+
+export default Terminal;

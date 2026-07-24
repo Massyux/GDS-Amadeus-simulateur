@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App.jsx";
+import { ACCESS_KEY_STORAGE_KEY } from "./accessKey.js";
 
 const TEST_KEY = "GDS-TEST-0001";
 // SHA-256 hex digest of "GDS-TEST-0001" (see src/lib/keyHash.test.js).
@@ -65,6 +66,41 @@ describe("App onboarding + access gate flow", () => {
     await user.click(screen.getByRole("button", { name: "EN" }));
     expect(
       screen.getByRole("heading", { name: "Amadeus GDS Simulator" })
+    ).toBeInTheDocument();
+  });
+});
+
+describe("App exercise mode entry (missions/MISSION-08.md Etape 2)", () => {
+  it("gates exercise mode behind the same access key as free mode (no free bypass to the real terminal)", async () => {
+    vi.stubEnv("VITE_FALLBACK_KEY_HASHES", TEST_KEY_HASH);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Mode exercices" }));
+    // Still behind the key gate -- not the exercise picker yet.
+    expect(screen.getByLabelText("Clé d'accès")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Clé d'accès"), TEST_KEY);
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Choisissez un exercice" })
+    ).toBeInTheDocument();
+  });
+
+  it("goes straight to the exercise picker (skipping the key screen) when a key is already validated", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    // Simulate a key already validated in this tab without remounting (the
+    // real trigger -- initialScreen() reading a stored valid key -- would
+    // skip onboarding entirely, so onExercises' own live localStorage check
+    // is exercised directly here instead).
+    localStorage.setItem(ACCESS_KEY_STORAGE_KEY, "1");
+
+    await user.click(screen.getByRole("button", { name: "Mode exercices" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Choisissez un exercice" })
     ).toBeInTheDocument();
   });
 });

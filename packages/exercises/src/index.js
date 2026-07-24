@@ -238,3 +238,8 @@ export function evaluate(exercise, finalState, commandTrace, options = {}) {
 
   return { passed, score, maxScore, feedback, jalonsFeedback };
 }
+
+// Re-exported here so the whole package has a single entry point (matches
+// packages/core and packages/data: one main/exports target, no deep-path
+// imports needed by consumers such as apps/web).
+export { exercises, exercisesById } from "./content.js";
