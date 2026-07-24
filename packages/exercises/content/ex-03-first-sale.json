@@ -1,0 +1,43 @@
+{
+  "id": "ex-03-first-sale",
+  "niveau": 1,
+  "titre": {
+    "fr": "Première vente",
+    "en": "Your first sale"
+  },
+  "consigne": {
+    "fr": "Affichez la disponibilité Alger→Paris pour le 26 décembre (AN26DECALGPAR), vendez 1 place en classe Y sur un vol de votre choix (SS<ligne>Y1), puis affichez le dossier avec RT pour vérifier le statut du segment.",
+    "en": "Display the Algiers→Paris availability for 26 December (AN26DECALGPAR), sell 1 seat in Y class on any flight (SS<line>Y1), then display the record with RT to check the segment's status."
+  },
+  "objectifs": [
+    {
+      "id": "obj-route",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "label": {
+        "fr": "Segment ALG→PAR confirmé",
+        "en": "Confirmed ALG→PAR segment"
+      },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-rt",
+      "pattern": "^RT$",
+      "label": { "fr": "A affiché RT", "en": "Displayed RT" }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "Après AN, vendez avec SS<numéro de ligne><classe><nombre de passagers>, ex: SS1Y1.",
+        "en": "After AN, sell with SS<line number><class><passenger count>, e.g. SS1Y1."
+      },
+      "penalty": 1
+    }
+  ]
+}

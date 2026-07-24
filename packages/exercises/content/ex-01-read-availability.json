@@ -1,0 +1,63 @@
+{
+  "id": "ex-01-read-availability",
+  "niveau": 1,
+  "titre": {
+    "fr": "Lire une disponibilité",
+    "en": "Reading an availability display"
+  },
+  "consigne": {
+    "fr": "Affichez la disponibilité Alger→Paris pour le 26 décembre (AN26DECALGPAR). La liste tient sur 2 pages : utilisez MD pour voir la suite si besoin. Repérez un vol Air Algérie (AH) — ou filtrez la liste avec AC/AAH — et vendez 1 place en classe Y sur ce vol.",
+    "en": "Display the Algiers→Paris availability for 26 December (AN26DECALGPAR). The list spans 2 pages: use MD to see the rest if needed. Find an Air Algérie (AH) flight — or filter the list with AC/AAH — and sell 1 seat in Y class on that flight."
+  },
+  "objectifs": [
+    {
+      "id": "obj-route-ah",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "airline": "AH",
+      "label": {
+        "fr": "Segment Air Algérie ALG→PAR confirmé",
+        "en": "Confirmed Air Algérie ALG→PAR segment"
+      },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-md",
+      "pattern": "^MD$",
+      "label": {
+        "fr": "A utilisé MD pour faire défiler l'affichage",
+        "en": "Used MD to scroll the display"
+      }
+    },
+    {
+      "id": "jt-ac",
+      "pattern": "^AC",
+      "label": {
+        "fr": "A utilisé AC pour filtrer sans relancer une recherche",
+        "en": "Used AC to filter without a new search"
+      }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "La colonne de gauche de chaque ligne AN indique le code compagnie à 2 lettres (ex: AH = Air Algérie).",
+        "en": "The left column of each AN row shows the 2-letter airline code (e.g. AH = Air Algérie)."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "AC/AAH filtre l'affichage précédent pour ne garder que les vols Air Algérie.",
+        "en": "AC/AAH filters the previous display down to Air Algérie flights only."
+      },
+      "penalty": 1
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "id": "ex-04-full-pnr",
+  "niveau": 1,
+  "titre": {
+    "fr": "Un dossier complet",
+    "en": "A complete PNR"
+  },
+  "consigne": {
+    "fr": "Vendez 1 place en classe Y sur un vol Alger→Paris du 26 décembre pour M. John Doe (NM1DOE/JOHN MR), ajoutez un contact (AP1234567890), une signature (RFMM), une limite de billetterie (TKTL/<date>), puis enregistrez le dossier (ER).",
+    "en": "Sell 1 seat in Y class on an Algiers→Paris flight on 26 December for Mr John Doe (NM1DOE/JOHN MR), add a contact (AP1234567890), a signature (RFMM), a ticketing time limit (TKTL/<date>), then record the PNR (ER)."
+  },
+  "objectifs": [
+    {
+      "id": "obj-pnr",
+      "type": "pnr-recorded",
+      "label": { "fr": "Dossier enregistré", "en": "PNR recorded" },
+      "points": 2
+    },
+    {
+      "id": "obj-route",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "label": {
+        "fr": "Segment ALG→PAR confirmé",
+        "en": "Confirmed ALG→PAR segment"
+      },
+      "points": 1
+    },
+    {
+      "id": "obj-name",
+      "type": "passenger-name",
+      "lastName": "DOE",
+      "firstName": "JOHN",
+      "title": "MR",
+      "label": {
+        "fr": "Nom du passager conforme",
+        "en": "Passenger name matches"
+      },
+      "points": 1
+    },
+    {
+      "id": "obj-tktl",
+      "type": "tk-set",
+      "kind": "TL",
+      "label": {
+        "fr": "Limite de billetterie posée (TKTL)",
+        "en": "Ticketing time limit set (TKTL)"
+      },
+      "points": 1
+    }
+  ],
+  "jalonsTrace": [],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "L'ordre entre AP, RF et TKTL n'a pas d'importance, tant qu'ils sont tous posés avant ER.",
+        "en": "The order of AP, RF and TKTL doesn't matter, as long as they're all set before ER."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "ER refuse tant qu'il manque un nom, un contact ou une signature (END PNR FIRST).",
+        "en": "ER refuses until a name, a contact and a signature are all present (END PNR FIRST)."
+      },
+      "penalty": 1
+    }
+  ]
+}

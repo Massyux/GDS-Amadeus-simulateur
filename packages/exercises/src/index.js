@@ -12,7 +12,8 @@ import { createInitialState } from "@simulateur/core";
  * @typedef {Object} Objectif
  * @property {string} id
  * @property {string} type - "pnr-recorded" | "segment-count" | "route" |
- *   "passenger-name" | "tst-present" | "ticket-issued" | "element-status"
+ *   "passenger-name" | "tst-present" | "ticket-issued" | "element-status" |
+ *   "tk-set"
  * @property {Bilingual} label
  * @property {number} [points] - defaults to 1
  * @property {boolean} [required] - defaults to true (must pass for the
@@ -25,9 +26,12 @@ import { createInitialState } from "@simulateur/core";
  * @property {number} [max] - segment-count: maximum active-segment count
  * @property {string} [from] - route: origin city code
  * @property {string} [to] - route: destination city code
+ * @property {string} [airline] - route: 2-letter airline code (e.g. "AH")
  * @property {string} [lastName] - passenger-name
  * @property {string} [firstName] - passenger-name
  * @property {string} [title] - passenger-name (e.g. "MR", "MRS")
+ * @property {string} [kind] - tk-set: "TL" | "XL" | "OK" (TKTL/TKXL/TKOK);
+ *   omit to just require any TK element
  *
  * @typedef {Object} JalonTrace
  * @property {string} id
@@ -121,7 +125,8 @@ function evaluateObjectif(objectif, finalState) {
         (seg) =>
           (!objectif.from || seg.from === objectif.from) &&
           (!objectif.to || seg.to === objectif.to) &&
-          (!objectif.status || seg.status === objectif.status)
+          (!objectif.status || seg.status === objectif.status) &&
+          (!objectif.airline || seg.airline === objectif.airline)
       );
     }
 
@@ -151,6 +156,12 @@ function evaluateObjectif(objectif, finalState) {
       return getActiveSegments(finalState).some(
         (seg) => seg.status === objectif.status
       );
+    }
+
+    case "tk-set": {
+      const tk = pnr?.tk;
+      if (!tk) return false;
+      return objectif.kind ? tk.kind === objectif.kind : true;
     }
 
     default:

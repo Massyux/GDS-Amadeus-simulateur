@@ -1,0 +1,62 @@
+{
+  "id": "ex-02-decode",
+  "niveau": 1,
+  "titre": {
+    "fr": "Décoder ville, pays et compagnie",
+    "en": "Decoding city, country and airline codes"
+  },
+  "consigne": {
+    "fr": "Décodez le code ville ALG (DAC ALG), le code compagnie SV (DNA SV) et le code pays SA (DC SA). Vendez ensuite 1 place en classe Y sur un vol Saudia (SV) d'Alger vers Paris pour le 26 décembre — via AN puis SS, ou directement en vente longue (SSSV6979Y26DECALGPAR1).",
+    "en": "Decode the city code ALG (DAC ALG), the airline code SV (DNA SV) and the country code SA (DC SA). Then sell 1 seat in Y class on a Saudia (SV) flight from Algiers to Paris on 26 December — via AN then SS, or directly with a long sell (SSSV6979Y26DECALGPAR1)."
+  },
+  "objectifs": [
+    {
+      "id": "obj-route-sv",
+      "type": "route",
+      "from": "ALG",
+      "to": "PAR",
+      "status": "HK",
+      "airline": "SV",
+      "label": {
+        "fr": "Segment Saudia ALG→PAR confirmé",
+        "en": "Confirmed Saudia ALG→PAR segment"
+      },
+      "points": 2
+    }
+  ],
+  "jalonsTrace": [
+    {
+      "id": "jt-dac",
+      "pattern": "^DAC",
+      "label": { "fr": "A utilisé DAC", "en": "Used DAC" }
+    },
+    {
+      "id": "jt-dna",
+      "pattern": "^DNA",
+      "label": { "fr": "A utilisé DNA", "en": "Used DNA" }
+    },
+    {
+      "id": "jt-dc",
+      "pattern": "^DC ",
+      "label": { "fr": "A utilisé DC", "en": "Used DC" }
+    }
+  ],
+  "aides": [
+    {
+      "id": "hint-1",
+      "text": {
+        "fr": "DAC <code ville>, DNA <code ou nom compagnie>, DC <code ou nom pays>.",
+        "en": "DAC <city code>, DNA <airline code or name>, DC <country code or name>."
+      },
+      "penalty": 1
+    },
+    {
+      "id": "hint-2",
+      "text": {
+        "fr": "Une fois le vol identifié, une vente longue évite de repasser par AN : SS<compagnie><vol><classe><date><origine><destination><pax>.",
+        "en": "Once you know the flight, a long sell skips AN: SS<airline><flight><class><date><origin><destination><pax>."
+      },
+      "penalty": 1
+    }
+  ]
+}
