@@ -255,6 +255,11 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
 **Phase 6 — Moteur d'exercices et quiz**
 - Scénarios guidés type "fais-moi une réservation de X à Y", "annule le billet numéro ..."
 - Évaluation automatique de la séquence de commandes attendue
+- [x] **Mission 08 (partie 1 : moteur d'exercices guidés) CLOSE dans son ensemble (25/07/2026)**
+  — les 4 étapes (spec + moteur, contenu 1-4 + UI, contenu 5-10 + indices/barème/polissage,
+  rituel de clôture final + production vérifiée) sont toutes closes. Détail par étape ci-dessous,
+  historique complet dans `TASKS.md`. Partie 2 (quiz/notation/progression) = Mission 09, pas
+  encore commencée.
 - [x] **Mission 08 Étape 1 close (16/07/2026)** : nouveau package pur `packages/exercises`
   (même architecture que `packages/core`), format JSON d'exercice documenté (`titre`/`consigne`
   bilingues, `seedState`, `objectifs[]`, `jalonsTrace[]`, `aides[]`) et moteur
@@ -286,8 +291,19 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
   une seule fois — une première tentative pouvait corrompre l'exercice pour la suivante (`ER`
   mute `state.pnrStore` en place). Corrigé avec `structuredClone`, testé en régression. Détail
   complet dans `TASKS.md`.
-- [ ] Étape 4 (rituel de clôture final + vérification production des 10 exercices) : pas encore
-  commencée.
+- [x] **Mission 08 Étape 4 close (25/07/2026)** : rituel de clôture final. `e2e/exercises.spec.js`
+  étendu pour résoudre les 10 exercices de bout en bout dans un vrai navigateur (auparavant seul
+  l'exercice 3 avait une preuve e2e directe, les 9 autres n'étaient couverts que par les tests
+  golden `packages/exercises`), 12 nouveaux tests (12→24 e2e au total). **Production vérifiée** :
+  le hash du bundle JS déployé sur Cloudflare Pages est identique à celui du build local testé
+  (même contenu, même taille) et contient bien les 10 identifiants/titres d'exercice — confirme
+  que le déploiement reflète tout le contenu de l'Étape 3, pas une version périmée. Limite
+  assumée et documentée (pas contournée) : le parcours réel de validation de clé (Cloudflare
+  Pages Function) n'a pas pu être re-testé en production faute d'une vraie clé (seul Massy en
+  détient) — la suite e2e locale tourne contre le même artefact de build que celui déployé
+  (`npm run build:web`), ce qui couvre tout le reste du parcours. 6 suites vertes (268 core,
+  9 data, 47 exercises, 41 web, 24 e2e, lint et typecheck propres). Détail complet dans
+  `TASKS.md`.
 
 **Phase 7 — Assistant IA intégré**
 - Chat pour poser des questions librement

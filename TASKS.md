@@ -7,16 +7,17 @@
 ## En cours
 
 **Mission 07 reportée** (décision Massy 07/07/2026, à relancer quand il le décidera) — Partie A
-reste close (voir historique ci-dessous). **Mission 08 Étape 3 close** (exercices 5-10 + indices
-+ barème + polissage, Phase 6). Tout poussé sur `main`, suites vertes (268 core, 9 data,
-47 exercises, 41 web, 14 e2e, lint et typecheck propres).
+reste close (voir historique ci-dessous). **Mission 08 CLOSE dans son ensemble** (les 4 étapes :
+moteur d'exercices, contenu 1-4 + UI, contenu 5-10 + indices/barème/polissage, rituel de clôture
+final + production vérifiée — Phase 6). Tout poussé sur `main`, suites vertes (268 core, 9 data,
+47 exercises, 41 web, 24 e2e, lint et typecheck propres).
 
-**Reprise exacte** : ouvrir `missions/MISSION-08.md`, démarrer l'**Étape 4** (rituel de clôture
-final + production vérifiée) : les 10 exercices sont écrits et testés, `ExercisePicker`/
-`ExercisePanel` les servent déjà tous sans changement d'UI. Il reste à vérifier manuellement en
-production (Cloudflare Pages) que le mode exercice complet (les 10, pas seulement les 4
-premiers) est jouable de bout en bout, puis clore Mission 08 dans son ensemble (CLAUDE.md,
-PROJECT_MEMORY). Protocole habituel.
+**Reprise exacte** : Mission 08 est entièrement terminée (les 10 exercices jouables de bout en
+bout, vérifiés en local ET en production). Aucune reprise en attente sur cette mission.
+Prochaine mission à définir avec l'architecte/Massy — candidats déjà identifiés dans
+`missions/README.md` : Mission 09 (quiz/notation/progression, Phase 6 partie 2, esquisse),
+Mission 10 (assistant IA pédagogique, Phase 7, esquisse), ou reprendre Mission 07 (pilote) si
+Massy le décide.
 
 **Reprise exacte** : Partie A de Mission 07 est terminée côté code. La suite (Partie B) est une
 checklist **opérationnelle pour Massy** (générer les clés, les configurer sur Cloudflare,
@@ -26,6 +27,32 @@ corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habi
 prochaine mission une fois le pilote conclu.
 
 ## Fait (par session, datée)
+
+### 25/07/2026 — Mission 08 Étape 4 (rituel de clôture final + production vérifiée, Phase 6)
+- **e2e étendu aux 10 exercices** (`apps/web/e2e/exercises.spec.js`) : un nouveau bloc
+  paramétré (`ALL_EXERCISES`) résout chacun des 10 exercices avec sa séquence de commandes
+  vérifiée (les mêmes séquences que les tests golden de `packages/exercises`), confirme
+  « Exercice réussi » affiché dans un vrai navigateur — auparavant seul l'exercice 3 avait une
+  preuve e2e ; les 9 autres n'étaient couverts que par les tests golden `packages/exercises`
+  (logique métier) et Vitest `ExercisePanel.test.jsx` (un seul exercice fixture). 12 nouveaux
+  tests e2e (12→24 au total), tous verts en local avant toute vérification production.
+- **Vérification production** (critère explicite de l'étape) : le hash du bundle JS déployé sur
+  Cloudflare Pages (`index-dx2ePTKe.js`) est identique à celui du build local testé (même
+  contenu, même taille — 306 029 octets) ; le bundle contient bien les 10 identifiants/titres
+  d'exercice (`ex-10-full-workflow`, « Liste d'attente », « Dossier complet de A », etc.),
+  confirmant que le déploiement reflète bien tout le contenu de l'Étape 3 et pas une version
+  périmée. **Limite assumée et documentée** (pas contournée en silence) : le parcours réel de
+  validation de clé d'accès (Cloudflare Pages Function `verify-key.js`) n'a pas pu être
+  re-testé de bout en bout en production, faute d'une vraie clé (seul Massy en détient, par
+  design — CLAUDE.md §Accès par clé). La suite e2e locale tourne contre le build produit par la
+  même commande (`npm run build:web`) que celle utilisée par Cloudflare Pages pour le
+  déploiement — c'est donc le même artefact qui est exercé, à l'exception de la couche
+  Cloudflare Function elle-même (déjà validée lors des missions 06/07, hors périmètre ici).
+- **Mission 08 CLOSE dans son ensemble** (Étapes 1 à 4) : moteur d'exercices pur (`evaluate()`),
+  10 exercices FR/EN avec deux chemins valides + un échec typique chacun, UI mode exercice
+  intégrée sans dégrader le mode libre, rituel de clôture complet. 6 suites vertes (268 core,
+  9 data, 47 exercises, 41 web, 24 e2e, lint et typecheck propres). `CLAUDE.md` (Phase 6) et
+  `PROJECT_MEMORY` mis à jour pour refléter la clôture complète.
 
 ### 24/07/2026 — Mission 08 Étape 3 (exercices 5-10 + indices/barème + polissage, Phase 6)
 - **Contenu réel des exercices 5-10** (`packages/exercises/content/*.json`) : vente directe sans

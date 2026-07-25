@@ -635,19 +635,38 @@ Interdit :
 - 28→47 tests exercises (19 nouveaux). Suites core/data/web/e2e inchangées (268/9/41/14).
   **Mission 08 Étape 3 CLOSE** : 6 suites vertes, lint et typecheck propres, build web vérifié.
 
+### 25/07/2026 — Mission 08 Étape 4 (rituel de clôture final + production vérifiée, Phase 6)
+- `apps/web/e2e/exercises.spec.js` étendu avec un bloc paramétré résolvant les 10 exercices de
+  bout en bout dans un vrai navigateur (mêmes séquences de commandes que les tests golden de
+  `packages/exercises`) — auparavant seul l'exercice 3 avait une preuve e2e directe, les 9 autres
+  n'étaient couverts que par les tests golden (logique métier) et Vitest (un seul exercice
+  fixture dans `ExercisePanel.test.jsx`). 12 nouveaux tests e2e (12→24), tous verts en local.
+- **Vérification production** : hash du bundle JS déployé (`index-dx2ePTKe.js`) identique au
+  build local testé (même taille, 306 029 octets), contenant bien les 10 identifiants/titres
+  d'exercice — confirme le déploiement complet de l'Étape 3, pas une version périmée. Limite
+  assumée et documentée (pas contournée en silence) : le parcours réel de validation de clé
+  (Cloudflare Pages Function `verify-key.js`) n'a pas pu être re-testé en production faute d'une
+  vraie clé (seul Massy en détient, par design) — la suite e2e locale tourne contre le même
+  artefact de build que celui déployé (`npm run build:web`), couvrant tout le reste du parcours ;
+  la couche Cloudflare Function elle-même a déjà été validée lors des missions 06/07.
+- **Mission 08 CLOSE dans son ensemble** (Étapes 1 à 4) : 6 suites vertes (268 core, 9 data,
+  47 exercises, 41 web, 24 e2e, lint et typecheck propres). `CLAUDE.md` mis à jour pour refléter
+  la clôture complète de la partie 1 (moteur d'exercices guidés) de la Phase 6.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
 Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, **Mission 07 Partie A
 (préparation technique du pilote) est close** mais **Mission 07 (le pilote lui-même) est
 reportée par décision de Massy** (07/07/2026 — Partie B, checklist opérationnelle, en attente),
-et **Mission 08 Étapes 1, 2 et 3 (moteur d'exercices + contenu complet 1-10 + UI) sont closes**
-(24/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne
-d'implémentation v1.x TERMINÉE**.
-Prochaine étape : **Mission 08 Étape 4** — rituel de clôture final : vérifier en production
-(Cloudflare Pages) que les 10 exercices sont bien jouables de bout en bout, puis clore Mission 08
-dans son ensemble. Points notables en Backlog : interaction FXP/TTP avec un segment `HL`/`UC`
-non confirmé (Mission 13, non demandée, à trancher si besoin).
+et **Mission 08 est CLOSE dans son ensemble** (les 4 étapes — moteur d'exercices + contenu
+complet 1-10 + UI + rituel de clôture final, 25/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0
+atteint**, **Phase 3 close**, **chaîne d'implémentation v1.x TERMINÉE**.
+Prochaine étape : à définir avec l'architecte/Massy — candidats déjà identifiés dans
+`missions/README.md` : Mission 09 (quiz/notation/progression, Phase 6 partie 2, esquisse),
+Mission 10 (assistant IA pédagogique, Phase 7, esquisse), ou reprise de Mission 07 (pilote) si
+Massy le décide. Points notables en Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non
+confirmé (Mission 13, non demandée, à trancher si besoin).
 
 ---
 
