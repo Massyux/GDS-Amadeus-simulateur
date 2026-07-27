@@ -29,8 +29,8 @@
 | 05 | Déploiement public — **avec Massy** (son compte hébergeur) | Phase 2 (fin) | fait (06/07/2026) |
 | 06 | Accès v1 par clé/lien privé (offre commerciale) | Phase 3 | fait (06/07/2026) |
 | 07 | Lancement pilote + traitement des retours | Phase 4 | détaillée — **REPORTÉE (décision Massy 07/07/2026)**, à relancer quand il le décidera |
-| 14 | **Espace admin + licences par poste** (paliers 1 / 2-4 postes, Supabase) — après le pilote, avant la vente large | Phase 8 anticipée | détaillée |
-| 08 | Moteur d'exercices guidés (spec → moteur → contenu) | Phase 6 | **détaillée, PROCHAINE ÉTAPE** (07/07/2026) |
+| **→ 14** | **Espace admin + licences par poste** — **PROCHAINE (décision Massy 07/07 : 14 puis 09)** (paliers 1 / 2-4 postes, Supabase) — après le pilote, avant la vente large | Phase 8 anticipée | détaillée |
+| 08 | Moteur d'exercices guidés (spec → moteur → contenu) | Phase 6 | ✅ close (07/07/2026, 10 exercices en production) |
 | 09 | Quiz, notation, progression | Phase 6 | esquisse |
 | 10 | Assistant IA pédagogique intégré | Phase 7 | esquisse |
 | 11 | Site de vente + licences par poste | Phase 8 | esquisse |

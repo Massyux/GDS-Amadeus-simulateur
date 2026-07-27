@@ -30,6 +30,41 @@ d'appareils que son palier ne l'autorise.
   utilisés/max, dernière activité), bouton « Nouvelle clé » (génération serveur, affichée une
   seule fois), révoquer/prolonger, export CSV.
 
+## Ordre décidé par Massy (07/07/2026) : MISSION-14 puis MISSION-09 (quiz/notation).
+
+## ⚠️ CHANGEMENT D'ARCHITECTURE (architecte, 07/07/2026) : Cloudflare D1 au lieu de Supabase
+
+**Remplacer Supabase par Cloudflare D1** (base SQLite gratuite, même compte Cloudflare que
+Pages). Raisons : aucun nouveau compte à créer (Massy ne peut/veut pas en ouvrir un de plus),
+aucune clé secrète tierce à faire transiter, binding natif dans les Pages Functions déjà
+utilisées par `verify-key.js`, une seule plateforme à administrer. Partout où la mission dit
+« Supabase », lire « D1 ».
+
+**Auth de l'espace admin** : pas de Supabase Auth. Une phrase secrète d'administration
+(`ADMIN_SECRET_HASH`, haché SHA-256 en variable d'environnement Cloudflare, même pattern que
+`ACCESS_KEY_HASHES`), vérifiée côté serveur par `/api/admin/login` qui renvoie un jeton de
+session signé à durée limitée. Massy est le seul admin — inutile de complexifier. Les
+`/api/admin/*` refusent toute requête sans jeton valide (réponse neutre, pas de fuite).
+
+## ÉTAPE 0 — ce que Claude Code fait, et ce que Massy fait
+
+**Claude Code (autonome, sans attendre Massy)** : créer le schéma SQL (`migrations/*.sql`),
+les Functions, l'UI admin, les tests — en développant contre le **D1 local de Wrangler**
+(`wrangler d1 execute --local`), qui ne demande aucune authentification. Tout doit être
+testable en local de bout en bout avant de toucher à la production.
+
+**Massy (2 minutes, à la fin, dans son dashboard Cloudflare qu'il a déjà)** :
+1. Workers & Pages → D1 → Create database (nom : `gds-licences`)
+2. Projet Pages `gds-amadeus-simulateur` → Settings → Bindings → ajouter un binding D1
+   (variable `DB` → base `gds-licences`)
+3. Settings → Environment variables → ajouter `ADMIN_SECRET_HASH` (le haché que
+   `scripts/generate-keys.mjs` — ou un nouveau script `generate-admin-secret.mjs` — produira)
+4. Redéployer, puis appliquer la migration en production (`wrangler d1 execute gds-licences
+   --remote --file=...` ou via la console D1 du dashboard)
+
+Claude Code rédige ces 4 étapes dans `README.md` §Administration avec les commandes exactes
+avant de les demander à Massy.
+
 ## Étapes
 
 1. Schéma Supabase + RLS + doc de création du projet (Massy crée le compte, 10 min, gratuit).

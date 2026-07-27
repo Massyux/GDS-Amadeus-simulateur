@@ -653,20 +653,69 @@ Interdit :
   47 exercises, 41 web, 24 e2e, lint et typecheck propres). `CLAUDE.md` mis à jour pour refléter
   la clôture complète de la partie 1 (moteur d'exercices guidés) de la Phase 6.
 
+### 27/07/2026 — Mission 14 (espace admin + licences par poste, Étapes 1/2/4/6, Phase 8 anticipée)
+- **Bandeau de changement d'architecture lu et appliqué avant de commencer** (règle explicite de
+  la mission) : Cloudflare D1 remplace Supabase partout. Auth admin par phrase secrète hachée
+  (`ADMIN_SECRET_HASH`), pas de Supabase Auth.
+- Schéma D1 (`migrations/0001_init.sql`) : `licenses` + `activations`, contrainte unique
+  `(license_id, device_fingerprint)` = idempotence de réactivation ET comptage de postes en un
+  seul mécanisme. Pas de RLS (n'existe pas sur SQLite/D1) — remplacé par le fait que D1 n'est
+  jamais accessible autrement que depuis l'intérieur d'une Pages Function.
+- **Décision de conception qui s'écarte légèrement de la lettre de la mission, justifiée** : la
+  mission demandait un « jeton signé » pour l'activation ET la session admin. Pour l'activation,
+  un jeton signé aurait de toute façon exigé une vérification d'état en base à chaque `check`
+  (la révocation doit être instantanée) — un jeton opaque aléatoire cherché directement dans
+  `activations.token` est donc strictement plus simple pour un résultat identique. Gardé le
+  jeton HMAC signé (`functions/_lib/token.js`) uniquement pour la session admin (évite un
+  aller-retour D1 par requête), signé avec `ADMIN_SECRET_HASH` lui-même plutôt qu'un deuxième
+  secret à faire configurer à Massy.
+- 7 Cloudflare Pages Functions testées contre un **vrai `wrangler pages dev` + D1 local
+  disposable** (pas de mock D1) : `license/activate` (limite de postes, réactivation idempotente,
+  `DEVICE_LIMIT`/`NOT_FOUND` distincts — volontairement plus informatif que `verify-key.js`,
+  conforme à la demande explicite de la mission), `license/check` (révocation instantanée, l'état
+  en base est la seule source de vérité), `admin/login`, `admin/licenses` (liste + création),
+  `admin/licenses/[id]` (révoquer/réactiver/prolonger), `admin/licenses/[id]/activations`
+  (détail des postes), `admin/activations/[id]` (libérer un poste sans révoquer toute la
+  licence).
+- **Limite connue, documentée plutôt que masquée ou sur-conçue** (`docs/LICENCES.md` §4) :
+  fenêtre de course théorique sur `activate` (deux activations simultanées sur le dernier poste
+  disponible) — acceptée sans verrou transactionnel vu l'échelle réelle du produit (CONSTITUTION
+  §8).
+- UI `/admin` sans dépendance routeur (test de `window.location.pathname` dans `main.jsx`,
+  cohérent avec le reste de l'appli) ; `apps/web/public/_redirects` ajouté pour que la navigation
+  directe vers `/admin` ne 404 pas sur Cloudflare Pages. Empreinte appareil avec limites honnêtes
+  documentées (pas une barrière de sécurité, contournable par un utilisateur motivé).
+- Tests sur 3 couches : 18 tests d'intégration Functions, tests composants Vitest, 4 tests
+  Playwright dédiés contre un vrai `wrangler pages dev` (config séparée de la suite e2e
+  principale, car `vite preview` ne fait pas tourner les Cloudflare Functions).
+- **Étape 3 (bascule production) volontairement non commencée** : l'ÉTAPE 0 de la mission
+  demande explicitement de tout développer et tester en local avant de toucher à la production.
+  Script de migration des clés pilote (`scripts/migrate-keys-to-d1.mjs`) écrit et testé contre D1
+  local, jamais exécuté contre la production. `README.md` §Administration documente les 4 étapes
+  manuelles exactes pour Massy (créer la base D1, la lier au projet Pages, configurer
+  `ADMIN_SECRET_HASH`, appliquer la migration en production).
+- 268 core / 9 data / 47 exercises / 51 web / **18 functions (nouveau)** / 24 e2e / **4 e2e admin
+  (nouveau)**, lint et typecheck propres. Détail complet dans `TASKS.md`.
+
 ---
 
 ## 10) Objectif immédiat (prochaine étape recommandée)
 Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, **Mission 07 Partie A
 (préparation technique du pilote) est close** mais **Mission 07 (le pilote lui-même) est
 reportée par décision de Massy** (07/07/2026 — Partie B, checklist opérationnelle, en attente),
-et **Mission 08 est CLOSE dans son ensemble** (les 4 étapes — moteur d'exercices + contenu
-complet 1-10 + UI + rituel de clôture final, 25/07/2026 — voir §9 et `TASKS.md`). **Jalon v1.0
-atteint**, **Phase 3 close**, **chaîne d'implémentation v1.x TERMINÉE**.
-Prochaine étape : à définir avec l'architecte/Massy — candidats déjà identifiés dans
-`missions/README.md` : Mission 09 (quiz/notation/progression, Phase 6 partie 2, esquisse),
-Mission 10 (assistant IA pédagogique, Phase 7, esquisse), ou reprise de Mission 07 (pilote) si
-Massy le décide. Points notables en Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non
-confirmé (Mission 13, non demandée, à trancher si besoin).
+**Mission 08 est CLOSE dans son ensemble** (les 4 étapes — moteur d'exercices + contenu complet
+1-10 + UI + rituel de clôture final, 25/07/2026), et **Mission 14 (espace admin + licences) a ses
+Étapes 1/2/4/6 closes** (27/07/2026 — système complet et testé en local, voir §9 et `TASKS.md`).
+**Jalon v1.0 atteint**, **Phase 3 close**, **chaîne d'implémentation v1.x TERMINÉE**.
+Prochaine étape : **Mission 14, Étape 3 (bascule production)** — bloquée sur 4 actions manuelles
+de Massy dans son dashboard Cloudflare (`README.md` §Administration : créer la base D1, la lier
+au projet Pages, configurer `ADMIN_SECRET_HASH`, appliquer la migration en production). Une fois
+confirmées : migrer les clés pilote existantes, brancher `AccessGate.jsx` sur le nouveau système,
+vérifier en production, puis retirer `ACCESS_KEY_HASHES`. En parallèle ou ensuite, candidats déjà
+identifiés dans `missions/README.md` : Mission 09 (quiz/notation/progression, Phase 6 partie 2,
+esquisse), Mission 10 (assistant IA pédagogique, Phase 7, esquisse), ou reprise de Mission 07
+(pilote) si Massy le décide. Points notables en Backlog : interaction FXP/TTP avec un segment
+`HL`/`UC` non confirmé (Mission 13, non demandée, à trancher si besoin).
 
 ---
 

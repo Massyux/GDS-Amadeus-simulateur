@@ -6,18 +6,34 @@
 
 ## En cours
 
-**Mission 07 reportée** (décision Massy 07/07/2026, à relancer quand il le décidera) — Partie A
-reste close (voir historique ci-dessous). **Mission 08 CLOSE dans son ensemble** (les 4 étapes :
-moteur d'exercices, contenu 1-4 + UI, contenu 5-10 + indices/barème/polissage, rituel de clôture
-final + production vérifiée — Phase 6). Tout poussé sur `main`, suites vertes (268 core, 9 data,
-47 exercises, 41 web, 24 e2e, lint et typecheck propres).
+**Mission 14 (espace admin + licences par poste) — Étapes 1, 2, 4, 6 CLOSES ; Étape 3 (bascule
+production) volontairement non commencée.** Architecture changée en cours de route par
+l'architecte (07/07/2026) : Cloudflare D1 au lieu de Supabase — voir `missions/MISSION-14.md`
+§CHANGEMENT D'ARCHITECTURE. Tout développé et testé contre le **D1 local de Wrangler**, rien ne
+touche encore la production (conforme à l'ÉTAPE 0 de la mission). Tout poussé sur `main`, suites
+vertes (268 core, 9 data, 47 exercises, 51 web, 18 functions, 24 e2e + 4 e2e admin, lint et
+typecheck propres).
 
-**Reprise exacte** : Mission 08 est entièrement terminée (les 10 exercices jouables de bout en
-bout, vérifiés en local ET en production). Aucune reprise en attente sur cette mission.
-Prochaine mission à définir avec l'architecte/Massy — candidats déjà identifiés dans
-`missions/README.md` : Mission 09 (quiz/notation/progression, Phase 6 partie 2, esquisse),
-Mission 10 (assistant IA pédagogique, Phase 7, esquisse), ou reprendre Mission 07 (pilote) si
-Massy le décide.
+**Reprise exacte** : le système de licences est complet et testé (schéma D1, 7 Cloudflare
+Functions, UI `/admin` avec auth, scripts) mais **pas encore branché sur le parcours client
+réel** — `AccessGate.jsx` utilise toujours `functions/api/verify-key.js`/`ACCESS_KEY_HASHES`
+(Mission 06). Deux choses restent, dans cet ordre :
+1. **Massy** (2 minutes, `README.md` §Administration) : créer la base D1 en production, la lier
+   au projet Pages, configurer `ADMIN_SECRET_HASH` (`node scripts/generate-admin-secret.mjs`),
+   redéployer, appliquer `migrations/0001_init.sql` en production.
+2. **Claude Code, une fois (1) confirmé par Massy** : migrer les clés pilote existantes avec
+   `scripts/migrate-keys-to-d1.mjs` (déjà écrit et testé contre D1 local, jamais exécuté en
+   production), brancher `AccessGate.jsx` sur `/api/license/activate` + `/api/license/check`,
+   vérifier en production, **puis seulement** retirer `ACCESS_KEY_HASHES`. Voir
+   `docs/LICENCES.md` §6 et `missions/MISSION-14.md` Étape 3.
+Protocole habituel pour la suite (non-régression après chaque commande, rituel de clôture à la
+fin de l'étape).
+
+**Reprise exacte** : Mission 08 (moteur d'exercices) est entièrement terminée (les 10 exercices
+jouables de bout en bout, vérifiés en local ET en production). Aucune reprise en attente sur
+cette mission. Prochaine mission après Mission 14 : Mission 09 (quiz/notation/progression, Phase
+6 partie 2, esquisse) ou Mission 10 (assistant IA pédagogique, Phase 7, esquisse), à définir avec
+l'architecte/Massy.
 
 **Reprise exacte** : Partie A de Mission 07 est terminée côté code. La suite (Partie B) est une
 checklist **opérationnelle pour Massy** (générer les clés, les configurer sur Cloudflare,
@@ -27,6 +43,69 @@ corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habi
 prochaine mission une fois le pilote conclu.
 
 ## Fait (par session, datée)
+
+### 27/07/2026 — Mission 14 (espace admin + licences par poste, Étapes 1/2/4/6 — Phase 8 anticipée)
+- **Changement d'architecture appliqué** (bandeau architecte 07/07/2026, lu en tête de fichier
+  avant de commencer) : Cloudflare D1 partout où la mission disait Supabase. Auth admin par
+  phrase secrète (`ADMIN_SECRET_HASH`, même pattern que `ACCESS_KEY_HASHES`), pas de Supabase
+  Auth.
+- **Schéma D1** (`migrations/0001_init.sql`) : `licenses` (clé hachée, palier individuel/école,
+  `max_devices`, statut) + `activations` (une ligne par appareil, contrainte unique
+  `(license_id, device_fingerprint)` qui fait à la fois l'idempotence de réactivation et le
+  comptage de postes utilisés). Pas de RLS (n'existe pas sur D1/SQLite) — son intention protectrice
+  est préservée autrement : D1 n'est accessible que depuis l'intérieur des Pages Functions,
+  jamais exposé à un SDK client.
+- **Conception des jetons repensée en cours de route** : la mission décrivait un « jeton signé »
+  pour l'activation ET la session admin. Pour l'activation, un jeton signé (JWT-like) aurait de
+  toute façon fallu re-vérifier l'état en base à chaque `check` (la révocation doit être
+  instantanée) — un jeton opaque aléatoire stocké dans `activations.token` et recherché
+  directement est donc plus simple ET tout aussi correct (pas de double mécanisme de validité à
+  raisonner). Gardé le jeton signé (HMAC-SHA256, `functions/_lib/token.js`) uniquement pour la
+  session admin, où il évite un aller-retour base de données par requête ; signé avec
+  `ADMIN_SECRET_HASH` lui-même (pas de deuxième secret à faire configurer à Massy — rotation de
+  la phrase secrète invalide tous les jetons existants du même coup).
+- **7 Cloudflare Pages Functions** : `license/activate` (limite de postes, réactivation
+  idempotente, `DEVICE_LIMIT`/`NOT_FOUND` distincts — contrairement à `verify-key.js`, la mission
+  demande explicitement des messages différenciables ici), `license/check` (révocation
+  instantanée, l'état en base est la seule source de vérité), `admin/login`, `admin/licenses`
+  (GET liste + POST création), `admin/licenses/[id]` (PATCH révoquer/réactiver/prolonger),
+  `admin/licenses/[id]/activations` (GET détail des postes), `admin/activations/[id]` (DELETE
+  libérer un poste sans révoquer toute la licence).
+- **Limite connue documentée, pas contournée** : `activate` a une fenêtre de course théorique
+  (deux activations simultanées sur le dernier poste disponible) — accepté sans verrou
+  transactionnel vu l'échelle réelle du produit (CONSTITUTION §8, pas d'over-engineering) ;
+  détaillé dans `docs/LICENCES.md` §4.
+- **UI `/admin`** (`apps/web/src/admin/`) : pas de dépendance routeur pour une seule page en plus
+  — un simple test de `window.location.pathname` dans `main.jsx`, cohérent avec le reste de
+  l'appli qui gère déjà son propre état d'écran à la main. `AdminLogin` + `AdminDashboard`
+  (tableau licences, Nouvelle clé affichée une seule fois, révoquer/réactiver/prolonger, détail
+  des appareils par licence + libérer un poste, export CSV). Session en `sessionStorage` (pas
+  `localStorage`) — se termine à la fermeture de l'onglet. `apps/web/public/_redirects` ajouté
+  (SPA fallback `/* -> /index.html`) : sans lui, une navigation directe vers `/admin` renvoie 404
+  sur Cloudflare Pages (seule la route `/` existait jusqu'ici).
+- **Empreinte appareil** (`apps/web/src/lib/deviceFingerprint.js`) : hash de signaux navigateur
+  (user agent, écran, fuseau, canevas léger). Limites documentées explicitement (pas une
+  barrière de sécurité, contournable) dans le code et `docs/LICENCES.md` §3, comme demandé par
+  la mission.
+- **Tests, 3 couches** : `functions/__tests__/license-api.test.js` (18 tests d'intégration
+  contre un vrai `wrangler pages dev` + D1 local disposable — postes 1/1, 2/2, 4/4 et 5ᵉ refusé,
+  révocation instantanée, réactivation, libérer un poste — pas de mock D1) ; Vitest sur
+  `AdminLogin`/`AdminDashboard` (9 tests, réseau simulé) ; `apps/web/e2e-admin/admin.spec.js`
+  (4 tests Playwright contre `wrangler pages dev` réel — `vite preview` ne fait pas tourner les
+  Functions, d'où une config Playwright dédiée `playwright.admin.config.js`, isolée de la suite
+  e2e principale). `.dev.vars` (gitignored) fixe `ADMIN_SECRET_HASH` à une valeur de test connue
+  pour que tout ça tourne de façon déterministe en local et en CI.
+- **Scripts** : `scripts/generate-admin-secret.mjs` (phrase + haché, jamais écrit sur disque),
+  `scripts/migrate-keys-to-d1.mjs` (Étape 3 — écrit et testé contre D1 local, **jamais exécuté
+  contre la production**, prêt pour la bascule).
+- **Doc** : `README.md` §Administration (les 4 étapes exactes pour Massy, ÉTAPE 0 de la
+  mission), `docs/LICENCES.md` (fonctionnement, limites de l'empreinte, procédure de support).
+- **Étape 3 (bascule production) volontairement non commencée** : nécessite que Massy ait
+  d'abord fait ses 4 étapes manuelles (`README.md` §Administration) — rien à migrer/brancher tant
+  que la base D1 de production n'existe pas. Décision assumée, pas un oubli : l'ÉTAPE 0 de la
+  mission demande explicitement de tout tester en local avant de toucher à la production.
+- 268 core / 9 data / 47 exercises / 51 web (+10) / **18 functions (nouveau)** / 24 e2e / **4 e2e
+  admin (nouveau)**, lint et typecheck propres. Rituel de clôture appliqué (protocole habituel).
 
 ### 25/07/2026 — Mission 08 Étape 4 (rituel de clôture final + production vérifiée, Phase 6)
 - **e2e étendu aux 10 exercices** (`apps/web/e2e/exercises.spec.js`) : un nouveau bloc
