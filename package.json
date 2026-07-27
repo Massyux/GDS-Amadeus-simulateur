@@ -15,11 +15,14 @@
     "test:exercises": "npm --prefix packages/exercises run test",
     "test:web": "npm --prefix apps/web run test",
     "test:e2e": "npm --prefix apps/web run test:e2e",
+    "test:e2e:admin": "npm --prefix apps/web run test:e2e:admin",
+    "test:functions": "npm run build:web && node --test functions/__tests__/*.test.js",
     "prepare": "husky"
   },
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.0.0"
   }
 }

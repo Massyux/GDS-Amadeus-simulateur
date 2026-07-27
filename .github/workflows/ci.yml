@@ -39,6 +39,16 @@ jobs:
       - name: Test (apps/web)
         run: npm run test:web
 
+      - name: Write test-only .dev.vars (Mission 14 -- ADMIN_SECRET_HASH for wrangler-backed tests)
+        # Not a real secret: SHA-256 of the literal string "test-admin-secret"
+        # (see functions/__tests__/testServer.js). .dev.vars is gitignored
+        # (local-only convention), so a fresh CI checkout needs it written
+        # here before anything spawns wrangler pages dev / d1 execute.
+        run: echo "ADMIN_SECRET_HASH=b0413b34669b4c59b09c34129667cfbb4ce47a9bbf49785b5a8ae2d7858bea24" > .dev.vars
+
+      - name: Test (functions -- Mission 14 licensing, real wrangler + local D1)
+        run: npm run test:functions
+
       - name: Install Playwright browsers
         run: npx --prefix apps/web playwright install --with-deps chromium
 
@@ -50,3 +60,6 @@ jobs:
         env:
           VITE_FALLBACK_KEY_HASHES: f422821e3d707a6557c0b112a856927c754b5ca0842cb44503e6e028aa539a16
         run: npm run test:e2e
+
+      - name: E2E admin (Mission 14 -- real wrangler + local D1, not vite preview)
+        run: npm run test:e2e:admin

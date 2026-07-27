@@ -661,3 +661,193 @@ body {
   color: #2f2a7a;
   cursor: pointer;
 }
+
+/* Admin (Mission 14 -- espace admin + licences par poste) */
+
+.admin-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 22em;
+  width: 100%;
+  padding: 28px 32px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: #eef2fa;
+}
+
+.admin-login-title {
+  margin: 0 0 8px;
+  font-size: 1.2em;
+}
+
+.admin-login-label {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.admin-login-input {
+  font-family: inherit;
+  font-size: 1em;
+  padding: 8px 10px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: #fff;
+  color: #2f2a7a;
+}
+
+.admin-login-submit {
+  font-family: inherit;
+  font-size: 1em;
+  padding: 8px 16px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: #2f2a7a;
+  color: #eef2fa;
+  cursor: pointer;
+}
+
+.admin-login-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.admin-login-error {
+  margin: 4px 0 0;
+  color: #a3123a;
+}
+
+.admin-dashboard {
+  min-height: 100vh;
+  padding: 24px 32px;
+  font-family: "Courier New", Courier, monospace;
+  color: #2f2a7a;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-title {
+  margin: 0;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-header-actions button,
+.admin-new-license-form button,
+.admin-new-key-banner button {
+  font-family: inherit;
+  font-size: 0.85em;
+  padding: 6px 12px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: transparent;
+  color: #2f2a7a;
+  cursor: pointer;
+}
+
+.admin-new-key-banner {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid #1a7a3a;
+  border-radius: 4px;
+  background: rgba(26, 122, 58, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-new-license-form {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: #eef2fa;
+}
+
+.admin-new-license-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85em;
+}
+
+.admin-new-license-form input,
+.admin-new-license-form select {
+  font-family: inherit;
+  padding: 6px 8px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+}
+
+.admin-licenses-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-licenses-table th,
+.admin-licenses-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(47, 42, 122, 0.2);
+  font-size: 0.9em;
+}
+
+.admin-actions-cell {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-actions-cell button {
+  font-family: inherit;
+  font-size: 0.85em;
+  padding: 4px 8px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: transparent;
+  color: #2f2a7a;
+  cursor: pointer;
+}
+
+.admin-device-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85em;
+}
+
+.admin-device-list button {
+  font-family: inherit;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: transparent;
+  color: #2f2a7a;
+  cursor: pointer;
+}
