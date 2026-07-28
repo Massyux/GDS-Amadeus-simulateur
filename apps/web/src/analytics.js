@@ -3,7 +3,7 @@
 // VITE_CF_BEACON_TOKEN build-time env var (Cloudflare Pages -> Settings ->
 // Environment variables) so Massy can turn this on/off without touching
 // code. Empty by default -- a no-op, no external script is ever injected
-// until he configures it himself (same pattern as VITE_FALLBACK_KEY_HASHES).
+// until he configures it himself.
 export function initAnalytics() {
   const token = import.meta.env.VITE_CF_BEACON_TOKEN;
   if (!token) return;

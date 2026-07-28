@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-// GDS-TEST-0001's hash is injected as VITE_FALLBACK_KEY_HASHES for the e2e
-// build (see onboarding.spec.js). Exercise mode reuses the same key gate as
+// GDS-TEST-0001 is a fixture license seeded into the local D1 before this
+// suite runs (see onboarding.spec.js). Exercise mode reuses the same key gate as
 // free mode (App.test.jsx covers that routing decision directly) -- these
 // e2e tests go through the real onboarding -> key -> picker flow once to
 // confirm it works end to end in a real browser.

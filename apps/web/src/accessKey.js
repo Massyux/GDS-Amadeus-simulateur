@@ -1,39 +1,58 @@
-import { normalizeKey, sha256Hex } from "./lib/keyHash.js";
+import { getDeviceFingerprint } from "./lib/deviceFingerprint.js";
 
 export const ACCESS_KEY_STORAGE_KEY = "simulateur-amadeus:access-key-valid";
+export const ACCESS_TOKEN_STORAGE_KEY = "simulateur-amadeus:access-token";
 
-// Primary path: Cloudflare Pages Function checks the key against server-side
-// hashes (see functions/api/verify-key.js). Fallback: if that endpoint is
-// unreachable or not deployed (e.g. Pages Functions blocked, or local
-// dev/test where no Functions runtime exists), fall back to comparing the
-// key's hash against VITE_FALLBACK_KEY_HASHES baked into the client bundle
-// at build time. That env var is empty by default in a production build, so
-// the fallback is a no-op unless explicitly configured — documented as a
-// deliberately-less-robust pilot-only option in CLAUDE.md.
-export async function verifyKey(rawKey) {
-  const key = normalizeKey(rawKey);
-  if (!key) return false;
+// Mission 14 Etape 3: talks to the real license system (Cloudflare D1,
+// functions/api/license/activate.js) instead of the retired
+// ACCESS_KEY_HASHES/verify-key.js env-var scheme. No client-side fallback
+// this time -- per-device limits are the whole point of this system, and a
+// client-side hash comparison could never express "how many devices has
+// this key already activated".
+//
+// Returns the Function's own response shape: { valid: true, token, ... } or
+// { valid: false, reason: "NOT_FOUND" | "DEVICE_LIMIT", ... }. Any transport
+// failure (Functions unreachable, bad JSON) is folded into the same
+// NOT_FOUND shape a caller already has to handle -- no new UI state needed.
+export async function activateKey(rawKey) {
+  const key = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (!key) return { valid: false, reason: "NOT_FOUND" };
 
   try {
-    const res = await fetch("/api/verify-key", {
+    const deviceFingerprint = await getDeviceFingerprint();
+    const res = await fetch("/api/license/activate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ key }),
+      body: JSON.stringify({ key, deviceFingerprint }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {
+    // Functions unreachable -- falls through to the neutral NOT_FOUND below.
+  }
+  return { valid: false, reason: "NOT_FOUND" };
+}
+
+// Called at load time (docs/LICENCES.md #2) to confirm a previously stored
+// token is still valid. Revoking a license from /admin makes this return
+// false on the very next call. Tolerates a brief network/server hiccup by
+// failing OPEN (keeps the user in) rather than forcing a logout on a
+// transient error -- only an explicit { valid: false } from the server ever
+// triggers one.
+export async function checkToken(token) {
+  try {
+    const res = await fetch("/api/license/check", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token }),
     });
     if (res.ok) {
       const data = await res.json();
-      return data.valid === true;
+      return data.valid !== false;
     }
   } catch {
-    // Functions unreachable — fall through to the client-side fallback.
+    // fall through
   }
-
-  const fallbackHashes = (import.meta.env.VITE_FALLBACK_KEY_HASHES || "")
-    .split(",")
-    .map((hash) => hash.trim().toLowerCase())
-    .filter(Boolean);
-  if (fallbackHashes.length === 0) return false;
-
-  const hash = await sha256Hex(key);
-  return fallbackHashes.includes(hash);
+  return true;
 }

@@ -24,6 +24,8 @@ export const dictionary = {
       submit: "Valider",
       checking: "Vérification…",
       invalid: "Clé invalide.",
+      deviceLimit:
+        "Cette clé est déjà utilisée sur le nombre maximal d'appareils autorisés. Contactez-nous pour un palier supérieur.",
       back: "Retour",
     },
     feedback: {
@@ -103,6 +105,8 @@ export const dictionary = {
       submit: "Continue",
       checking: "Checking…",
       invalid: "Invalid key.",
+      deviceLimit:
+        "This key is already in use on the maximum number of devices allowed. Contact us to upgrade.",
       back: "Back",
     },
     feedback: {

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-// GDS-TEST-0001's hash is injected as VITE_FALLBACK_KEY_HASHES for the e2e
-// build (see .github/workflows/ci.yml and README.md "Tests").
+// GDS-TEST-0001 is a fixture license seeded into the local D1 before this
+// suite runs (see scripts/seed-e2e-test-license.sql), not a real pilot key.
 const TEST_KEY = "GDS-TEST-0001";
 
 test.describe("Pilot readiness (missions/MISSION-07.md Partie A)", () => {

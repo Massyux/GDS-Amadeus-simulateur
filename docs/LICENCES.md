@@ -66,14 +66,16 @@ pour un scénario à la fois improbable et sans conséquence grave.
 - **« Je me suis trompé, je veux annuler une révocation »** : **Réactiver** depuis `/admin` — les
   jetons déjà émis redeviennent valides sans que les appareils aient besoin de se réactiver.
 
-## 6) Ce qui n'est PAS encore fait
+## 6) État de la bascule (Étape 3, 27/07/2026)
 
-- **Bascule production** : `AccessGate.jsx` utilise encore `functions/api/verify-key.js` /
-  `ACCESS_KEY_HASHES` (Mission 06). Le nouveau système est complet et testé (17+ tests
-  d'intégration, `functions/__tests__/license-api.test.js`) mais brancher le parcours client réel
-  dessus — et retirer l'ancien système — est une étape volontairement séparée, après que Massy
-  ait confirmé les 4 points de `README.md` §Administration en production.
-- **Migration des clés pilote existantes** : pas encore de script automatique (les clés du
-  pilote actuel vivent dans `ACCESS_KEY_HASHES`, pas dans D1). À faire au moment de la bascule
-  ci-dessus, pas avant — importer maintenant des clés dans une table que rien n'utilise encore
-  n'apporterait rien.
+- **Bascule production faite** : `AccessGate.jsx` appelle désormais `/api/license/activate` +
+  `/api/license/check` (plus `functions/api/verify-key.js` / `ACCESS_KEY_HASHES`). 18 tests
+  d'intégration (`functions/__tests__/license-api.test.js`), suite e2e principale et e2e admin
+  toutes vertes contre un vrai `wrangler pages dev` + D1.
+- **Migration des clés pilote** : rien à migrer — `scripts/migrate-keys-to-d1.mjs` existe et
+  reste utilisable pour une future vague de clés, mais aucune clé pilote n'avait encore été
+  générée/distribuée au moment de la bascule (Mission 07 Partie B jamais lancée, `keys/` ne
+  contenait qu'un CSV vide).
+- **Reste à faire** : nettoyage final de `functions/api/verify-key.js`, `ACCESS_KEY_HASHES` et
+  `scripts/generate-keys.mjs` une fois la vérification en production confirmée (voir `TASKS.md`)
+  — volontairement gardés en place, inutilisés, jusque-là plutôt que retirés avant vérification.

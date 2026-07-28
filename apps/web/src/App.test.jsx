@@ -5,16 +5,34 @@ import App from "./App.jsx";
 import { ACCESS_KEY_STORAGE_KEY } from "./accessKey.js";
 
 const TEST_KEY = "GDS-TEST-0001";
-// SHA-256 hex digest of "GDS-TEST-0001" (see src/lib/keyHash.test.js).
-const TEST_KEY_HASH =
-  "f422821e3d707a6557c0b112a856927c754b5ca0842cb44503e6e028aa539a16";
+
+// Routes by URL so a single stub covers both /api/license/activate (the key
+// form) and /api/license/check (the boot-time revocation check, Mission 14
+// Etape 3) -- most tests here only exercise one of the two.
+function mockLicenseApi({ activate, check } = {}) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url) => {
+      if (url === "/api/license/activate") {
+        return new Response(
+          JSON.stringify(activate ?? { valid: true, token: "test-token" }),
+          { status: 200 }
+        );
+      }
+      if (url === "/api/license/check") {
+        return new Response(JSON.stringify(check ?? { valid: true }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    })
+  );
+}
 
 beforeEach(() => {
   localStorage.clear();
 });
 
 afterEach(() => {
-  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 describe("App onboarding + access gate flow", () => {
@@ -27,7 +45,7 @@ describe("App onboarding + access gate flow", () => {
   });
 
   it("never mounts the terminal without a validated access key", async () => {
-    vi.stubEnv("VITE_FALLBACK_KEY_HASHES", TEST_KEY_HASH);
+    mockLicenseApi({ activate: { valid: false, reason: "NOT_FOUND" } });
     const user = userEvent.setup();
     const { container } = render(<App />);
 
@@ -41,7 +59,7 @@ describe("App onboarding + access gate flow", () => {
   });
 
   it("enters the terminal with a valid key and remembers it across reloads", async () => {
-    vi.stubEnv("VITE_FALLBACK_KEY_HASHES", TEST_KEY_HASH);
+    mockLicenseApi();
     const user = userEvent.setup();
     const { unmount } = render(<App />);
 
@@ -59,6 +77,25 @@ describe("App onboarding + access gate flow", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("logs the user out on reload once the stored token is revoked", async () => {
+    mockLicenseApi();
+    const user = userEvent.setup();
+    const { unmount } = render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "J'ai une clé d'accès" }));
+    await user.type(screen.getByLabelText("Clé d'accès"), TEST_KEY);
+    await user.click(screen.getByRole("button", { name: "Valider" }));
+    await waitFor(() => expect(screen.getByRole("textbox")).toBeInTheDocument());
+    unmount();
+
+    mockLicenseApi({ check: { valid: false } });
+    render(<App />);
+    // Optimistic first paint still shows the terminal (initialScreen() reads
+    // localStorage synchronously); the boot-time check then kicks in.
+    await waitFor(() => expect(screen.getByLabelText("Clé d'accès")).toBeInTheDocument());
+    expect(localStorage.getItem(ACCESS_KEY_STORAGE_KEY)).toBeNull();
+  });
+
   it("toggles between French and English on the homepage", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -72,7 +109,7 @@ describe("App onboarding + access gate flow", () => {
 
 describe("App exercise mode entry (missions/MISSION-08.md Etape 2)", () => {
   it("gates exercise mode behind the same access key as free mode (no free bypass to the real terminal)", async () => {
-    vi.stubEnv("VITE_FALLBACK_KEY_HASHES", TEST_KEY_HASH);
+    mockLicenseApi();
     const user = userEvent.setup();
     render(<App />);
 
@@ -94,7 +131,9 @@ describe("App exercise mode entry (missions/MISSION-08.md Etape 2)", () => {
     // Simulate a key already validated in this tab without remounting (the
     // real trigger -- initialScreen() reading a stored valid key -- would
     // skip onboarding entirely, so onExercises' own live localStorage check
-    // is exercised directly here instead).
+    // is exercised directly here instead). No token stored on purpose: the
+    // boot-time revocation check (App.jsx's effect) skips itself when there
+    // is nothing to check, so no fetch mock is needed for this shortcut.
     localStorage.setItem(ACCESS_KEY_STORAGE_KEY, "1");
 
     await user.click(screen.getByRole("button", { name: "Mode exercices" }));

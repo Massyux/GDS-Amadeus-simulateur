@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
 
-// GDS-TEST-0001's hash is injected as VITE_FALLBACK_KEY_HASHES for the e2e
-// build (see .github/workflows/ci.yml and README.md "Tests"). It is not a
-// real access key — Cloudflare Pages Functions don't run under `vite
-// preview`, so this exercises the documented client-side fallback path.
+// GDS-TEST-0001 is a fixture license seeded into the local D1 before this
+// suite runs (see scripts/seed-e2e-test-license.sql and
+// playwright.config.js's webServer command) -- not a real pilot key.
+// Mission 14 Etape 3: this suite runs against a real `wrangler pages dev` +
+// D1 now, exercising the actual /api/license/activate Function, not a
+// client-side fallback.
 const TEST_KEY = "GDS-TEST-0001";
 
 test.describe("Onboarding", () => {

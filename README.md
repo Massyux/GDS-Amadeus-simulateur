@@ -33,48 +33,46 @@ npm run build:web
 - `functions/api/license/*`, `functions/api/admin/*` : Mission 14, licences par poste (Cloudflare D1)
 - `migrations/*.sql` : schéma D1
 
-## Gestion des clés d'accès (Mission 06)
+## Gestion des clés d'accès (Mission 06 — remplacée par la Mission 14, voir ci-dessous)
 
-Le site public ne donne accès au terminal qu'avec une clé valide (format `GDS-XXXX-XXXX`).
-Les clés ne sont jamais stockées en clair : seuls leurs hachés SHA-256 vivent dans la variable
-d'environnement Cloudflare Pages `ACCESS_KEY_HASHES` (liste séparée par des virgules).
-
-**Générer de nouvelles clés** (en local, jamais commité) :
-
-```bash
-node scripts/generate-keys.mjs 5   # génère 5 clés
-```
-
-Le script écrit un CSV en clair dans `keys/` (dossier gitignored — à distribuer toi-même, ne
-jamais le committer) et affiche la liste des hachés à coller dans Cloudflare.
-
-**Ajouter une clé** (sans toucher au code) : dashboard Cloudflare → le projet Pages
-`gds-amadeus-simulateur` → Settings → Environment variables → `ACCESS_KEY_HASHES` → coller la
-nouvelle liste de hachés (en les **ajoutant** aux hachés existants, séparés par une virgule, pas
-en remplaçant) → redéployer (ou attendre le prochain push sur `main`, un redeploy manuel suffit
-aussi pour n'appliquer qu'un changement de variable d'environnement).
-
-**Révoquer une clé** : retirer son haché de `ACCESS_KEY_HASHES` dans le même écran, puis
-redéployer. Sans le haché correspondant, la clé cesse immédiatement de fonctionner.
-
-**Repli client (fallback)** : si les Cloudflare Pages Functions sont un jour bloquées, une
-variable de build `VITE_FALLBACK_KEY_HASHES` (mêmes hachés, séparés par des virgules) peut être
-définie pour que la validation se fasse côté navigateur. Moins robuste (les hachés finissent dans
-le bundle livré, potentiellement extractibles hors-ligne) — solution de secours pilote uniquement,
-documentée dans `CLAUDE.md`. Vide par défaut, donc inactive tant qu'elle n'est pas configurée
-explicitement.
+**Historique, gardé pour référence.** Le terminal utilisait un système de clés à plat en variable
+d'environnement (`ACCESS_KEY_HASHES`, `node scripts/generate-keys.mjs`, repli client
+`VITE_FALLBACK_KEY_HASHES`). Depuis la bascule de la Mission 14 (Étape 3), `AccessGate.jsx` parle
+au vrai système de licences ci-dessous — voir « Gestion des licences » plus bas pour générer et
+révoquer des clés maintenant. `functions/api/verify-key.js` et la variable `ACCESS_KEY_HASHES`
+restent en place, inutilisés, le temps de vérifier la bascule en production ; ils seront retirés
+dans un nettoyage séparé (voir `TASKS.md`). Aucune clé pilote n'avait encore été distribuée au
+moment de la bascule (Mission 07 Partie B jamais lancée) — rien à migrer.
 
 ## Administration — licences par poste (Mission 14)
 
-Remplace à terme les clés en variable d'environnement (Mission 06 ci-dessus) par un vrai système
-de licences : palier individuel (1 poste) ou école (2-4 postes), un espace `/admin` pour Massy
-(générer/révoquer les clés, voir les appareils activés), sur **Cloudflare D1** (SQLite gratuit,
-même compte que Pages — décision architecte du 07/07/2026, remplace le Supabase envisagé au
-départ : aucun nouveau compte à créer, aucune clé tierce à faire transiter).
+Système de licences : palier individuel (1 poste) ou école (2-4 postes), un espace `/admin` pour
+Massy (générer/révoquer les clés, voir les appareils activés), sur **Cloudflare D1** (SQLite
+gratuit, même compte que Pages — décision architecte du 07/07/2026, remplace le Supabase envisagé
+au départ). **En production depuis l'Étape 3 (27/07/2026)** : base créée, schéma appliqué, binding
+`DB` actif sur le projet Pages, `ADMIN_SECRET_HASH` configuré, `AccessGate.jsx` branché dessus.
+Les 4 étapes de mise en place (créer la base, lier le binding, générer la phrase secrète admin,
+appliquer le schéma) ont été faites une fois et n'ont pas à être répétées — gardées ci-dessous
+pour mémoire seulement en cas de nouvelle base (changement de compte Cloudflare, etc).
 
-Tout le code (schéma SQL, Functions, UI admin, tests) a été développé et testé de bout en bout
-contre le **D1 local de Wrangler** — rien ne touche encore la production. Les 4 étapes ci-dessous
-sont ce qu'il reste à faire, une seule fois, dans ton dashboard Cloudflare (2 minutes) :
+`https://gds-amadeus-simulateur.pages.dev/admin` : connexion avec la phrase secrète, tableau des
+licences, bouton **Nouvelle clé** (génère et affiche une clé une seule fois — à distribuer
+toi-même), révoquer/prolonger, export CSV. `docs/LICENCES.md` explique le fonctionnement complet,
+les limites de l'empreinte appareil, et la procédure de support (« client a changé de PC »).
+
+**Développer/tester en local** (sans toucher à la production, sans compte Cloudflare requis) :
+
+```bash
+npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql   # idempotent
+npx wrangler pages dev apps/web/dist --port 8788                              # serveur local
+node --test functions/__tests__/*.test.js                                     # suite de tests
+```
+
+`.dev.vars` (gitignored) contient déjà un `ADMIN_SECRET_HASH` de test pour le développement local
+(phrase secrète : voir l'en-tête de `functions/__tests__/testServer.js` — jamais une vraie valeur).
+
+<details>
+<summary>Mise en place initiale (déjà faite en production — pour mémoire / nouvelle base)</summary>
 
 **1. Créer la base D1** : dashboard Cloudflare → **Workers & Pages** → **D1** → **Create
 database** → nom `gds-licences`.
@@ -90,8 +88,7 @@ node scripts/generate-admin-secret.mjs
 
 Note la phrase secrète affichée (c'est ton mot de passe pour `/admin` — le script ne l'écrit
 nulle part, à toi de la garder). Colle le **haché** affiché juste en dessous dans : projet Pages
-→ **Settings** → **Environment variables** → `ADMIN_SECRET_HASH` (en remplaçant une éventuelle
-valeur existante — un seul admin, pas de liste à cumuler comme pour `ACCESS_KEY_HASHES`).
+→ **Settings** → **Environment variables** → `ADMIN_SECRET_HASH`.
 
 **4. Redéployer, puis appliquer le schéma en production** :
 
@@ -100,30 +97,9 @@ npx wrangler d1 execute gds-licences --remote --file=migrations/0001_init.sql
 ```
 
 (ou colle le contenu de `migrations/0001_init.sql` dans l'onglet **Console** de la base D1 sur le
-dashboard, si tu préfères ne pas utiliser la ligne de commande).
+dashboard).
 
-Une fois ces 4 étapes faites, `https://gds-amadeus-simulateur.pages.dev/admin` devient
-utilisable : connexion avec la phrase secrète, tableau des licences, bouton **Nouvelle clé**
-(génère et affiche une clé une seule fois — à distribuer toi-même), révoquer/prolonger,
-export CSV. `docs/LICENCES.md` explique le fonctionnement complet, les limites de l'empreinte
-appareil, et la procédure de support (« client a changé de PC »).
-
-**Développer/tester en local** (sans toucher à la production, sans compte Cloudflare requis) :
-
-```bash
-npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql   # une fois
-npx wrangler pages dev apps/web/dist --port 8788                              # serveur local
-node --test functions/__tests__/*.test.js                                     # suite de tests
-```
-
-`.dev.vars` (gitignored) contient déjà un `ADMIN_SECRET_HASH` de test pour le développement local
-(phrase secrète : voir l'en-tête de `functions/__tests__/testServer.js` — jamais une vraie valeur).
-
-**Important — bascule non encore faite** : l'accès au terminal (`AccessGate.jsx`) utilise
-toujours `functions/api/verify-key.js` / `ACCESS_KEY_HASHES` (Mission 06) pour l'instant. Le
-nouveau système de licences (`functions/api/license/*`) est complet et testé, mais brancher
-l'accès réel dessus — et retirer `ACCESS_KEY_HASHES` — est une étape volontairement séparée, à
-faire une fois les 4 points ci-dessus confirmés en production (voir `TASKS.md`).
+</details>
 
 ## Mesure d'audience (Mission 07, pilote)
 

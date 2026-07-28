@@ -2,27 +2,31 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AccessGate from "./AccessGate.jsx";
-import { ACCESS_KEY_STORAGE_KEY } from "./accessKey.js";
+import { ACCESS_KEY_STORAGE_KEY, ACCESS_TOKEN_STORAGE_KEY } from "./accessKey.js";
 import { dictionary } from "./i18n/dictionary.js";
 
 const TEST_KEY = "GDS-TEST-0001";
-// SHA-256 hex digest of "GDS-TEST-0001" (see lib/keyHash.test.js).
-const TEST_KEY_HASH =
-  "f422821e3d707a6557c0b112a856927c754b5ca0842cb44503e6e028aa539a16";
 
 const t = dictionary.fr;
+
+function mockActivate(response) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(JSON.stringify(response), { status: 200 }))
+  );
+}
 
 beforeEach(() => {
   localStorage.clear();
 });
 
 afterEach(() => {
-  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 
 describe("AccessGate", () => {
-  it("rejects an invalid key when neither the server nor the fallback recognize it", async () => {
+  it("rejects a key the server does not recognize", async () => {
+    mockActivate({ valid: false, reason: "NOT_FOUND" });
     const user = userEvent.setup();
     const onValidated = vi.fn();
     render(<AccessGate t={t} onValidated={onValidated} />);
@@ -35,15 +39,10 @@ describe("AccessGate", () => {
     expect(localStorage.getItem(ACCESS_KEY_STORAGE_KEY)).toBeNull();
   });
 
-  it("accepts a key validated by the server (primary path)", async () => {
+  it("accepts a key activated by the server and stores the token", async () => {
+    mockActivate({ valid: true, token: "opaque-token-123", devicesUsed: 1, maxDevices: 1 });
     const user = userEvent.setup();
     const onValidated = vi.fn();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(JSON.stringify({ valid: true }), { status: 200 })
-      )
-    );
 
     render(<AccessGate t={t} onValidated={onValidated} />);
     await user.type(screen.getByLabelText(t.accessGate.inputLabel), TEST_KEY);
@@ -51,23 +50,29 @@ describe("AccessGate", () => {
 
     await waitFor(() => expect(onValidated).toHaveBeenCalledTimes(1));
     expect(localStorage.getItem(ACCESS_KEY_STORAGE_KEY)).toBe("1");
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBe("opaque-token-123");
   });
 
-  it("falls back to the client-side hash list when the server is unreachable", async () => {
-    vi.stubEnv("VITE_FALLBACK_KEY_HASHES", TEST_KEY_HASH);
+  it("shows a distinct message when the device limit is reached", async () => {
+    mockActivate({ valid: false, reason: "DEVICE_LIMIT", devicesUsed: 1, maxDevices: 1 });
     const user = userEvent.setup();
     const onValidated = vi.fn();
 
     render(<AccessGate t={t} onValidated={onValidated} />);
-    // normalization: lowercase + surrounding whitespace must still match.
-    await user.type(screen.getByLabelText(t.accessGate.inputLabel), `  ${TEST_KEY.toLowerCase()}  `);
+    await user.type(screen.getByLabelText(t.accessGate.inputLabel), TEST_KEY);
     await user.click(screen.getByRole("button", { name: t.accessGate.submit }));
 
-    await waitFor(() => expect(onValidated).toHaveBeenCalledTimes(1));
-    expect(localStorage.getItem(ACCESS_KEY_STORAGE_KEY)).toBe("1");
+    expect(await screen.findByRole("alert")).toHaveTextContent(t.accessGate.deviceLimit);
+    expect(onValidated).not.toHaveBeenCalled();
   });
 
-  it("does not accept any key when the fallback list is empty and the server is unreachable", async () => {
+  it("treats an unreachable server as an invalid key, not a crash", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("network down");
+      })
+    );
     const user = userEvent.setup();
     const onValidated = vi.fn();
 

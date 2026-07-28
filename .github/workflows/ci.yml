@@ -53,12 +53,10 @@ jobs:
         run: npx --prefix apps/web playwright install --with-deps chromium
 
       - name: E2E (apps/web)
-        # Not a real access key: a test-only value whose SHA-256 hash is
-        # baked into this build via the client-side fallback (Cloudflare
-        # Pages Functions don't run under `vite preview`). See
-        # apps/web/e2e/onboarding.spec.js and CLAUDE.md "Accès par clé".
-        env:
-          VITE_FALLBACK_KEY_HASHES: f422821e3d707a6557c0b112a856927c754b5ca0842cb44503e6e028aa539a16
+        # Mission 14 Etape 3: runs against a real wrangler pages dev + local
+        # D1 now (see playwright.config.js), seeded with a fixture license
+        # for GDS-TEST-0001 (scripts/seed-e2e-test-license.sql) -- not a
+        # client-side fallback, not a real pilot key.
         run: npm run test:e2e
 
       - name: E2E admin (Mission 14 -- real wrangler + local D1, not vite preview)

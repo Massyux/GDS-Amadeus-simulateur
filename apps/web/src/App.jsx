@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Onboarding from "./Onboarding.jsx";
 import AccessGate from "./AccessGate.jsx";
-import { ACCESS_KEY_STORAGE_KEY } from "./accessKey.js";
+import { ACCESS_KEY_STORAGE_KEY, ACCESS_TOKEN_STORAGE_KEY, checkToken } from "./accessKey.js";
 import Terminal from "./Terminal.jsx";
 import ExercisePicker from "./ExercisePicker.jsx";
 import ExercisePanel from "./ExercisePanel.jsx";
@@ -26,6 +26,25 @@ export default function App() {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [lang, setLang] = useLang();
   const t = dictionary[lang];
+
+  // Mission 14 Etape 3: confirm a previously-stored token is still valid
+  // (docs/LICENCES.md #2 -- "appele au chargement"). A license revoked from
+  // /admin cuts access on the user's next load, not instantly while the tab
+  // stays open (no continuous polling -- not asked for, would be
+  // over-engineering for this audience). Skipped entirely when there is no
+  // stored token (e.g. the exercise-mode test below simulates "already
+  // validated" without one).
+  useEffect(() => {
+    const token = localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+    if (!token) return;
+    checkToken(token).then((valid) => {
+      if (!valid) {
+        localStorage.removeItem(ACCESS_KEY_STORAGE_KEY);
+        localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+        setScreen("key");
+      }
+    });
+  }, []);
 
   if (screen === "terminal") {
     return <Terminal />;

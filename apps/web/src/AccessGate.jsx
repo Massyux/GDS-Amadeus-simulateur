@@ -1,17 +1,24 @@
 import { useState } from "react";
-import { verifyKey, ACCESS_KEY_STORAGE_KEY } from "./accessKey.js";
+import {
+  activateKey,
+  ACCESS_KEY_STORAGE_KEY,
+  ACCESS_TOKEN_STORAGE_KEY,
+} from "./accessKey.js";
 
 export default function AccessGate({ t, onValidated, onBack }) {
   const [value, setValue] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | checking | invalid
+  const [status, setStatus] = useState("idle"); // idle | checking | invalid | device-limit
 
   async function handleSubmit(event) {
     event.preventDefault();
     setStatus("checking");
-    const ok = await verifyKey(value);
-    if (ok) {
+    const result = await activateKey(value);
+    if (result.valid) {
       localStorage.setItem(ACCESS_KEY_STORAGE_KEY, "1");
+      localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, result.token);
       onValidated();
+    } else if (result.reason === "DEVICE_LIMIT") {
+      setStatus("device-limit");
     } else {
       setStatus("invalid");
     }
@@ -61,6 +68,11 @@ export default function AccessGate({ t, onValidated, onBack }) {
         {status === "invalid" && (
           <p className="access-key-error" role="alert">
             {t.accessGate.invalid}
+          </p>
+        )}
+        {status === "device-limit" && (
+          <p className="access-key-error" role="alert">
+            {t.accessGate.deviceLimit}
           </p>
         )}
       </div>
