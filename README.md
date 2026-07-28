@@ -46,6 +46,21 @@ moment de la bascule (Mission 07 Partie B jamais lancée) — rien à migrer.
 
 ## Administration — licences par poste (Mission 14)
 
+### ⚠️ Deux portes, deux identifiants — ne pas confondre
+
+Le simulateur a **deux écrans de connexion séparés**, chacun avec son propre identifiant. Se
+tromper d'écran donne un message d'erreur qui ne dit pas lequel il fallait utiliser — cause de
+confusion réelle vécue par Massy (28/07/2026), documentée ici pour ne pas se reproduire :
+
+| Écran | Où | Identifiant attendu | Valeur en local/test | Valeur en production |
+|---|---|---|---|---|
+| **Accès terminal** (mode libre ou exercices) | `/` → bouton « J'ai une clé d'accès » | Une **clé de licence** `GDS-XXXX-XXXX` | `GDS-TEST-0001` (licence fixture, palier école/4 postes — voir `scripts/seed-e2e-test-license.sql`) | Une clé générée depuis `/admin` → **Nouvelle clé**, distribuée au client |
+| **Espace admin** | `/admin` | Une **phrase secrète** (un seul admin, pas de clé `GDS-...`) | `test-admin-secret` (valeur fixe dans `.dev.vars`, jamais une vraie phrase — voir `functions/__tests__/testServer.js`) | La phrase générée une fois par Massy via `node scripts/generate-admin-secret.mjs` (lui seul la connaît) |
+
+Une phrase secrète admin ne fonctionnera jamais sur l'écran `/`, et une clé de licence ne
+fonctionnera jamais sur `/admin` — ce sont deux systèmes distincts (`ADMIN_SECRET_HASH` vs. la
+table `licenses`), pas un mauvais mot de passe.
+
 Système de licences : palier individuel (1 poste) ou école (2-4 postes), un espace `/admin` pour
 Massy (générer/révoquer les clés, voir les appareils activés), sur **Cloudflare D1** (SQLite
 gratuit, même compte que Pages — décision architecte du 07/07/2026, remplace le Supabase envisagé
@@ -60,12 +75,23 @@ licences, bouton **Nouvelle clé** (génère et affiche une clé une seule fois 
 toi-même), révoquer/prolonger, export CSV. `docs/LICENCES.md` explique le fonctionnement complet,
 les limites de l'empreinte appareil, et la procédure de support (« client a changé de PC »).
 
-**Développer/tester en local** (sans toucher à la production, sans compte Cloudflare requis) :
+**Développer/tester en local, environnement complet en une commande** (build + schéma + licence
+de test `GDS-TEST-0001` + serveur Functions/D1, sans toucher à la production, sans compte
+Cloudflare requis) :
 
 ```bash
-npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql   # idempotent
-npx wrangler pages dev apps/web/dist --port 8788                              # serveur local
-node --test functions/__tests__/*.test.js                                     # suite de tests
+npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler pages dev apps/web/dist --port 8788
+```
+
+Les deux `wrangler d1 execute` sont idempotents (sans risque à relancer sur une base locale déjà
+initialisée). Une fois le serveur prêt (`http://localhost:8788`), utilise le tableau ci-dessus :
+`GDS-TEST-0001` sur `/`, `test-admin-secret` sur `/admin`.
+
+Suite de tests seule (sans serveur manuel, `functions/__tests__/testServer.js` gère son propre
+D1 jetable) :
+
+```bash
+node --test functions/__tests__/*.test.js
 ```
 
 `.dev.vars` (gitignored) contient déjà un `ADMIN_SECRET_HASH` de test pour le développement local
