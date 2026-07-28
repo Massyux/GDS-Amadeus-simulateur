@@ -2,13 +2,15 @@
   // Cloudflare Pages Functions config (Mission 14 — espace admin + licences,
   // Cloudflare D1 au lieu de Supabase, decision architecte 07/07/2026).
   //
-  // Local-dev-only file: production is a classic dashboard-configured Pages
-  // project (see CLAUDE.md Phase 2 deploiement history) whose build command
-  // and D1 binding are set in the Cloudflare dashboard, not read from here.
-  // This file exists so `wrangler d1 execute --local` and `wrangler pages
-  // dev` know the "DB" binding name during local development/tests
-  // (missions/MISSION-14.md Etape 0: develop entirely against D1 local
-  // before Massy touches production).
+  // CORRECTION (Etape 3, 28/07/2026) : ce fichier n'est PAS local-dev-only --
+  // Cloudflare Pages le LIT en production (fonctionnalite en beta) et il
+  // PRIME sur la config du dashboard. Un `database_id` placeholder ici a
+  // fait echouer le deploiement des Functions ("Invalid database UUID") sur
+  // au moins 2 deploiements consecutifs (voir TASKS.md) -- le commentaire
+  // precedent affirmant le contraire etait faux et trompeur, corrige ici.
+  // database_id ci-dessous est le vrai UUID de la base D1 de production
+  // (affiche par `wrangler d1 create` / le dashboard -- ce n'est pas un
+  // secret, juste un identifiant de ressource).
   "name": "gds-amadeus-simulateur",
   "compatibility_date": "2026-07-27",
   "pages_build_output_dir": "apps/web/dist",
@@ -16,11 +18,7 @@
     {
       "binding": "DB",
       "database_name": "gds-licences",
-      // Placeholder: production's real database_id is assigned when Massy
-      // runs "Workers & Pages -> D1 -> Create database" (see README.md
-      // "Administration"). Irrelevant for --local execution, which only
-      // uses database_name to key its local SQLite file.
-      "database_id": "local-dev-placeholder"
+      "database_id": "6af85642-3628-4f14-bac9-7794c89124f3"
     }
   ]
 }

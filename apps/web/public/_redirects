@@ -1,6 +1,0 @@
-# SPA fallback (Mission 14 adds a second route, /admin, alongside "/" --
-# without this, Cloudflare Pages 404s on a direct navigation or refresh of
-# /admin since there is no admin/index.html static file). Pages Functions
-# under /api/* are matched before _redirects is ever consulted, so this
-# catch-all never shadows them.
-/*    /index.html   200
