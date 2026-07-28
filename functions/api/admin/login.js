@@ -24,7 +24,7 @@ export async function onRequestPost({ request, env }) {
 
   try {
     const body = await request.json();
-    const secret = typeof body?.secret === "string" ? body.secret : "";
+    const secret = typeof body?.secret === "string" ? body.secret.trim() : "";
     const configuredHash = (env.ADMIN_SECRET_HASH || "").trim().toLowerCase();
 
     if (secret && configuredHash) {

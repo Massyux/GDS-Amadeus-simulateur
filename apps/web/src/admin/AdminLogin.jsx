@@ -13,7 +13,7 @@ export default function AdminLogin({ onLoggedIn }) {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ secret }),
+        body: JSON.stringify({ secret: secret.trim() }),
       });
       const data = await res.json();
       if (data.valid && data.token) {

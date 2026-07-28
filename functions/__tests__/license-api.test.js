@@ -71,6 +71,12 @@ describe("Mission 14 -- license API (real wrangler pages dev + local D1)", { tim
       assert.equal(body.valid, false);
     });
 
+    it("accepts the admin secret with surrounding whitespace (copy-paste safety)", async () => {
+      const { body } = await post("/api/admin/login", { secret: `  ${TEST_ADMIN_SECRET}\n` });
+      assert.ok(body.valid, "a trailing space/newline from copy-paste must not break login");
+      assert.ok(body.token);
+    });
+
     it("rejects admin API calls without a token", async () => {
       const { status, body } = await get("/api/admin/licenses");
       assert.equal(status, 401);

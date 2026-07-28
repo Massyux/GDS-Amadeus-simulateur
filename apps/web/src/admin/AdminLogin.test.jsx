@@ -25,6 +25,23 @@ describe("AdminLogin", () => {
     await waitFor(() => expect(onLoggedIn).toHaveBeenCalledWith("abc.def"));
   });
 
+  it("trims surrounding whitespace before sending the secret (copy-paste safety)", async () => {
+    const user = userEvent.setup();
+    const onLoggedIn = vi.fn();
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ valid: true, token: "abc.def" }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminLogin onLoggedIn={onLoggedIn} />);
+    await user.type(screen.getByLabelText("Phrase secrète"), "  correct-secret  ");
+    await user.click(screen.getByRole("button", { name: "Se connecter" }));
+
+    await waitFor(() => expect(onLoggedIn).toHaveBeenCalled());
+    const sentBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sentBody.secret).toBe("correct-secret");
+  });
+
   it("shows an error and never calls onLoggedIn when the secret is wrong", async () => {
     const user = userEvent.setup();
     const onLoggedIn = vi.fn();
