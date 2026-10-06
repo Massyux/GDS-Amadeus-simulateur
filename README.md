@@ -115,6 +115,13 @@ Note la phrase secrète affichée (c'est ton mot de passe pour `/admin` — le s
 nulle part, à toi de la garder). Colle le **haché** affiché juste en dessous dans : projet Pages
 → **Settings** → **Environment variables** → `ADMIN_SECRET_HASH`.
 
+**Où est rangée la phrase secrète de production** : `D:\cowork\secrets-gds\admin-passphrase-production.txt`
+(hors du dépôt — jamais commitée, jamais dans le bundle). Si ce fichier est un jour perdu, il n'y
+a pas de récupération possible : régénérer une nouvelle phrase avec la commande ci-dessus,
+reconfigurer `ADMIN_SECRET_HASH` sur Cloudflare Pages, redéployer — la rotation invalide aussi
+tous les jetons de session admin déjà émis (voir `functions/_lib/token.js`), sans impact sur les
+clés de licence des clients.
+
 **4. Redéployer, puis appliquer le schéma en production** :
 
 ```bash
