@@ -14,9 +14,12 @@ Premier des trois chantiers restants (ordre choisi par Massy : 23 Plateforme →
 déployé en production** pendant tout le chantier (règle explicite du mode autonome) — la
 production actuelle (simulateur + accès par clé) continue de fonctionner à l'identique.
 
-**Étape 0 (fondations visuelles + sécurité) CLOSE (06/10/2026)** — voir l'entrée datée
-ci-dessous pour le détail complet. **Reprise exacte pour la suite** : Étape 1 (modèle de données
-D1 + authentification étudiant, migration `0002_*.sql`, ne jamais toucher `0001`).
+**Étape 0 (fondations visuelles + sécurité) CLOSE (06/10/2026)** et **Étape 1 (modèle de
+données + authentification étudiant) CLOSE (06/10/2026)** — voir les entrées datées ci-dessous
+pour le détail complet. **Reprise exacte pour la suite** : Étape 2 (espace étudiant — catalogue,
+page de formation, lecteur de leçon, reprise en un clic, progression, « Mon compte », les 7
+types de leçon). Rien n'est encore affiché côté étudiant : l'auth d'Étape 1 n'est qu'API, sans
+aucune page de connexion/inscription — c'est l'Étape 2 qui construit les écrans.
 
 **Mission 14 (espace admin + licences par poste) — CLOSE dans son ensemble, y compris l'Étape 3
 (bascule production).** Architecture changée en cours de route par l'architecte (07/07/2026) :
@@ -76,6 +79,91 @@ prochaine mission une fois le pilote conclu.
   par les futurs appelants (Étape 4, back-office).
 
 ## Fait (par session, datée)
+
+### 06/10/2026 — Mission 23 Étape 1 (modèle de données + authentification étudiant, mode autonome)
+**Étape 1 CLOSE.** Aucun écran construit (voulu : "rien d'affiché encore", c'est l'Étape 2) --
+uniquement le schéma D1 et les Functions d'authentification, testées de bout en bout contre un
+vrai `wrangler pages dev` + D1.
+
+- **Migration `migrations/0002_platform_users.sql`** (jamais touché `0001`) : `users`,
+  `sessions`, `password_resets`, `rate_limit_attempts`, et déjà `courses`/`modules`/`lessons`/
+  `enrollments`/`lesson_progress` (schéma complet de l'Architecture de MISSION-23.md, même si
+  Étape 1 ne les utilise pas encore) — `lessons.type` inclut déjà `quiz`, `lesson_progress`
+  inclut déjà `score`/`max_score`/`last_command` nullables : les 3 points d'extension à réserver
+  pour les missions 24/25, demandés explicitement "dès l'étape 1".
+  **Non fait ici, volontairement** : `licenses.user_id` (rattacher une licence à un compte). Un
+  `ALTER TABLE ADD COLUMN` n'a pas d'équivalent `IF NOT EXISTS` en SQLite/D1 (contrairement à
+  `CREATE TABLE`/`CREATE INDEX`) ; l'ajouter maintenant sans aucun code qui le consomme encore
+  aurait cassé la ré-application idempotente du fichier avant chaque run local/CI. Reporté à
+  l'étape où un étudiant active réellement une licence depuis son compte (2 ou 3), avec
+  l'idempotence résolue dans le code qui l'exécute plutôt que dans le `.sql` lui-même.
+- **Mots de passe** (`functions/_lib/passwordHash.js`) : PBKDF2-HMAC-SHA256, 600 000 itérations,
+  sel 16 octets, format `pbkdf2$iterations$sel$hash` (durcissable sans casser les hachés
+  existants). Liste locale de mots de passe courants refusés
+  (`functions/_lib/commonPasswords.js`), aucune exigence de complexité absurde
+  (`functions/_lib/validators.js`).
+- **Sessions** (`functions/_lib/session.js`) : jeton signé HMAC (réutilise
+  `functions/_lib/token.js`) contenant un id de session, **vérifié contre la table `sessions`**
+  à chaque requête -- la signature prouve l'émission, la ligne en base prouve la validité
+  actuelle (même distinction documentée dans `token.js`). C'est ce qui permet une révocation par
+  appareil (logout d'un seul, les autres restent) que `ADMIN_SECRET_HASH`/rotation globale ne
+  permettrait pas -- `SESSION_SECRET` est donc un secret dédié, pas une réutilisation de
+  `ADMIN_SECRET_HASH`. Cookie `HttpOnly`+`SameSite=Strict`, `Secure` ajouté seulement si la
+  requête est en https (sinon aucun test local/CI ne recevrait jamais le cookie, `wrangler pages
+  dev` servant toujours en http). Fenêtre glissante de 7 jours, prolongée à chaque requête
+  validée.
+- **CSRF** (`functions/_lib/csrf.js`) : double-soumission dérivée (HMAC(sessionId,
+  SESSION_SECRET)), exposée uniquement dans le corps JSON de `/api/auth/me` (jamais un cookie),
+  à renvoyer dans l'en-tête `X-CSRF-Token`. Nécessaire ici (cookie = ambiant) alors que
+  `/api/admin/*` n'en a jamais eu besoin (jeton porté manuellement, jamais ambiant).
+- **6 Functions** : `register` (anti-énumération -- une collision d'e-mail renvoie EXACTEMENT la
+  réponse `{ok:true}` d'un succès, sans jamais créer de session ni toucher au compte existant),
+  `login` (anti-énumération -- e-mail inconnu et mot de passe faux renvoient le même message),
+  `logout` (CSRF obligatoire, idempotent), `me` (session courante + jeton CSRF), `forgot-password`
+  (toujours `{ok:true}`, jeton 32 octets stocké haché, jamais renvoyé en clair sauf
+  `MAIL_DEV_ECHO=1`, jamais vrai en prod), `reset-password` (invalide toutes les sessions après
+  coup, jeton à usage unique).
+- **Correction trouvée en écrivant les tests, avant tout commit** (famille CONSTITUTION §3,
+  pas après coup) : la limitation de débit devait être "neutre" (docs/SECURITE.md §3 : même
+  réponse, jamais un code distinct) -- la première version renvoyait un 429 `RATE_LIMITED`
+  dédié sur les 4 routes concernées, ce qui trahissait exactement la cause que la neutralité est
+  censée cacher. Corrigé partout : au-delà du quota, chaque route renvoie sa réponse d'échec
+  **habituelle** (login : message générique identifiants invalides ; register/forgot-password :
+  le même `{ok:true}` qu'une collision ; activation de licence : `NOT_FOUND`).
+- **Deuxième bug trouvé en relançant la suite e2e PRINCIPALE (pas une nouvelle) après ce
+  changement** : ajouter la limite à `functions/api/license/activate.js` (nommément exigé par
+  docs/SECURITE.md §3) a cassé 9 tests e2e existants (`exercises`/`onboarding`/`pilot`) --
+  chaque test soumet la vraie clé fixture `GDS-TEST-0001` via le formulaire réel, et tous les
+  appels locaux/tests partagent une même IP factice (`functions/_lib/rateLimit.js clientIp`),
+  donc le quota explosait après ~5 tests. Pas un problème de test à contourner : un bucket par
+  IP+clé ne freine d'ailleurs jamais un vrai attaquant qui change de clé à chaque essai (même
+  angle mort que si "inscription" était bucketée par e-mail). Corrigé à la racine, pas en
+  façade : la limite n'est plus comptée QUE sur un échec (clé inconnue/révoquée, le vrai signal
+  de brute-force), jamais sur une réactivation légitime répétée d'une clé déjà correcte, et le
+  bucket est par IP seule -- symétrique avec "inscription". Les deux suites e2e (30 + 4) sont
+  repassées vertes après coup, pas juste les nouveaux tests.
+- **Troisième bug trouvé en écrivant les tests d'intégration** : réinitialiser le compteur de
+  débit entre deux tests en relançant `wrangler d1 execute` PENDANT qu'un `wrangler pages dev`
+  sert déjà le même `--persist-to` provoque des `ECONNRESET` côté serveur (deux process sur le
+  même fichier SQLite). Résolu par une route interne `functions/api/dev/reset-rate-limits.js`
+  (nommée `dev/`, pas `_dev/` : Cloudflare exclut du routage tout ce qui est préfixé `_`, un
+  `_dev/` ne répondrait jamais) qui passe par le binding D1 déjà ouvert du worker, inerte (404)
+  tant que `MAIL_DEV_ECHO` n'est pas "1" -- jamais vrai en production.
+- **12 tests d'intégration** (`functions/__tests__/auth-api.test.js`, contre un vrai `wrangler
+  pages dev` + D1, même protocole que Mission 14) : les deux anti-énumérations avec comparaison
+  stricte des réponses, le rate limit neutre jusqu'au 6ᵉ essai inclus, CSRF obligatoire sur
+  logout avec invalidation réelle de la session, le cycle complet mot-de-passe-oublié→reset
+  (ancien mot de passe mort, toutes les sessions tombent, jeton à usage unique), et la neutralité
+  de la limite sur l'activation de licence (même famille, testée au même endroit).
+- **Checklist sécurité de fin d'étape** (`docs/SECURITE.md` §9) : `npm audit` à 0 (aucune
+  dépendance ajoutée -- Web Crypto natif uniquement) ; aucun secret (`SESSION_SECRET`,
+  `MAIL_DEV_ECHO`, `ADMIN_SECRET_HASH`) dans le bundle client, vérifié par recherche dans
+  `dist/assets/*.js` après build ; "un non-admin ne peut atteindre `/api/admin/*`" déjà couvert
+  par les tests Mission 14 existants, toujours verts ; "un étudiant ne peut pas accéder à un
+  cours non acheté" **sans objet à cette étape** (aucun cours/contenu n'existe encore) --
+  s'applique à partir de l'Étape 2/3 ; en-têtes de sécurité toujours vérifiés servis (Étape 0).
+- 268 core / 9 data / 47 exercises / 66 web / **32 functions (+13)** / 30 e2e / 4 e2e admin, lint
+  et typecheck propres, build vérifié. Rien déployé en production.
 
 ### 06/10/2026 — Mission 23 Étape 0 (fondations visuelles + sécurité, mode autonome)
 **Étape 0 CLOSE.** Socle posé pour les 5 étapes suivantes, sans toucher au métier existant

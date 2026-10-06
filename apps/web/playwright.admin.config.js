@@ -44,7 +44,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      `npm run build:web && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql && npx wrangler pages dev apps/web/dist --port 8799 --persist-to="${persistDir}"`,
+      `npm run build:web && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0002_platform_users.sql && npx wrangler pages dev apps/web/dist --port 8799 --persist-to="${persistDir}"`,
     cwd: REPO_ROOT,
     url: "http://localhost:8799",
     reuseExistingServer: !process.env.CI,

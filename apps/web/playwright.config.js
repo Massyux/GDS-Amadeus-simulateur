@@ -22,7 +22,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler pages dev apps/web/dist --port 4173",
+      "npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler pages dev apps/web/dist --port 4173",
     cwd: REPO_ROOT,
     url: "http://localhost:4173",
     reuseExistingServer: !process.env.CI,

@@ -44,7 +44,10 @@ jobs:
         # (see functions/__tests__/testServer.js). .dev.vars is gitignored
         # (local-only convention), so a fresh CI checkout needs it written
         # here before anything spawns wrangler pages dev / d1 execute.
-        run: echo "ADMIN_SECRET_HASH=b0413b34669b4c59b09c34129667cfbb4ce47a9bbf49785b5a8ae2d7858bea24" > .dev.vars
+        run: |
+          echo "ADMIN_SECRET_HASH=b0413b34669b4c59b09c34129667cfbb4ce47a9bbf49785b5a8ae2d7858bea24" > .dev.vars
+          echo "SESSION_SECRET=test-session-secret-never-use-in-prod" >> .dev.vars
+          echo "MAIL_DEV_ECHO=1" >> .dev.vars
 
       - name: Test (functions -- Mission 14 licensing, real wrangler + local D1)
         run: npm run test:functions

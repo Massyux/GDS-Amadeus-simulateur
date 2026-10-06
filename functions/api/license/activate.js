@@ -14,6 +14,7 @@
 // Re-activating from the SAME device (same fingerprint) is idempotent: it
 // returns the existing token rather than consuming a new device slot.
 import { normalizeKey, sha256Hex } from "../../_lib/hash.js";
+import { checkRateLimit, clientIp } from "../../_lib/rateLimit.js";
 
 const MIN_DELAY_MS = 300;
 
@@ -40,7 +41,22 @@ export async function onRequestPost({ request, env }) {
         .bind(keyHash)
         .first();
 
-      if (license) {
+      if (!license) {
+        // docs/SECURITE.md §3 : limitation de débit obligatoire sur
+        // l'activation de licence (Mission 23 Étape 1 -- "à appliquer dès la
+        // première ligne", pas seulement aux nouvelles routes). Comptée
+        // uniquement côté échec (clé inconnue/révoquée), jamais sur un
+        // succès : c'est la supposition brute-forcée qu'on veut freiner, pas
+        // la réactivation légitime répétée d'une clé déjà correcte -- qui
+        // n'est jamais un signal d'attaque, quelle que soit sa fréquence.
+        // Bucket par IP SEULE (pas IP+clé) : contrairement à une connexion où
+        // l'attaquant vise un compte précis, ici il change de clé à chaque
+        // essai -- un bucket par clé ne compterait jamais rien (même
+        // raisonnement que "inscription", qui n'a pas encore de compte à
+        // combiner avec l'IP). La réponse reste NOT_FOUND quoi qu'il arrive :
+        // déjà neutre, rien à changer dans `result`.
+        await checkRateLimit(env.DB, `activate:${clientIp(request)}`);
+      } else {
         const existing = await env.DB.prepare(
           "SELECT token FROM activations WHERE license_id = ? AND device_fingerprint = ?"
         )

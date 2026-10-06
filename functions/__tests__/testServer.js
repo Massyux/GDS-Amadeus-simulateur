@@ -32,10 +32,12 @@ export async function startTestServer() {
   const persistDir = mkdtempSync(path.join(tmpdir(), "gds-d1-test-"));
   const port = 8790 + Math.floor(Math.random() * 500);
 
-  execSync(
-    `${NPX} wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql`,
-    { cwd: REPO_ROOT, stdio: "ignore", shell: true }
-  );
+  for (const file of ["migrations/0001_init.sql", "migrations/0002_platform_users.sql"]) {
+    execSync(
+      `${NPX} wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=${file}`,
+      { cwd: REPO_ROOT, stdio: "ignore", shell: true }
+    );
+  }
 
   // shell:true is required on Windows to invoke npx.cmd at all (without it:
   // "spawn EINVAL") -- args are all internally-controlled constants (a
@@ -62,6 +64,23 @@ export async function startTestServer() {
 
   return {
     baseUrl,
+    // Every local/test request shares one fake client IP (see
+    // functions/_lib/rateLimit.js clientIp) -- a real deployment has one IP
+    // per visitor, but a test FILE making many register/login calls in a row
+    // would otherwise trip its own rate limit and start interfering with
+    // itself. Call this between tests that each need a full quota (Mission 23
+    // Étape 1's auth-api.test.js uses it in beforeEach).
+    //
+    // Goes through the running worker's own HTTP route (functions/api/dev/
+    // reset-rate-limits.js, gated by MAIL_DEV_ECHO) rather than spawning a
+    // second `wrangler d1 execute` against the same --persist-to while
+    // `wrangler pages dev` is already serving it: tried that first, it
+    // causes ECONNRESET on the live server (two processes touching the same
+    // SQLite file concurrently) -- unlike the migrations above, which only
+    // ever run *before* the server starts.
+    async resetRateLimits() {
+      await fetch(`${baseUrl}/api/dev/reset-rate-limits`, { method: "POST" });
+    },
     async stop() {
       if (process.platform === "win32" && child.pid) {
         try {
