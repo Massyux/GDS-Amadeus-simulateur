@@ -6,28 +6,29 @@
 
 ## En cours
 
-**Mission 14 (espace admin + licences par poste) — Étapes 1, 2, 4, 6 CLOSES ; Étape 3 (bascule
-production) volontairement non commencée.** Architecture changée en cours de route par
-l'architecte (07/07/2026) : Cloudflare D1 au lieu de Supabase — voir `missions/MISSION-14.md`
-§CHANGEMENT D'ARCHITECTURE. Tout développé et testé contre le **D1 local de Wrangler**, rien ne
-touche encore la production (conforme à l'ÉTAPE 0 de la mission). Tout poussé sur `main`, suites
-vertes (268 core, 9 data, 47 exercises, 51 web, 18 functions, 24 e2e + 4 e2e admin, lint et
-typecheck propres).
+**Mission 14 (espace admin + licences par poste) — CLOSE dans son ensemble, y compris l'Étape 3
+(bascule production).** Architecture changée en cours de route par l'architecte (07/07/2026) :
+Cloudflare D1 au lieu de Supabase — voir `missions/MISSION-14.md` §CHANGEMENT D'ARCHITECTURE.
+L'Étape 3 (bascule production) a en réalité été faite et vérifiée le 28/07/2026 (commits
+`ff6a652`, `40e8ed9`, `3b3398d`, `9430c9d` : `AccessGate.jsx` branché sur
+`/api/license/activate`/`/api/license/check`, 2 bugs de déploiement corrigés, bug de trim sur la
+phrase admin corrigé) — **cette section ne l'avait jamais enregistré**, ce qui a fait croire
+pendant plus de 2 mois (jusqu'à l'audit de reprise du 05/10/2026) que l'Étape 3 restait à faire.
+Reconfirmé vivant le 06/10/2026 après les 4 mois d'arrêt : l'architecte a vérifié que
+`/api/license/check` répond bien en production. **Leçon tirée** : le rituel de clôture
+(`missions/README.md` §Règles d'exécution point 3 : mettre à jour `TASKS.md`/`CLAUDE.md`/
+`PROJECT_MEMORY` avant de considérer une étape terminée) n'avait pas été appliqué à la fin de la
+session du 28/07/2026 — probablement parce que les commits de cette session-là corrigeaient des
+bugs découverts après coup plutôt que de clore une étape planifiée à l'avance. À refaire
+systématiquement même quand la session se termine sur des correctifs imprévus plutôt que sur le
+plan initial.
 
-**Reprise exacte** : le système de licences est complet et testé (schéma D1, 7 Cloudflare
-Functions, UI `/admin` avec auth, scripts) mais **pas encore branché sur le parcours client
-réel** — `AccessGate.jsx` utilise toujours `functions/api/verify-key.js`/`ACCESS_KEY_HASHES`
-(Mission 06). Deux choses restent, dans cet ordre :
-1. **Massy** (2 minutes, `README.md` §Administration) : créer la base D1 en production, la lier
-   au projet Pages, configurer `ADMIN_SECRET_HASH` (`node scripts/generate-admin-secret.mjs`),
-   redéployer, appliquer `migrations/0001_init.sql` en production.
-2. **Claude Code, une fois (1) confirmé par Massy** : migrer les clés pilote existantes avec
-   `scripts/migrate-keys-to-d1.mjs` (déjà écrit et testé contre D1 local, jamais exécuté en
-   production), brancher `AccessGate.jsx` sur `/api/license/activate` + `/api/license/check`,
-   vérifier en production, **puis seulement** retirer `ACCESS_KEY_HASHES`. Voir
-   `docs/LICENCES.md` §6 et `missions/MISSION-14.md` Étape 3.
-Protocole habituel pour la suite (non-régression après chaque commande, rituel de clôture à la
-fin de l'étape).
+**Seul reliquat réel restant** (confirmé par l'audit du 05/10/2026, traité dans cette même
+session) : retirer `functions/api/verify-key.js`, `ACCESS_KEY_HASHES` et
+`VITE_FALLBACK_KEY_HASHES`, devenus du code mort depuis la bascule du 28/07/2026 (plus aucune
+référence côté `apps/web/src`, confirmé par recherche) — gardés volontairement jusqu'ici « le
+temps de vérifier la bascule en production » (commit `ff6a652`), ce qui est désormais fait. Voir
+entrée datée ci-dessous pour le détail du retrait.
 
 **Reprise exacte** : Mission 08 (moteur d'exercices) est entièrement terminée (les 10 exercices
 jouables de bout en bout, vérifiés en local ET en production). Aucune reprise en attente sur

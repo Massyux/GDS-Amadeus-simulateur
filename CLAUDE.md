@@ -49,8 +49,10 @@ rédigées et auditées par l'architecte (Claude Cowork).
 - **Licences & admin (06/07/2026, exécuté en avance de phase le 27/07/2026)** : espace admin +
   verrouillage par poste, paliers dès le départ — individuel (1 poste) et école (2-4 postes),
   liaison clé↔appareils via **Cloudflare D1** (remplace Supabase, décision architecte
-  07/07/2026). Voir Phase 8 ci-dessous et `TASKS.md` pour l'état d'avancement réel (Étapes 1/2/4/6
-  closes, développées et testées en local ; bascule production = Étape 3, pas encore commencée).
+  07/07/2026). **Mission CLOSE dans son ensemble, y compris la bascule production (Étape 3),
+  faite et vérifiée le 28/07/2026** — reconfirmée vivante le 06/10/2026 après 4 mois d'arrêt
+  (audit de reprise, `AUDIT.md` : l'architecte a vérifié que `/api/license/check` répond en
+  production). Voir Phase 8 ci-dessous et `TASKS.md` pour le détail.
 - **Mode API réel AN/SN (05/07/2026)** : validé comme évolution v1.x — provider
   `providers/availability/amadeus.js` (API Amadeus Self-Service « Flight Availabilities
   Search », Massy a déjà une clé) derrière un proxy serverless gratuit (clé jamais côté client,
@@ -319,22 +321,25 @@ retiré du `.gitignore`, committé, CI basculée de `npm install` à `npm ci` + 
 - Hébergement du système complet
 - Lien à usage unique = un seul poste de travail, OU compte multi-postes (2 à 4 postes) selon
   le palier d'abonnement acheté (comme le vrai Amadeus)
-- [x] **Mission 14 (espace admin + licences par poste) exécutée en avance de phase, Étapes 1/2/4/6
-  closes (27/07/2026)** : anticipée par décision de Massy (06/07/2026) pour être prête avant la
-  vente large, indépendamment de l'ordre normal des phases. Architecture changée en cours de
-  route par l'architecte (07/07/2026) : **Cloudflare D1** au lieu de Supabase (même compte que
-  Pages, aucun tiers). Schéma (`migrations/0001_init.sql` : `licenses` + `activations`), 7
-  Cloudflare Pages Functions (`license/activate` avec limite de postes et messages différenciés,
-  `license/check` avec révocation instantanée, `admin/*` CRUD avec auth par phrase secrète —
-  `ADMIN_SECRET_HASH`, pas de Supabase Auth), UI `/admin` (`apps/web/src/admin/`, routage par
-  pathname sans dépendance routeur), empreinte appareil documentée avec ses limites honnêtes
-  (`docs/LICENCES.md`). Testé sur 3 couches (18 tests d'intégration contre un vrai `wrangler
-  pages dev` + D1 local, tests composants, 4 tests Playwright dédiés contre le même D1 local —
-  `vite preview` ne fait pas tourner les Functions). **Tout développé et vérifié en local
-  uniquement** (ÉTAPE 0 de la mission) : la bascule production (créer la base D1 réelle, migrer
-  les clés pilote, brancher `AccessGate.jsx`, retirer `ACCESS_KEY_HASHES`) reste à faire — 4
-  étapes manuelles pour Massy documentées dans `README.md` §Administration, puis une session
-  Claude Code pour la suite. Détail complet dans `TASKS.md`.
+- [x] **Mission 14 (espace admin + licences par poste) CLOSE dans son ensemble** : anticipée par
+  décision de Massy (06/07/2026) pour être prête avant la vente large, indépendamment de l'ordre
+  normal des phases. Architecture changée en cours de route par l'architecte (07/07/2026) :
+  **Cloudflare D1** au lieu de Supabase (même compte que Pages, aucun tiers). Schéma
+  (`migrations/0001_init.sql` : `licenses` + `activations`), 7 Cloudflare Pages Functions
+  (`license/activate` avec limite de postes et messages différenciés, `license/check` avec
+  révocation instantanée, `admin/*` CRUD avec auth par phrase secrète — `ADMIN_SECRET_HASH`, pas
+  de Supabase Auth), UI `/admin` (`apps/web/src/admin/`, routage par pathname sans dépendance
+  routeur), empreinte appareil documentée avec ses limites honnêtes (`docs/LICENCES.md`). Testé
+  sur 3 couches (18 tests d'intégration contre un vrai `wrangler pages dev` + D1 local, tests
+  composants, 4 tests Playwright dédiés contre le même D1 local — `vite preview` ne fait pas
+  tourner les Functions). **Bascule production (Étape 3) faite et vérifiée le 28/07/2026** :
+  `AccessGate.jsx` branché sur `/api/license/activate`/`/api/license/check`, aucune clé pilote à
+  migrer (Mission 07 Partie B jamais lancée à cette date), 2 bugs de déploiement corrigés le même
+  jour. **Reconfirmée vivante le 06/10/2026** après 4 mois d'arrêt (audit de reprise, `AUDIT.md` :
+  `/api/license/check` répond toujours en production). Le reliquat trouvé par cet audit (code
+  mort `verify-key.js`/`ACCESS_KEY_HASHES`/`VITE_FALLBACK_KEY_HASHES`, gardé volontairement « le
+  temps de vérifier la bascule ») a été retiré le 06/10/2026 — Mission 14 n'a donc plus aucun
+  reliquat. Détail complet dans `TASKS.md`.
 
 Règle stricte : ne jamais démarrer une phase avant que la précédente soit testée et mergée. Phases
 5 à 8 ne commencent pas avant que la Phase 1 (cœur niveau 1-2) soit 100% stable.

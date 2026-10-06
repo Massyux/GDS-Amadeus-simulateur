@@ -688,14 +688,31 @@ Interdit :
 - Tests sur 3 couches : 18 tests d'intégration Functions, tests composants Vitest, 4 tests
   Playwright dédiés contre un vrai `wrangler pages dev` (config séparée de la suite e2e
   principale, car `vite preview` ne fait pas tourner les Cloudflare Functions).
-- **Étape 3 (bascule production) volontairement non commencée** : l'ÉTAPE 0 de la mission
-  demande explicitement de tout développer et tester en local avant de toucher à la production.
-  Script de migration des clés pilote (`scripts/migrate-keys-to-d1.mjs`) écrit et testé contre D1
-  local, jamais exécuté contre la production. `README.md` §Administration documente les 4 étapes
-  manuelles exactes pour Massy (créer la base D1, la lier au projet Pages, configurer
+- **Étape 3 (bascule production) non commencée à cette date** : l'ÉTAPE 0 de la mission demande
+  explicitement de tout développer et tester en local avant de toucher à la production. Script de
+  migration des clés pilote (`scripts/migrate-keys-to-d1.mjs`) écrit et testé contre D1 local, pas
+  encore exécuté contre la production à ce stade. `README.md` §Administration documente les 4
+  étapes manuelles exactes pour Massy (créer la base D1, la lier au projet Pages, configurer
   `ADMIN_SECRET_HASH`, appliquer la migration en production).
 - 268 core / 9 data / 47 exercises / 51 web / **18 functions (nouveau)** / 24 e2e / **4 e2e admin
   (nouveau)**, lint et typecheck propres. Détail complet dans `TASKS.md`.
+
+### 28/07/2026 — Mission 14 Étape 3 (bascule production) — faite le même mois, jamais enregistrée ici
+Les 4 étapes manuelles de Massy (créer la base D1, lier le binding, configurer
+`ADMIN_SECRET_HASH`, appliquer la migration) ont été faites, puis `AccessGate.jsx`/`accessKey.js`
+basculés sur `/api/license/activate`/`/api/license/check` (commit `ff6a652`) ; aucune clé pilote à
+migrer (`keys/*.csv` ne contenait que l'en-tête à ce moment — Mission 07 Partie B jamais
+lancée) ; 2 bugs de déploiement trouvés et corrigés le même jour (`wrangler.jsonc` lu en
+production malgré son commentaire affirmant le contraire ; règle SPA `_redirects` rejetée par
+Cloudflare, remplacée par un `404.html` natif — commit `40e8ed9`) ; bug de `trim()` manquant sur
+la phrase admin corrigé (commit `3b3398d`) ; `README.md` clarifié sur les deux écrans de connexion
+distincts (commit `9430c9d`). **Mission 14 était donc déjà close dans son ensemble fin
+juillet 2026** — mais ce paragraphe et le §10 ci-dessous n'ont jamais été mis à jour pour le dire,
+contrairement à la règle de clôture de `missions/README.md`. Corrigé ici le 06/10/2026, à l'audit
+de reprise après 4 mois d'arrêt (`AUDIT.md`), après que l'architecte a reconfirmé en direct que
+`/api/license/check` répond toujours en production. Seul reliquat retrouvé par cet audit : le
+retrait de `verify-key.js`/`ACCESS_KEY_HASHES`/`VITE_FALLBACK_KEY_HASHES`, resté en code mort —
+traité dans la même session (voir entrée du 06/10/2026 ci-dessous).
 
 ---
 
@@ -704,18 +721,21 @@ Missions 01 à 06, 15, 16, 17 réduite, 13, 19 réduite sont closes, **Mission 0
 (préparation technique du pilote) est close** mais **Mission 07 (le pilote lui-même) est
 reportée par décision de Massy** (07/07/2026 — Partie B, checklist opérationnelle, en attente),
 **Mission 08 est CLOSE dans son ensemble** (les 4 étapes — moteur d'exercices + contenu complet
-1-10 + UI + rituel de clôture final, 25/07/2026), et **Mission 14 (espace admin + licences) a ses
-Étapes 1/2/4/6 closes** (27/07/2026 — système complet et testé en local, voir §9 et `TASKS.md`).
+1-10 + UI + rituel de clôture final, 25/07/2026), et **Mission 14 (espace admin + licences) est
+CLOSE dans son ensemble, y compris l'Étape 3 (bascule production), faite et vérifiée dès le
+28/07/2026** (voir §9 — la bascule avait bien eu lieu, seul ce document ne le disait pas encore ;
+corrigé le 06/10/2026 lors de l'audit de reprise après 4 mois d'arrêt, après reconfirmation en
+direct par l'architecte que `/api/license/check` répond toujours en production).
 **Jalon v1.0 atteint**, **Phase 3 close**, **chaîne d'implémentation v1.x TERMINÉE**.
-Prochaine étape : **Mission 14, Étape 3 (bascule production)** — bloquée sur 4 actions manuelles
-de Massy dans son dashboard Cloudflare (`README.md` §Administration : créer la base D1, la lier
-au projet Pages, configurer `ADMIN_SECRET_HASH`, appliquer la migration en production). Une fois
-confirmées : migrer les clés pilote existantes, brancher `AccessGate.jsx` sur le nouveau système,
-vérifier en production, puis retirer `ACCESS_KEY_HASHES`. En parallèle ou ensuite, candidats déjà
-identifiés dans `missions/README.md` : Mission 09 (quiz/notation/progression, Phase 6 partie 2,
-esquisse), Mission 10 (assistant IA pédagogique, Phase 7, esquisse), ou reprise de Mission 07
-(pilote) si Massy le décide. Points notables en Backlog : interaction FXP/TTP avec un segment
-`HL`/`UC` non confirmé (Mission 13, non demandée, à trancher si besoin).
+Prochaine étape : le retrait du code mort `verify-key.js`/`ACCESS_KEY_HASHES`/
+`VITE_FALLBACK_KEY_HASHES` (reliquat trouvé par l'audit du 05/10/2026, traité le 06/10/2026 dans
+la même session — voir entrée datée) referme complètement Mission 14. Au-delà, candidats déjà
+identifiés dans `missions/README.md`, à trancher avec Massy : Mission 09
+(quiz/notation/progression, Phase 6 partie 2, esquisse), Mission 10 (assistant IA pédagogique,
+Phase 7, esquisse), ou reprise de Mission 07 (pilote, Partie B — recrutement de testeurs,
+maintenant que le système de licences est confirmé vivant en production). Points notables en
+Backlog : interaction FXP/TTP avec un segment `HL`/`UC` non confirmé (Mission 13, non demandée, à
+trancher si besoin).
 
 ---
 
