@@ -39,6 +39,14 @@ rédigées et auditées par l'architecte (Claude Cowork).
   (SQLite gratuit, même compte que Pages, binding natif dans les Functions, aucun compte tiers
   à créer ; auth admin par phrase secrète hachée en variable d'env). Paiement Algérie :
   Chargily Pay (CIB/EDAHABIA)
+- **Reprise du 06/10/2026 — le produit N'EST PAS fini** (correction explicite de Massy).
+  Trois chantiers manquants, dans cet ordre : **23** plateforme e-learning sur mesure (le
+  simulateur devient un cours parmi d'autres, Massy doit pouvoir ajouter des formations sans
+  développeur) → **22** paiement Chargily + création/envoi automatique de la clé par e-mail
+  (zéro étape manuelle ; limite connue : pas de domaine, donc envoi réel bloqué jusqu'à
+  l'achat d'un domaine) → **21** fidélité des réponses écran (AN, RT, FXP/TQT, TTP — les
+  affichages ne sont pas identiques au vrai Amadeus). Plateforme = sur mesure sur la stack
+  actuelle (Cloudflare + D1), décision Massy.
 - **Chaîne d'implémentation (06/07/2026)** : décision Massy — implémenter TOUTES les commandes
   manquantes (docs/COMMANDES-MANQUANTES.md) AVANT le pilote. Ordre : missions 15→16→17→13→18→
   19→20 en enchaînement continu avec non-régression après chaque commande (protocole dans

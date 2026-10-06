@@ -31,8 +31,13 @@
 | 07 | Lancement pilote + traitement des retours | Phase 4 | détaillée — **REPORTÉE (décision Massy 07/07/2026)**, à relancer quand il le décidera |
 | **→ 14** | **Espace admin + licences par poste** — **PROCHAINE (décision Massy 07/07 : 14 puis 09)** (paliers 1 / 2-4 postes, Supabase) — après le pilote, avant la vente large | Phase 8 anticipée | détaillée |
 | 08 | Moteur d'exercices guidés (spec → moteur → contenu) | Phase 6 | ✅ close (07/07/2026, 10 exercices en production) |
-| 09 | Quiz, notation, progression | Phase 6 | esquisse |
-| 10 | Assistant IA pédagogique intégré | Phase 7 | esquisse |
+| **→ 23** | **Plateforme e-learning sur mesure** (comptes, formations, leçons, progression, back-office) | Phase 6 | **PROCHAINE — 5-8 sessions** |
+| **22** | **Paiement Chargily + licence 100 % automatique par e-mail** | Phase 8 | détaillée — après la 23 |
+| **24** | **Quiz, notation, tableau de bord étudiant** *(ex-mission 09, renumérotée 06/10)* | Phase 6 | détaillée — après la 22 |
+| **25** | **Assistant IA pédagogique** *(ex-mission 10, renumérotée 06/10)* | Phase 7 | détaillée — après la 24 |
+| **21** | **Correction des schémas de réponse** — session dirigée par Massy, écran par écran | Phase 5 | **en dernier, NE PAS démarrer seul** |
+| ~~09~~ | → **renumérotée en MISSION-24** (06/10/2026) | Phase 6 | voir ligne 24 |
+| ~~10~~ | → **renumérotée en MISSION-25** (06/10/2026) | Phase 7 | voir ligne 25 |
 | 11 | Site de vente + licences par poste | Phase 8 | esquisse |
 | 12 | Mode « données réelles » AN/SN via API Amadeus (provider + proxy serverless) | v1.x | esquisse |
 | 13 | Liste d'attente réaliste HL/UC/KK/KL + ETK/ERK (confirmé Massy, mission 03) | v1.x | esquisse |
