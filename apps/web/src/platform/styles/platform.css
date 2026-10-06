@@ -1,0 +1,457 @@
+/* Plateforme de formation — feuille de style unique (Mission 23, Étape 0).
+ *
+ * Toutes les valeurs viennent de docs/DESIGN-SYSTEM.md, figé par l'architecte
+ * le 06/10/2026 : ce ne sont pas des choix de cette session, elles sont
+ * copiées telles quelles. Scopée sous .platform-root (jamais sur :root ou
+ * body globalement) pour ne jamais affecter le terminal, l'onboarding ou
+ * l'admin existants, qui vivent dans apps/web/src/index.css et doivent
+ * rester strictement identiques (CLAUDE.md, CONSTITUTION §3).
+ *
+ * N'anime que opacity/transform (DESIGN-SYSTEM §6) ; prefers-reduced-motion
+ * respecté en bas de fichier.
+ */
+
+.platform-root {
+  /* Fonds */
+  --bg-base: #0B0F14;
+  --bg-surface: #121821;
+  --bg-elevated: #1A2230;
+  --bg-inset: #080B0F;
+
+  /* Bordures */
+  --border: #243040;
+  --border-strong: #35455A;
+
+  /* Texte */
+  --text-primary: #E6EDF3;
+  --text-secondary: #9FB0C0;
+  --text-muted: #6B7E90;
+  --text-inverse: #0B0F14;
+
+  /* Accent (unique dans toute l'interface — DESIGN-SYSTEM §2) */
+  --accent: #34D399;
+  --accent-hover: #2BB885;
+  --accent-subtle: #34D3991A;
+
+  /* États — déclinaisons "subtle" (10% alpha) dérivées par le même motif
+     que --accent-subtle ci-dessus, pour les badges warning/danger/info
+     (DESIGN-SYSTEM §2 ne fixe que les couleurs pleines ; la déclinaison
+     10% est une extension mécanique, pas une nouvelle décision). */
+  --success: #34D399;
+  --success-subtle: #34D3991A;
+  --warning: #FBBF24;
+  --warning-subtle: #FBBF241A;
+  --danger: #F87171;
+  --danger-subtle: #F871711A;
+  --info: #60A5FA;
+  --info-subtle: #60A5FA1A;
+
+  /* Typographie */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 25px;
+  --text-2xl: 31px;
+  --text-3xl: 39px;
+
+  /* Espacement (échelle 4px, DESIGN-SYSTEM §4) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --motion-duration: 150ms;
+  --motion-duration-page: 250ms;
+  --motion-ease: ease-out;
+
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.platform-root * {
+  box-sizing: border-box;
+}
+
+.platform-root h1,
+.platform-root h2,
+.platform-root h3 {
+  line-height: 1.2;
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+}
+
+.platform-root p {
+  margin: 0 0 var(--space-3);
+}
+
+.platform-root :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Gabarit de page ---------- */
+
+.pf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 56px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.pf-topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 56px;
+  padding: 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pf-topbar-brand {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.pf-topbar-nav--desktop {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.pf-topbar-menu-btn {
+  display: none;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.pf-topbar-menu-btn:hover {
+  background: var(--bg-elevated);
+}
+
+.pf-topbar-nav--mobile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.pf-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-5);
+}
+
+@media (max-width: 767px) {
+  .pf-topbar-nav--desktop {
+    display: none;
+  }
+
+  .pf-topbar-menu-btn {
+    display: flex;
+  }
+}
+
+@media (max-width: 639px) {
+  .pf-topbar-inner,
+  .pf-container {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+}
+
+/* ---------- Bouton ---------- */
+
+.pf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease),
+    color var(--motion-duration) var(--motion-ease);
+}
+
+.pf-btn--compact {
+  height: 36px;
+  padding: 8px 16px;
+}
+
+.pf-btn--primary {
+  background: var(--accent);
+  color: var(--text-inverse);
+}
+
+.pf-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.pf-btn--secondary {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.pf-btn--secondary:hover:not(:disabled) {
+  background: var(--bg-elevated);
+}
+
+.pf-btn--discreet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+  height: auto;
+  padding: var(--space-1) 2px;
+}
+
+.pf-btn--discreet:hover:not(:disabled) {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.pf-btn--danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.pf-btn--danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: var(--text-inverse);
+}
+
+.pf-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Champ de saisie ---------- */
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pf-field-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.pf-field-input {
+  height: 40px;
+  padding: 0 var(--space-3);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  transition: border-color var(--motion-duration) var(--motion-ease);
+}
+
+.pf-field-input::placeholder {
+  color: var(--text-muted);
+}
+
+.pf-field-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.pf-field-input--error {
+  border-color: var(--danger);
+}
+
+.pf-field-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pf-field-error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+  margin: 0;
+}
+
+.pf-field-hint {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---------- Carte ---------- */
+
+.pf-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: background-color var(--motion-duration) var(--motion-ease);
+}
+
+.pf-card--hoverable:hover {
+  background: var(--bg-elevated);
+}
+
+/* ---------- Badge ---------- */
+
+.pf-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.pf-badge--warning {
+  background: var(--warning-subtle);
+  color: var(--warning);
+}
+
+.pf-badge--danger {
+  background: var(--danger-subtle);
+  color: var(--danger);
+}
+
+.pf-badge--info {
+  background: var(--info-subtle);
+  color: var(--info);
+}
+
+.pf-badge--neutral {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+/* ---------- Barre de progression ---------- */
+
+.pf-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pf-progress-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.pf-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: transform var(--motion-duration) var(--motion-ease);
+  transform-origin: left;
+  width: 100%;
+}
+
+.pf-progress-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ---------- État vide ---------- */
+
+.pf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.pf-empty-icon {
+  font-size: var(--text-2xl);
+  color: var(--text-muted);
+}
+
+.pf-empty-message {
+  margin: 0;
+  font-size: var(--text-base);
+  max-width: 68ch;
+}
+
+/* ---------- Squelette de chargement ---------- */
+/* N'anime que `transform` (via ::after), jamais background-position/width —
+   DESIGN-SYSTEM §6 interdit toute propriété hors opacity/transform. */
+
+.pf-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.pf-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: pf-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes pf-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------- Mouvement réduit (DESIGN-SYSTEM §6, obligatoire) ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-root *,
+  .platform-root *::after,
+  .platform-root *::before {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -6,6 +6,18 @@
 
 ## En cours
 
+**Mission 23 (plateforme e-learning) — EN COURS, mode autonome (décision Massy 06/10/2026).**
+Premier des trois chantiers restants (ordre choisi par Massy : 23 Plateforme → 22 Auto-licence
+→ 21 Fidélité), 5-8 sessions estimées. Référence complète : `missions/MISSION-23.md` +
+`docs/DESIGN-SYSTEM.md` (valeurs figées) + `docs/SECURITE.md` (exigences figées) +
+`docs/DESIGN-PSYCHOLOGIE.md`/`docs/ETUDE-PLATEFORMES-ELEARNING.md` (le pourquoi). **Rien n'est
+déployé en production** pendant tout le chantier (règle explicite du mode autonome) — la
+production actuelle (simulateur + accès par clé) continue de fonctionner à l'identique.
+
+**Étape 0 (fondations visuelles + sécurité) CLOSE (06/10/2026)** — voir l'entrée datée
+ci-dessous pour le détail complet. **Reprise exacte pour la suite** : Étape 1 (modèle de données
+D1 + authentification étudiant, migration `0002_*.sql`, ne jamais toucher `0001`).
+
 **Mission 14 (espace admin + licences par poste) — CLOSE dans son ensemble, y compris l'Étape 3
 (bascule production).** Architecture changée en cours de route par l'architecte (07/07/2026) :
 Cloudflare D1 au lieu de Supabase — voir `missions/MISSION-14.md` §CHANGEMENT D'ARCHITECTURE.
@@ -31,9 +43,10 @@ le détail complet (retrait du code mort, fix de la suite e2e admin, durcissemen
 
 **Reprise exacte** : Mission 08 (moteur d'exercices) est entièrement terminée (les 10 exercices
 jouables de bout en bout, vérifiés en local ET en production). Aucune reprise en attente sur
-cette mission. Prochaine mission après Mission 14 : Mission 09 (quiz/notation/progression, Phase
-6 partie 2, esquisse) ou Mission 10 (assistant IA pédagogique, Phase 7, esquisse), à définir avec
-l'architecte/Massy.
+cette mission. Prochaine mission après Mission 14 : **tranchée depuis — Mission 23 (ci-dessus),
+puis 22, puis 21** (décision Massy 06/10/2026, voir `CLAUDE.md`) ; Mission 09
+(quiz/notation/progression) devient Mission 24 dans cette nouvelle numérotation, Mission 10
+(assistant IA) devient Mission 25 — les deux après Mission 23.
 
 **Reprise exacte** : Partie A de Mission 07 est terminée côté code. La suite (Partie B) est une
 checklist **opérationnelle pour Massy** (générer les clés, les configurer sur Cloudflare,
@@ -42,7 +55,110 @@ Prochaine session Claude Code : soit une correction de bug remontée par un pilo
 corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habituel), soit la
 prochaine mission une fois le pilote conclu.
 
+## À valider par Massy
+
+> Section exigée par le mode autonome de Mission 23 (`missions/MISSION-23.md` §MODE AUTONOME,
+> règle 2) : une question vraiment sans réponse dans `docs/DESIGN-SYSTEM.md`/`docs/SECURITE.md`
+> est tranchée ici par la solution la plus simple et la plus réversible, consignée, et la session
+> continue sans attendre. Rien ci-dessous ne bloque la suite — à revoir quand Massy a un moment.
+
+- **Seuil de bascule menu mobile (Étape 0, 06/10/2026)** : DESIGN-SYSTEM §5 dit « navigation...
+  en mobile, menu latéral coulissant » sans préciser à partir de quelle largeur. Choisi 768px
+  (le point de rupture nommé « tablette ») plutôt que 640px : au-dessus de 768px, la nav
+  horizontale a la place ; en dessous, le menu ☰. Un seul nombre à changer dans
+  `apps/web/src/platform/styles/platform.css` (`@media (max-width: 767px)`) si Massy préfère
+  640px.
+- **Mécanique de confirmation du bouton danger (Étape 0, 06/10/2026)** : DESIGN-SYSTEM §5 exige
+  une confirmation obligatoire sans dire comment. Choisi le plus simple et réversible : un
+  deuxième clic sur le même bouton, qui change de libellé (« Supprimer » → « Confirmer la
+  suppression ? »), pas une modale. Revenir à une modale plus tard ne changerait que l'intérieur
+  de `apps/web/src/platform/ui/Button.jsx` (`variant="danger"` + `confirmLabel`), pas l'API vue
+  par les futurs appelants (Étape 4, back-office).
+
 ## Fait (par session, datée)
+
+### 06/10/2026 — Mission 23 Étape 0 (fondations visuelles + sécurité, mode autonome)
+**Étape 0 CLOSE.** Socle posé pour les 5 étapes suivantes, sans toucher au métier existant
+(terminal, onboarding, admin — tous vérifiés inchangés, voir suites ci-dessous).
+
+- **Jetons CSS** (`apps/web/src/platform/styles/platform.css`) : toutes les valeurs de
+  `docs/DESIGN-SYSTEM.md` §2-4/6/7 (couleurs, typo, échelle d'espacement 4px, rayons, durées de
+  transition) copiées telles quelles en variables CSS, **scopées sous `.platform-root`** plutôt
+  que sur `:root`/`body` globalement — décision technique (CONSTITUTION §8, pas une question de
+  design) : `apps/web/src/index.css` fixe déjà `:root`/`body` pour le terminal/onboarding/admin
+  (fond bleu clair, police Courier) ; les redéfinir globalement aurait fait fuir ces valeurs dans
+  tout l'existant. Les deux feuilles ne se touchent jamais.
+- **8 composants de base** (`apps/web/src/platform/ui/`) : `Button` (4 variantes, le bouton
+  danger exige un deuxième clic de confirmation — voir § À valider par Massy), `Field` (libellé
+  réel, erreur sous le champ qui dit quoi faire, `aria-describedby`/`aria-invalid`), `Card`,
+  `Badge` (5 tons, dont warning/danger/info/neutral ajoutés par extension mécanique du motif
+  10%-alpha déjà fixé pour `--accent-subtle` — pas une nouvelle décision), `ProgressBar`
+  (toujours avec un texte, remplissage animé en `transform: scaleX()` — jamais `width`),
+  `EmptyState`, `Skeleton` (shimmer en `transform: translateX()` via un pseudo-élément, pas
+  `background-position`, pour respecter strictement DESIGN-SYSTEM §6 « opacity/transform
+  uniquement, jamais … d'autre propriété »), `PlatformLayout` (barre 56px, conteneur 1200px,
+  menu mobile coulissant sous 768px — seuil consigné en § À valider par Massy).
+- **Gabarit + page de démonstration** : `PlatformLayout` + `StyleguidePage.jsx`, route
+  `/styleguide` (jamais liée depuis l'accueil, même convention que `/admin` : test de
+  `pathname` dans `main.jsx`), **chargée en `import()` dynamique** (DESIGN-SYSTEM §7 : « chargé à
+  la demande ») pour ne jamais alourdir le bundle visiteur par défaut.
+- **`_headers`** (`apps/web/public/_headers`, copié à la racine de `dist/` par Vite) : les 5
+  en-têtes de `docs/SECURITE.md` §4 mot pour mot (CSP, HSTS, X-Content-Type-Options,
+  Referrer-Policy, Permissions-Policy). **Vérifié servi réellement** (pas juste présent dans
+  `dist/`) par un nouveau test Playwright (`apps/web/e2e/security-headers.spec.js`) contre un
+  vrai `wrangler pages dev` — la meilleure preuve possible sans déployer (interdit pendant tout
+  le chantier).
+- **Budgets de performance mesurés** (DESIGN-SYSTEM §7), pas supposés :
+  - CSS de la plateforme (tous les composants + jetons) : **1,85 Ko gzip** — budget 25 Ko, large
+    marge pour les pages à venir.
+  - JS de `/styleguide` (chargé à la demande, séparé du bundle visiteur par défaut) : **2,33 Ko
+    gzip** — budget 180 Ko, confirme que le découpage par `import()` fonctionne bien.
+  - CLS mesuré (pas supposé) via un test Playwright dédié qui lit les vraies entrées
+    `layout-shift` du navigateur après chargement de `/styleguide` : **< 0,05**, budget respecté
+    (squelettes et composants dimensionnés explicitement, aucune image).
+  - **LCP/INP non mesurés ici, sciemment** : ces deux budgets dépendent de contenu réel et de
+    conditions réseau (« 4G lente »), qu'Étape 0 n'a pas encore (page de démo interne, zéro appel
+    réseau métier) — les mesurer maintenant produirait un chiffre sans signification. À mesurer
+    avec un vrai Lighthouse/WebPageTest une fois l'Étape 2 (catalogue, lecteur de leçon) en
+    place, sur du contenu réel.
+  - **Point de vigilance identifié, volontairement non corrigé ici** : le bundle visiteur par
+    défaut actuel (`index.js`, terminal + onboarding + exercices + admin, tous préexistants)
+    pèse **95 Ko gzip** à lui seul — déjà sous le budget "plateforme hors simulateur" de 180 Ko,
+    mais seulement parce que **rien de la plateforme n'y est encore accroché**. Le terminal
+    (`packages/core`) et le moteur d'exercices n'y sont eux-mêmes pas isolés en chunk séparé
+    (ils sont déjà dans ce même bundle aujourd'hui, avant même Mission 23). DESIGN-SYSTEM §7
+    exige que « le simulateur et le moteur d'exercices soient chargés à la demande » : respecté
+    pour tout le code *ajouté* par Étape 0, mais le *découpage de l'existant* (sortir
+    `Terminal.jsx`/`ExercisePanel.jsx` du bundle de `App.jsx` avec `React.lazy`) n'a pas été fait
+    ici — Étape 0 dit explicitement « rien de métier ici », et toucher à `App.jsx`/`main.jsx` au-
+    delà de la route `/styleguide` aurait été un changement sur le chemin critique du produit en
+    production (risque de régression sur l'accès par clé/le terminal) sans bénéfice avant que
+    l'accueil de la plateforme (Étape 2) ne remplace réellement `Onboarding.jsx` comme première
+    page vue par un visiteur. Décision : traiter ce découpage **en Étape 2**, quand il aura un
+    effet mesurable réel (la page d'accueil de la plateforme ne doit pas tirer le terminal), pas
+    maintenant où ça n'aurait été qu'un risque sans gain. Noté ici pour ne pas l'oublier.
+- **Tests** : 17 nouveaux tests Vitest (`apps/web/src/platform/ui/platform-ui.test.jsx` — tous
+  les composants, tous leurs états : confirmation danger, erreurs de champ, clamp de la barre de
+  progression, états vides avec/sans action) + 4 nouveaux tests Playwright (`styleguide.spec.js`
+  + `security-headers.spec.js`). **Zéro changement sur le terminal, l'onboarding, l'admin** —
+  confirmé en relançant les 6 suites + les deux e2e en entier, pas seulement les nouveaux tests.
+- 268 core / 9 data / 47 exercises / **66 web (+17)** / 19 functions / **30 e2e (+6)** / 4 e2e
+  admin, lint et typecheck propres, build vérifié (`npm run build:web`). **Checklist sécurité de
+  fin d'étape** (`docs/SECURITE.md` §9) : `npm audit` toujours à 0 vulnérabilité (voir session
+  précédente) ; aucun secret dans le bundle (aucun secret introduit par cette étape — pas encore
+  de backend auth/paiement) ; les deux items restants de la checklist (« un étudiant ne peut pas
+  accéder à un cours non acheté », « un non-admin ne peut atteindre aucune route `/api/admin/*` »)
+  ne s'appliquent pas encore — rien de métier n'existe avant l'Étape 1. En-têtes de sécurité
+  vérifiés servis (ci-dessus). **Rien déployé en production** (règle du mode autonome) : tout
+  vérifié en local/CI uniquement.
+- `CLAUDE.md`/`missions/README.md` (éditions de l'architecte : contexte Missions 21-25,
+  renumérotation 09→24/10→25) et les 5 nouveaux documents de cadrage
+  (`missions/MISSION-21.md` à `25.md`, `docs/DESIGN-SYSTEM.md`, `docs/SECURITE.md`,
+  `docs/DESIGN-PSYCHOLOGIE.md`, `docs/ETUDE-PLATEFORMES-ELEARNING.md`) étaient présents dans
+  l'arbre de travail mais pas encore commités au début de cette session — vérifiés stables
+  (identiques à trois relectures espacées dans la session) avant d'être commités ici avec le
+  travail d'Étape 0, même pattern que le commit `d29feda` (Mission 14) qui avait déjà inclus des
+  éditions externes de l'architecte présentes dans l'arbre de travail.
 
 ### 06/10/2026 — Traitement des conclusions de l'audit de reprise (AUDIT.md, 05/10/2026)
 Session consacrée à traiter, dans l'ordre demandé par Massy, les trois catégories de constats de

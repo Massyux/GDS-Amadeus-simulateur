@@ -1,0 +1,13 @@
+# En-têtes de sécurité (docs/SECURITE.md §4, figés par l'architecte le 06/10/2026).
+# Servi par Cloudflare Pages pour toute route (apps/web/public/* est copié tel
+# quel à la racine de dist/ par Vite). `style-src 'self' 'unsafe-inline'` est
+# nécessaire : les composants de apps/web/src/platform/ui utilisent des
+# styles inline (barre de progression, squelettes) plutôt qu'une librairie
+# CSS-in-JS supplémentaire (DESIGN-SYSTEM §7 : aucune dépendance sans
+# justification). Toute autre exception à la CSP doit être justifiée ici.
+/*
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
