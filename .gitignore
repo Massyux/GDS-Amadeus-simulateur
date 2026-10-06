@@ -6,4 +6,15 @@ apps/web/playwright-report/
 apps/web/dist/
 keys/
 .wrangler/
+
+# Secrets — jamais dans ce dépôt (il est public).
+# Filet de sécurité large : un secret mal nommé ne doit pas pouvoir être commité par accident.
 .dev.vars
+.dev.vars.*
+.env
+.env.*
+*secret*
+*-secret
+*.key
+*.pem
+pharase-secret
