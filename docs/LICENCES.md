@@ -76,6 +76,7 @@ pour un scénario à la fois improbable et sans conséquence grave.
   reste utilisable pour une future vague de clés, mais aucune clé pilote n'avait encore été
   générée/distribuée au moment de la bascule (Mission 07 Partie B jamais lancée, `keys/` ne
   contenait qu'un CSV vide).
-- **Reste à faire** : nettoyage final de `functions/api/verify-key.js`, `ACCESS_KEY_HASHES` et
-  `scripts/generate-keys.mjs` une fois la vérification en production confirmée (voir `TASKS.md`)
-  — volontairement gardés en place, inutilisés, jusque-là plutôt que retirés avant vérification.
+- **Nettoyage final fait (06/10/2026)** : `functions/api/verify-key.js`, la variable
+  `ACCESS_KEY_HASHES` et `scripts/generate-keys.mjs` ont été retirés une fois la bascule
+  reconfirmée vivante en production (l'audit de reprise du 05/10/2026 avait confirmé qu'ils
+  n'étaient plus appelés par aucun code — voir `AUDIT.md` et `TASKS.md`).

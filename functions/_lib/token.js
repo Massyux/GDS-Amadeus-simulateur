@@ -12,6 +12,8 @@
 // in D1 -- a signature alone can prove "the server issued this," never
 // "this is still valid right now."
 
+import { constantTimeEqual } from "./hash.js";
+
 function base64url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -60,12 +62,7 @@ export async function verifyToken(token, secret) {
     );
     const expectedB64 = base64url(new Uint8Array(expectedSignature));
 
-    if (signatureB64.length !== expectedB64.length) return null;
-    let diff = 0;
-    for (let i = 0; i < signatureB64.length; i += 1) {
-      diff |= signatureB64.charCodeAt(i) ^ expectedB64.charCodeAt(i);
-    }
-    if (diff !== 0) return null;
+    if (!constantTimeEqual(signatureB64, expectedB64)) return null;
 
     const payload = JSON.parse(new TextDecoder().decode(base64urlDecode(payloadB64)));
     if (typeof payload.exp === "number" && Date.now() > payload.exp) return null;

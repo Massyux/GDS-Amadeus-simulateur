@@ -23,12 +23,11 @@ bugs découverts après coup plutôt que de clore une étape planifiée à l'ava
 systématiquement même quand la session se termine sur des correctifs imprévus plutôt que sur le
 plan initial.
 
-**Seul reliquat réel restant** (confirmé par l'audit du 05/10/2026, traité dans cette même
-session) : retirer `functions/api/verify-key.js`, `ACCESS_KEY_HASHES` et
-`VITE_FALLBACK_KEY_HASHES`, devenus du code mort depuis la bascule du 28/07/2026 (plus aucune
-référence côté `apps/web/src`, confirmé par recherche) — gardés volontairement jusqu'ici « le
-temps de vérifier la bascule en production » (commit `ff6a652`), ce qui est désormais fait. Voir
-entrée datée ci-dessous pour le détail du retrait.
+**Mission 14 n'a plus aucun reliquat** : le seul qui restait (code mort
+`verify-key.js`/`ACCESS_KEY_HASHES`/`VITE_FALLBACK_KEY_HASHES`, trouvé par l'audit du
+05/10/2026) a été retiré le 06/10/2026 dans la même session — voir l'entrée datée ci-dessous pour
+le détail complet (retrait du code mort, fix de la suite e2e admin, durcissement de
+`admin/login.js`, `npm audit fix`).
 
 **Reprise exacte** : Mission 08 (moteur d'exercices) est entièrement terminée (les 10 exercices
 jouables de bout en bout, vérifiés en local ET en production). Aucune reprise en attente sur
@@ -44,6 +43,64 @@ corrective décrite dans `MISSION-07.md`, traiter immédiatement, protocole habi
 prochaine mission une fois le pilote conclu.
 
 ## Fait (par session, datée)
+
+### 06/10/2026 — Traitement des conclusions de l'audit de reprise (AUDIT.md, 05/10/2026)
+Session consacrée à traiter, dans l'ordre demandé par Massy, les trois catégories de constats de
+l'audit de reprise après 4 mois d'arrêt.
+
+1. **Rituel de clôture Mission 14** : `TASKS.md`, `PROJECT_MEMORY_SIMULATEUR_AMADEUS.md` et
+   `CLAUDE.md` disaient encore « Étape 3 (bascule production) non commencée » alors que
+   l'historique git (commits `ff6a652`/`40e8ed9`/`3b3398d`/`9430c9d`, 28/07/2026) et `README.md`
+   montraient qu'elle avait été faite et vérifiée le même mois. Confirmé toujours vivant en
+   production par l'architecte (`/api/license/check` répond) avant de corriger les trois
+   fichiers et de marquer Mission 14 CLOSE dans son ensemble. **Leçon ajoutée dans `TASKS.md`** :
+   le rituel de clôture doit s'appliquer même quand une session se termine sur des correctifs
+   imprévus plutôt que sur le plan initial — c'est précisément ce qui avait fait sauter la mise à
+   jour le 28/07/2026.
+2. **Bug e2e admin (pollution D1 locale entre runs)** : `playwright.admin.config.js` lançait
+   `wrangler pages dev` sans `--persist-to`, donc sur le D1 local persistant du dépôt plutôt
+   qu'un D1 jetable — les licences fixtures `Client E2E`/`Client Revoke E2E` créées par chaque
+   run s'accumulaient sans jamais être nettoyées, jusqu'à ce que deux lignes du même nom cassent
+   les locators Playwright (`strict mode violation`, reproduit en direct par l'audit après
+   plusieurs mois de runs locaux accumulés). Corrigé avec le même motif que
+   `functions/__tests__/testServer.js` (déjà correct) : un répertoire temporaire frais
+   (`mkdtempSync` + `--persist-to`) généré une fois par invocation de la config, pour la
+   migration ET pour `wrangler pages dev`. Vérifié par deux exécutions consécutives de
+   `npm run test:e2e:admin` (4/4 les deux fois). `playwright.config.js` (suite e2e principale) a
+   le même répertoire D1 non isolé, mais volontairement — la licence fixture `GDS-TEST-0001` est
+   insérée de façon idempotente (`ON CONFLICT DO NOTHING`) et son palier école/4 postes absorbe
+   explicitement la variance d'empreinte entre runs (voir `scripts/seed-e2e-test-license.sql`) ;
+   ce n'est donc pas la même famille de bug, juste un design différent et déjà documenté comme
+   tel — **non modifié**, noté en Backlog comme amélioration possible (pas un bug) si Massy
+   préfère l'isoler aussi un jour.
+3. **Points mineurs de l'audit** :
+   - Code mort retiré : `functions/api/verify-key.js`, `scripts/generate-keys.mjs`, la variable
+     `ACCESS_KEY_HASHES` (plus aucune référence côté `apps/web/src` depuis la bascule du
+     28/07/2026, confirmé par recherche avant suppression) ; `VITE_FALLBACK_KEY_HASHES` n'avait
+     déjà plus aucune référence dans le code (son seul appelant, `apps/web/src/lib/keyHash.js`,
+     avait été supprimé dans le commit `ff6a652`) — seules des mentions en commentaires/doc
+     restaient, mises à jour (`README.md`, `docs/LICENCES.md`).
+   - Comparaison à temps constant : `functions/api/admin/login.js` comparait le haché de la
+     phrase admin avec `===` (s'arrête à la première différence) alors que `functions/_lib/
+     token.js` le fait déjà correctement pour les signatures. Extrait un helper partagé
+     `constantTimeEqual()` dans `functions/_lib/hash.js`, réutilisé par les deux (réduit aussi la
+     duplication de la boucle XOR qui n'existait jusqu'ici que dans `token.js`).
+   - `npm audit fix` : 13 vulnérabilités (toutes en devDependencies — vitest/@vitest/mocker,
+     wrangler/miniflare/sharp/undici, vite/postcss/browserslist, brace-expansion, js-yaml,
+     nanoid) → 0 après `npm audit fix` (33 paquets mis à jour, aucun changement de version majeure
+     forcée). Les 6 suites + lint + typecheck + build ré-exécutés après coup pour confirmer
+     l'absence de régression.
+   - Décompte « 51 web » vs 49 observés par l'audit (ligne du 27/07/2026 ci-dessous) : ce n'est
+     pas une erreur à corriger — c'était vrai au moment où c'était écrit, c'est juste une
+     photographie historique d'un instant différent de celui de l'audit. Rien à changer.
+4. **Note sur une édition concurrente** : pendant cette session, l'architecte a mis à jour
+   `CLAUDE.md`/`missions/README.md` et ajouté `missions/MISSION-21.md`/`22.md`/`23.md` en
+   parallèle (nouvelle correction de Massy : le produit n'est pas fini, 3 chantiers restants —
+   plateforme e-learning, paiement Chargily automatisé, fidélité des écrans). Ces fichiers n'ont
+   pas été touchés par cette session ni inclus dans ses commits — à lire séparément.
+
+Suites vérifiées vertes après l'ensemble des changements de cette session : 268 core, 9 data,
+47 exercises, 49 web, 19 functions, 24 e2e, 4 e2e admin, lint et typecheck propres, build OK.
 
 ### 27/07/2026 — Mission 14 (espace admin + licences par poste, Étapes 1/2/4/6 — Phase 8 anticipée)
 - **Changement d'architecture appliqué** (bandeau architecte 07/07/2026, lu en tête de fichier
@@ -646,6 +703,24 @@ prochaine mission une fois le pilote conclu.
 - **Amélioration recommandée** : espacement fixe de 12ch après le `>` du prompt (`.prompt-gap`),
   vu dans la branche supprimée `ux/an-filter-and-class-selection`. Cosmétique, non implémenté —
   à valider avec Massy si jugé utile (pas indispensable à la fidélité Amadeus).
+- **Amélioration recommandée** (trouvée en corrigeant le bug e2e admin du 06/10/2026) :
+  `apps/web/playwright.config.js` (suite e2e principale) lance aussi `wrangler pages dev` sans
+  `--persist-to`, donc sur le même D1 local persistant du dépôt entre deux runs — mais c'est
+  volontaire et déjà documenté (`scripts/seed-e2e-test-license.sql` : licence fixture
+  `GDS-TEST-0001` insérée de façon idempotente, palier école/4 postes choisi explicitement pour
+  absorber la variance d'empreinte appareil entre runs/workers). Pas un bug : contrairement à la
+  suite e2e admin, aucune collision de locator n'a jamais été observée ici. Isoler aussi cette
+  suite avec un répertoire temporaire (même motif que l'admin et `functions/__tests__`) la
+  rendrait plus cohérente avec le reste du projet, mais ce n'est qu'un confort de robustesse, pas
+  une correction — à valider avec Massy avant de la traiter.
+- **Observation mineure, non traitée** (vue en re-testant après le fix e2e admin du 06/10/2026) :
+  `functions/__tests__/testServer.js` a occasionnellement échoué sur un `EPERM` Windows en
+  nettoyant son répertoire D1 temporaire (`rmSync` dans `stop()`) alors que les 19 tests
+  eux-mêmes passaient tous — probablement le process `wrangler` qui n'a pas encore relâché son
+  verrou sur le fichier SQLite au moment du `rmSync`. Flaky, pas reproductible à volonté (repassé
+  vert au 2ᵉ essai), aucun changement de code pour cette session. À creuser seulement si ça
+  revient souvent en pratique (CI Linux non concerné — ce comportement de verrouillage de fichier
+  est spécifique à Windows).
 - **Bug critique confirmé, mission dédiée future (SS liste d'attente HL/UC)** : SS refuse
   purement la vente si la classe est à 0 siège ou si le nombre de pax dépasse le disponible.
   **Confirmé par Massy (05/07/2026, Mission 03)** : le vrai Amadeus met en liste d'attente

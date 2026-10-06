@@ -12,7 +12,7 @@
 // not "forever"); there is deliberately no server-side session table to
 // revoke early since there is exactly one admin and rotating
 // ADMIN_SECRET_HASH already invalidates every outstanding token at once.
-import { sha256Hex } from "../../_lib/hash.js";
+import { sha256Hex, constantTimeEqual } from "../../_lib/hash.js";
 import { signToken } from "../../_lib/token.js";
 
 const MIN_DELAY_MS = 300;
@@ -29,7 +29,7 @@ export async function onRequestPost({ request, env }) {
 
     if (secret && configuredHash) {
       const hash = await sha256Hex(secret);
-      if (hash === configuredHash) {
+      if (constantTimeEqual(hash, configuredHash)) {
         const token = await signToken(
           { role: "admin", exp: Date.now() + SESSION_TTL_MS },
           env.ADMIN_SECRET_HASH

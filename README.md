@@ -29,20 +29,19 @@ npm run build:web
 - `apps/web` : frontend React (Vite)
 - `packages/core` : moteur de commandes (core)
 - `packages/data` : DataStore / provider de codes ville
-- `functions/api/verify-key.js` : Cloudflare Pages Function, validation des clés d'accès (Mission 06, pilote)
 - `functions/api/license/*`, `functions/api/admin/*` : Mission 14, licences par poste (Cloudflare D1)
 - `migrations/*.sql` : schéma D1
 
-## Gestion des clés d'accès (Mission 06 — remplacée par la Mission 14, voir ci-dessous)
+## Gestion des clés d'accès (Mission 06 — remplacée par la Mission 14)
 
-**Historique, gardé pour référence.** Le terminal utilisait un système de clés à plat en variable
-d'environnement (`ACCESS_KEY_HASHES`, `node scripts/generate-keys.mjs`, repli client
-`VITE_FALLBACK_KEY_HASHES`). Depuis la bascule de la Mission 14 (Étape 3), `AccessGate.jsx` parle
-au vrai système de licences ci-dessous — voir « Gestion des licences » plus bas pour générer et
-révoquer des clés maintenant. `functions/api/verify-key.js` et la variable `ACCESS_KEY_HASHES`
-restent en place, inutilisés, le temps de vérifier la bascule en production ; ils seront retirés
-dans un nettoyage séparé (voir `TASKS.md`). Aucune clé pilote n'avait encore été distribuée au
-moment de la bascule (Mission 07 Partie B jamais lancée) — rien à migrer.
+**Historique.** Le terminal utilisait un système de clés à plat en variable d'environnement
+(`ACCESS_KEY_HASHES`, repli client `VITE_FALLBACK_KEY_HASHES`). Depuis la bascule de la
+Mission 14 (Étape 3, vérifiée en production le 28/07/2026), `AccessGate.jsx` parle au vrai
+système de licences ci-dessous — voir « Gestion des licences » plus bas pour générer et révoquer
+des clés. `functions/api/verify-key.js`, la variable `ACCESS_KEY_HASHES` et le script
+`scripts/generate-keys.mjs` qui les alimentait ont été retirés le 06/10/2026 (code mort confirmé
+par l'audit de reprise, `AUDIT.md` — aucune clé pilote n'avait jamais été distribuée via ce
+système, Mission 07 Partie B n'ayant jamais été lancée ; rien n'avait donc à être migré).
 
 ## Administration — licences par poste (Mission 14)
 
