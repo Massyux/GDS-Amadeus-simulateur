@@ -14,11 +14,11 @@
 
 ## 0. Identité (à fixer avant tout écran)
 
-- **Nom du produit affiché partout** : remplacer « Learning space » par le vrai nom. Choix
-  par défaut si Massy n'en impose pas : **« GDS Academy »** — court, lisible en FR et EN,
-  ne contient pas « Amadeus » (risque de marque, voir `CLAUDE.md` Phase 5).
+- **Nom du produit affiché partout** : **« Orionis Academy »** (décision Massy, 08/10/2026,
+  voir `CLAUDE.md` — tranche ce qui restait ouvert ici ; « GDS Academy » était le choix par
+  défaut provisoire de l'architecte, retenu jusqu'à cette décision).
 - **Logo** : pas d'image. Le nom en `--font-mono`, avec un curseur vert clignotant après
-  (`GDS Academy▌`). C'est gratuit, unique, et ça dit immédiatement « terminal ».
+  (`Orionis Academy▌`). C'est gratuit, unique, et ça dit immédiatement « terminal ».
 - **Langue** : tous les libellés d'interface passent par le dictionnaire FR/EN. **Aucun
   texte en dur** — le mélange constaté (« My account » au-dessus de contenu français) est
   le défaut qui fait le plus « amateur » de toute l'interface actuelle.

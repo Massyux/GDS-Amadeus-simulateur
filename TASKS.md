@@ -14,20 +14,22 @@ Premier des trois chantiers restants (ordre choisi par Massy : 23 Plateforme →
 déployé en production** pendant tout le chantier (règle explicite du mode autonome) — la
 production actuelle (simulateur + accès par clé) continue de fonctionner à l'identique.
 
-**Étape 0, Étape 1 et Étape 2 (espace étudiant) CLOSES** — Étape 2 reprise en entier le
-08/10/2026 sur une nouvelle direction artistique (« Nuit & aube », palette rejetée par Massy
-après maquette), puis complétée le même jour par une passe « vivant » (images réelles, couleur,
-animation, double thème clair) après le verdict de Massy sur la version en ligne ; voir les
-entrées datées ci-dessous pour le détail complet des trois passes.
-**Reprise exacte pour la suite** : Étape 3 (intégration du simulateur et des exercices comme
-leçons du cours « Amadeus niveau 1 », déjà créé comme donnée par `scripts/seed-dev-course.sql` —
-Étape 2 rend déjà les types `simulateur`/`exercice` par un message d'attente, c'est l'Étape 3 qui
-branche le vrai terminal/moteur d'exercices dessus).
-**Rappel production pour la clôture finale (Étape 5)** : trois choses à faire une fois, qui
+**Étape 0, Étape 1, Étape 2 (espace étudiant), Étape 3 (navigation + simulateur intégré) et
+Étape 4 (back-office formations) CLOSES** — Étape 2 reprise en entier le 08/10/2026 sur une
+nouvelle direction artistique (« Nuit & aube », palette rejetée par Massy après maquette), puis
+complétée le même jour par une passe « vivant » (images réelles, couleur, animation, double thème
+clair) après le verdict de Massy sur la version en ligne, puis l'Étape 3 (même jour, retour Massy
+sur la navigation + cœur de l'intégration simulateur/exercices), puis l'Étape 4 (09/10/2026,
+back-office complet : créer/modifier/réordonner/publier formations-modules-leçons, upload R2,
+vidéo/PDF/fichier/live, journal d'audit) ; voir les entrées datées ci-dessous pour le détail
+complet des cinq passes.
+**Reprise exacte pour la suite** : Étape 5 (clôture finale, bascule production — voir le rappel
+ci-dessous). Rien d'autre en attente sur cette mission.
+**Rappel production pour la clôture finale (Étape 5)** : quatre choses à faire une fois, qui
 n'existent qu'en local pour l'instant — `SESSION_SECRET` (env var Cloudflare Pages, comme
 `ADMIN_SECRET_HASH`), le binding R2 réel (`wrangler.jsonc` n'a volontairement PAS été modifié,
-voir l'entrée Étape 2 ci-dessous) une fois le bucket créé, et `migrations/0002_platform_users.sql`
-appliqué en `--remote`.
+voir l'entrée Étape 2 ci-dessous) une fois le bucket créé, `migrations/0002_platform_users.sql`
+**et** `migrations/0003_audit_log.sql` appliqués en `--remote` (dans cet ordre, après 0001).
 
 **Mission 14 (espace admin + licences par poste) — CLOSE dans son ensemble, y compris l'Étape 3
 (bascule production).** Architecture changée en cours de route par l'architecte (07/07/2026) :
@@ -85,8 +87,200 @@ prochaine mission une fois le pilote conclu.
   suppression ? »), pas une modale. Revenir à une modale plus tard ne changerait que l'intérieur
   de `apps/web/src/platform/ui/Button.jsx` (`variant="danger"` + `confirmLabel`), pas l'API vue
   par les futurs appelants (Étape 4, back-office).
+- **Taille max d'un fichier téléversé depuis `/admin` (Étape 4, 09/10/2026)** :
+  `docs/SECURITE.md` ne fixe aucune limite. Choisi 25 Mo (bon sens pour des PDF/fiches de cours —
+  pas de vidéo, volontairement en URL externe, voir MISSION-23.md) ; un seul nombre à changer
+  (`MAX_UPLOAD_BYTES`, `functions/api/admin/upload.js`) si Massy veut une autre valeur.
 
 ## Fait (par session, datée)
+
+### 09/10/2026 — Mission 23 Étape 4 (back-office formations, mode autonome) + marque Orionis Academy + domaine
+Session de suite directe sur la même conversation que l'entrée Étape 3 ci-dessous — reprise par
+un message explicite de l'architecte (`missions/PROMPT-SUITE-23-ETAPE4.md`) pointant un vrai
+risque : une session entière de travail non commitée. Traité en quatre temps, dans l'ordre
+demandé.
+
+**A. Sécurisation du travail non commité** : rituel de non-régression complet relancé avant
+toute nouvelle ligne (268 `packages/core` + 9 `packages/data` + 47 `packages/exercises` + 86
+Vitest `apps/web` + lint + typecheck + build, tous verts) — confirmé que l'Étape 3 (déjà écrite,
+jamais commitée) était saine. **Décision sur `AUDIT.md`** (non suivi, audit du 05/10/2026) :
+**entre dans le dépôt**, tel quel — `CLAUDE.md` le cite déjà comme référence vivante (« l'audit de
+reprise du 05/10/2026 ») depuis plusieurs sessions ; il était anormal qu'un document déjà cité
+comme source ne soit pas lui-même versionné. Ses constats sont presque tous déjà résolus par des
+sessions postérieures (code mort retiré, Mission 14 reconfirmée, etc.) — gardé comme instantané
+historique, pas remis à jour. `missions/PROMPT-SUITE-23-ETAPE4.md` (le prompt de reprise
+lui-même, non suivi) entre aussi dans le dépôt pour la même raison de traçabilité.
+
+**B. État réel de l'Étape 4, vérifié et non supposé** : à la reprise, une bonne partie du
+back-office existait déjà en code non commité (écrit avant que ce message n'arrive) mais
+**jamais vérifié par l'usage**. Vérification faite en pilotant un vrai navigateur contre un vrai
+`wrangler pages dev` + D1 + R2 locaux (`apps/web/e2e-admin/courses-admin.spec.js`, pas un
+raccourci API) : connexion admin → onglet **Formations** → création d'une formation → module →
+**4 leçons créées par clic/saisie réelle** (vidéo par URL collée, PDF par vrai envoi de fichier,
+« fichier » à télécharger par vrai envoi, session live avec date/heure/durée/lien) → publication
+→ la formation publiée apparaît dans le catalogue étudiant réel avec le bon décompte de leçons.
+**Le critère d'acceptation de MISSION-23.md est satisfait, prouvé par l'usage, pas par la
+lecture du code.** Réordonnancement (↑/↓, leçons et modules) et suppression testés aussi. Détail
+technique :
+- Nouvelle table `audit_log` (`migrations/0003_audit_log.sql`) — comble le vrai manque trouvé en
+  explorant le code existant : `docs/SECURITE.md` §7 exige un journal d'audit « consultable dans
+  /admin », jamais construit depuis Mission 14. `functions/_lib/auditLog.js` (best-effort, une
+  panne d'écriture du journal ne doit jamais faire échouer l'action admin elle-même) ; nouvel
+  onglet « Journal » en lecture seule (`AuditLogView.jsx`).
+- API admin complète (`functions/api/admin/courses|modules|lessons`, même convention que
+  `licenses.js` — `requireAdmin`, requêtes préparées, DTO camelCase) : cours (liste incluant les
+  brouillons, création, détail avec `content` complet, mise à jour — **pas de DELETE, « dépublier
+  plutôt que supprimer » comme l'exige SECURITE §7**), modules et leçons (création/mise à
+  jour/suppression, la suppression d'un module cascade manuellement sur ses leçons — pas de `ON
+  DELETE CASCADE` déclaré dans le schéma). `type` de leçon revalidé côté serveur (liste fermée,
+  `quiz` compris dans la contrainte CHECK mais absent de cette liste et du formulaire — réservé
+  Mission 24, jamais implémenté ici).
+- Premier vrai endpoint d'upload du projet (`functions/api/admin/upload.js`) : écrit sur R2
+  (`env.CONTENT.put`), jamais dans D1 ni le dépôt, nom de fichier assaini (bloque la traversée de
+  chemin), limite 25 Mo (décision consignée dans « À valider par Massy »). Le `fileKey` renvoyé
+  se pose tel quel dans le `content` d'une leçon pdf/fichier — la protection par lien signé à
+  durée limitée (10 min) existe déjà depuis l'Étape 2 (`functions/_lib/fileAccess.js`) et
+  s'applique automatiquement, sans rien à faire de plus : un document ainsi créé n'est jamais
+  accessible par simple partage d'URL, vérifié par les suites existantes qui exercent ce chemin.
+- Interface (`apps/web/src/admin/CoursesAdmin.jsx`, `apps/web/src/admin/AdminApp.jsx` passé à 3
+  onglets Licences/Formations/Journal) : même langage visuel que Mission 14 (HTML brut,
+  `.admin-*` dans `index.css`, pas les composants `platform/ui/*` — deux systèmes de design
+  distincts, confirmé en explorant le code existant avant d'écrire une ligne). Formulaire de
+  leçon unique dont les champs changent avec le type (texte/vidéo/pdf/fichier/live/simulateur/
+  exercice — le select d'exercice lit `@simulateur/exercises` directement, pas de duplication de
+  la liste).
+- Tests : `functions/__tests__/courses-admin-api.test.js` (13, dont le critère d'acceptation
+  rejoué côté API jusqu'au vrai catalogue étudiant), `apps/web/e2e-admin/courses-admin.spec.js`
+  (2, dont le parcours complet ci-dessus). `functions/__tests__/testServer.js` applique maintenant
+  `migrations/0003` par défaut pour **tout** test (c'est un schéma, pas une fixture — même
+  traitement que 0001/0002, jamais opt-in) ; `playwright.admin.config.js` gagne `--r2 CONTENT` et
+  la migration 0003 (absents jusqu'ici, l'admin ne pouvait pas téléverser en e2e).
+- **1 bug réel de lint trouvé en cours de route** (pas un bug produit, mais une vraie violation de
+  `react-hooks/set-state-in-effect`) : deux `useEffect` de `CoursesAdmin.jsx` appelaient une
+  fonction `refresh()` asynchrone directement au lieu d'inliner l'appel avec un drapeau
+  `cancelled`, seul motif déjà établi dans ce fichier (`AdminDashboard.jsx`, `CataloguePage.jsx`,
+  etc.) qui satisfait cette règle. Corrigé pour suivre exactement le même motif.
+
+**Rien de reporté explicitement pour cette étape** — les six points de MISSION-23.md §Étape 4
+(créer/modifier/réordonner/publier formations-modules-leçons, upload R2 + liens signés, URL
+vidéo, session live avec lien réservé aux inscrits, remplacement de `scripts/seed-dev-course.sql`
+comme moyen de créer une formation) sont tous faits et vérifiés par l'usage. `scripts/seed-dev-
+course.sql` lui-même n'a pas été supprimé : il reste le fixture de plusieurs suites de tests
+existantes (`platform.spec.js`, `platform-api.test.js`) qui ont besoin d'une formation réelle
+préexistante pour exercer des fonctionnalités étudiantes sans dépendre de l'admin — un script de
+test fixture est un besoin différent de « comment Massy crée du vrai contenu », qui passe
+désormais entièrement par `/admin`.
+**Idée d'évolution notée, pas implémentée** (hors périmètre explicite de cette étape) : aperçu
+d'un fichier téléversé directement depuis `/admin` avant publication (aujourd'hui, l'admin voit
+juste le nom du fichier confirmé, pas un rendu) — pourrait être utile mais n'était pas demandé.
+
+**C. Marque et domaine** : CLAUDE.md porte déjà (édité directement par Massy le 08-09/10/2026,
+hors de cette session) la décision de renommer le produit **« Orionis Academy »** (remplace tous
+les noms provisoires — « GDS Academy » compris) et confirme le domaine **`orionisacademy.com`**
+comme URL canonique (Cloudflare Pages, SSL émis). Appliqué ici, strictement dans les deux
+périmètres où ces décisions s'appliquent réellement :
+- Nom affiché : `Brand.jsx` (« GDS Academy » → « Orionis Academy », y compris l'`aria-label`),
+  titre/description SEO de `apps/web/index.html` (texte exact donné par `CLAUDE.md`), assertions
+  de test mises à jour en conséquence (`platform-ui.test.jsx`, `platform.spec.js`). **Pas touché** :
+  la coquille historique « Simulateur Amadeus GDS » du mode libre (`/simulateur`, `Onboarding.jsx`,
+  `App.test.jsx`, `FeedbackButton.jsx`, dictionnaire) — ce nom n'a jamais été un des noms
+  provisoires visés par la décision (c'était le vrai nom du produit avant la Mission 23, pas une
+  piste explorée pendant la refonte), le toucher aurait été un élargissement de périmètre non
+  demandé.
+- URL : `README.md` (lien `/admin` + commande de dev locale, qui gagne aussi la migration 0003
+  manquante). **Pas touché** : les mentions de `gds-amadeus-simulateur.pages.dev` dans des
+  entrées datées de journal (`CLAUDE.md`, `PROJECT_MEMORY`, `TASKS.md`, `AUDIT.md`) décrivant un
+  déploiement passé — réécrire l'historique serait factuellement faux (le domaine n'existait pas
+  à ces dates). Aucun `canonical`/`og:*`/`robots.txt`/`sitemap` n'existe dans le projet — **non
+  créés ici**, comme demandé explicitement ; notés ci-dessous en amélioration recommandée pour
+  une passe SEO dédiée future.
+
+**Confirmé conforme aux suites automatisées, relancées intégralement après le renommage et le
+refactor de lint** : lint propre, typecheck propre, 268+9+47 `packages/*`, 86 Vitest `apps/web`,
+58 `functions` (13 nouveaux), 35 e2e Playwright principal, 6 e2e admin (2 nouveaux) — tous verts.
+Build : chunk partagé homepage ≈ 61 Ko gzip JS, CSS ≈ 7,7 Ko gzip (budgets 180/25 Ko, admin hors
+budget par nature — DESIGN-SYSTEM §7 ne couvre que la plateforme étudiante).
+
+**Amélioration recommandée, pas implémentée** : passe SEO dédiée (canonical, og:*, sitemap,
+robots.txt) — aucun n'existe aujourd'hui, explicitement non créés dans cette session (tâche
+bornée au remplacement d'URL, pas une passe SEO).
+
+**Un seul serveur de dev, arrêté à la fin de la session** (voir note méthode) — aucun process
+`wrangler`/`workerd` laissé tourner.
+
+### 08/10/2026 — Mission 23 Étape 3 (navigation + intégration réelle du simulateur, mode autonome)
+Retour Massy sur deux points après la passe « vivant » (entrée suivante) : navigation cassée
+(pas de retour à l'accueil) et image de héros « floue et bizarre ». Détail exigence par exigence
+dans `docs/EXIGENCES-UX.md` §N (navigation) et §O (simulateur), statuts A2/D4/G3/H3 mis à jour,
+bloc de clôture dédié en bas du même document.
+
+**A. Corrections de navigation** : `Brand`/`PlatformLayout` acceptent désormais `brandTo`
+(visiteur → `/`, connecté → `/app/catalogue`) ; nouveau composant `Breadcrumb.jsx` câblé sur
+`CoursePage` (3 maillons) et `LessonPlayerPage` (4 maillons, jusqu'au titre de la leçon) ; le
+bouton retour explicite du lecteur de leçon existait déjà avant cette session (conservé) ; bouton
+précédent du navigateur confirmé par un vrai `page.goBack()` en e2e. Image de héros : sortie du
+fond (opacité 38%/22% sous un voile dégradé) vers un cadre net (`pf-hero-photo`, rayon 20px,
+pleine opacité, superposition couleur en `mix-blend-mode` plutôt qu'une réduction d'opacité),
+composée au-dessus du terminal (`pf-hero-visual`) au lieu d'être une texture derrière le texte.
+
+**B. Intégration du simulateur** : le cours réel (`scripts/seed-dev-course.sql`) gagne un Module 2
+« Pratique au clavier » — 10 leçons `exercice` (chacune `content.exerciseId` pointant vers un
+fichier de `packages/exercises/content/`) + 1 leçon `simulateur` (terminal libre). Nouveaux
+composants `LessonExercisePanel.jsx` (résout l'id vers l'objet Exercise réel via `exercisesById`,
+réutilise `ExercisePanel.jsx` sans le modifier fonctionnellement) et `LessonSimulatorView.jsx`
+(terminal libre + bouton de sortie flottant, `React.lazy`). `ExercisePanel.jsx` gagne un
+`onPassed` (alimente `lesson_progress` dès la première réussite de `evaluate()`, jamais répété) et
+trois props d'override de libellé (`abandonLabel`/`backToHomeLabel`/`showBackToPicker`) pour que
+le mode leçon affiche « Retour à la leçon » au lieu de « Abandonner »/« Retour à l'accueil »
+(mode libre inchangé — props optionnelles). Sur mobile (`useIsMobileViewport`, 767px), aucune
+tentative de charger le terminal : message `mobileBlockedTitle`/`Body` déjà prévu en Étape 2.
+
+**RÈGLE ABSOLUE vérifiée, pas juste affirmée** : le terminal reste strictement identique au mode
+libre. `LessonSimulatorView` rend `<Terminal>`/`<ExercisePanel>` **en dehors de `.platform-root`**
+(jamais dans `<PlatformLayout>`) — c'est la seule façon d'empêcher `platform.css`
+(`font-family`/`color`/`background` posés sur `.platform-root`) de déteindre sur `index.css`, qui
+n'a aucune classe scopée et resterait sinon « byte-for-byte identique » seulement en apparence.
+Vérifié structurellement en e2e (`expect(page.locator(".platform-root .terminal")).toHaveCount(0)`).
+
+**Chargement à la demande, pour de vrai cette fois** : `App.jsx`/`AdminApp.jsx` étaient encore
+importés statiquement dans `main.jsx` depuis des missions antérieures — ils gonflaient le chunk
+partagé (chargé par **tout** visiteur, y compris sur `/`) de tout le poids de `Terminal.jsx`/
+`@simulateur/core`/`@simulateur/data`, rendant inutile le `React.lazy()` de `LessonSimulatorView`.
+Passés en `lazy()` comme `HomePage`/`PlatformApp`/`StyleguidePage`. Effet mesuré : chunk partagé
+101,7 Ko → 60,9 Ko gzip. `Terminal`/`ExercisePanel`/`@simulateur/exercises` ont maintenant leurs
+propres chunks (22,4 Ko et 7,1 Ko gzip), jamais chargés tant qu'une leçon `simulateur`/`exercice`
+n'est pas réellement ouverte.
+
+**1 bug réel trouvé par la revue visuelle, invisible à toutes les suites automatisées** (aucun
+test JS ne calcule un style CSS appliqué, seul un vrai navigateur le fait) : la règle responsive
+qui cache le sommaire latéral du lecteur de leçon sous 1024px (`@media (max-width:1023px)
+{ .pf-lesson-sidebar { display:none } }`) vivait, par erreur, **avant** la règle de base
+(`.pf-lesson-sidebar { display:flex }`) dans `platform.css`. Les deux ayant la même spécificité,
+c'est l'ordre dans le fichier qui tranchait une fois les deux présentes — la règle de base
+(déclarée après) gagnait donc toujours, même sous le point de rupture. Le sommaire ne disparaissait
+JAMAIS sur mobile, pour aucun type de leçon, depuis l'Étape 2. Repéré en capturant l'écran bloqué
+simulateur à 390px (sommaire affiché en pleine largeur au-dessus du message attendu). Corrigé en
+réordonnant les deux règles ; revérifié par capture après correction.
+
+**Confirmé conforme aux suites automatisées** (toutes relancées après le fix CSS ci-dessus) :
+lint propre, 86 Vitest `apps/web`, 45 `functions`, 35 e2e Playwright principal (3 nouveaux tests :
+fil d'Ariane + bouton précédent, leçon exercice bout en bout avec le vrai terminal, leçon
+simulateur bout en bout), 4 e2e admin, build : chunk partagé homepage 60,9 Ko gzip JS / 7,4 Ko
+gzip CSS (budgets 180/25 Ko).
+
+**Non encore satisfait, reporté explicitement** : tout ce qui était déjà reporté aux clôtures
+précédentes (A4 photo formateur, A6 pages Contact/Conditions, A9 relecture orthographique, G2
+tension zones cliquables, H1/K8 mesures de performance réelles, L6 contraste mesuré) reste dans le
+même état — rien dans son périmètre n'était concerné par cette étape.
+
+**Note méthode** : captures à 1280px et 390px, dark et light, prises via un script Playwright
+jetable (`.tmp-audit-step3.mjs`, non committé) contre un vrai `wrangler pages dev` local, avec un
+vrai passage de scroll avant chaque capture pleine page (même raison qu'à la clôture précédente :
+`page.screenshot({fullPage:true})` ne scrolle jamais réellement, donc ne déclenche jamais
+`useRevealGroup.js`). Rate limit d'inscription (5/15min, IP factice locale partagée par tout
+process `wrangler pages dev`/test) épuisé deux fois par l'enchaînement rapide de runs manuels et
+de suites e2e dans cette même session — purgé via `/api/dev/reset-rate-limits` (route de test déjà
+existante, `MAIL_DEV_ECHO` gardée active), pas un vrai bug. Un seul serveur de dev, arrêté à la fin.
 
 ### 08/10/2026 — Mission 23, passe « vivant » (images, couleur, animation, double thème, mode autonome)
 Massy a vu la version en ligne de la refonte « Nuit & aube » (entrée précédente) et a jugé

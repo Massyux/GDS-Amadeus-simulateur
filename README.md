@@ -69,7 +69,7 @@ Les 4 étapes de mise en place (créer la base, lier le binding, générer la ph
 appliquer le schéma) ont été faites une fois et n'ont pas à être répétées — gardées ci-dessous
 pour mémoire seulement en cas de nouvelle base (changement de compte Cloudflare, etc).
 
-`https://gds-amadeus-simulateur.pages.dev/admin` : connexion avec la phrase secrète, tableau des
+`https://orionisacademy.com/admin` : connexion avec la phrase secrète, tableau des
 licences, bouton **Nouvelle clé** (génère et affiche une clé une seule fois — à distribuer
 toi-même), révoquer/prolonger, export CSV. `docs/LICENCES.md` explique le fonctionnement complet,
 les limites de l'empreinte appareil, et la procédure de support (« client a changé de PC »).
@@ -79,10 +79,10 @@ de test `GDS-TEST-0001` + serveur Functions/D1, sans toucher à la production, s
 Cloudflare requis) :
 
 ```bash
-npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-dev-course.sql && npx wrangler pages dev apps/web/dist --port 8788 --r2 CONTENT
+npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --file=migrations/0003_audit_log.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-dev-course.sql && npx wrangler pages dev apps/web/dist --port 8788 --r2 CONTENT
 ```
 
-Les deux `wrangler d1 execute` sont idempotents (sans risque à relancer sur une base locale déjà
+Les trois `wrangler d1 execute` de migration sont idempotents (sans risque à relancer sur une base locale déjà
 initialisée). Une fois le serveur prêt (`http://localhost:8788`), utilise le tableau ci-dessus :
 `GDS-TEST-0001` sur `/`, `test-admin-secret` sur `/admin`.
 

@@ -152,7 +152,7 @@ describe("PlatformLayout", () => {
         <p>Contenu</p>
       </PlatformLayout>
     );
-    expect(screen.getByText("GDS Academy")).toBeTruthy();
+    expect(screen.getByText("Orionis Academy")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /menu/i })).toBeNull();
   });
 

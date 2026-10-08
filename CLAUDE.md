@@ -39,12 +39,37 @@ rédigées et auditées par l'architecte (Claude Cowork).
   (SQLite gratuit, même compte que Pages, binding natif dans les Functions, aucun compte tiers
   à créer ; auth admin par phrase secrète hachée en variable d'env). Paiement Algérie :
   Chargily Pay (CIB/EDAHABIA)
+- **Marque (décision Massy, 08/10/2026) : « Orionis Academy ».** Nom déjà déposé et accepté
+  par Massy pour son activité (l'agence *Orionis Voyage* est en cours d'agrément, pas encore
+  ouverte). Le nom du produit affiché partout est **Orionis Academy** — remplacer tout nom
+  provisoire (« Learning space », « GDS Academy », « Skillpoint », « Cockpit »).
+  Signature sous le nom : *« Formation aux métiers du voyage »*.
+  Titre des pages pour les moteurs de recherche : *« Orionis Academy — Formation aux métiers
+  du voyage et de la réservation aérienne | Algérie »* (les mots-clés vivent dans les titres
+  et les URL, pas dans le nom de domaine).
+  ⚠️ **Tant que l'agrément n'est pas délivré, ne jamais présenter Orionis comme une agence de
+  voyage en activité.** L'académie est une activité de formation, distincte.
+- **Domaine & e-mail (09/10/2026, acheté par Massy, configuré avec lui) :**
+  `orionisacademy.com` acheté chez Cloudflare Registrar. **Domaines personnalisés Pages
+  actifs et SSL émis** sur le projet `gds-amadeus-simulateur` : `orionisacademy.com` et
+  `www.orionisacademy.com` (l'URL `*.pages.dev` reste valide, mais l'URL canonique à
+  utiliser partout — SEO, e-mails, documents — est désormais **https://orionisacademy.com**).
+  **Email Routing activé sur la zone**, 1 règle active :
+  `contact@orionisacademy.com` → `orionisvoyage@gmail.com` (seule destination vérifiée).
+  Catch-all = *Drop, désactivé* → tout e-mail envoyé à une autre adresse du domaine
+  (`info@`, `support@`…) **n'arrive nulle part** tant qu'une règle n'est pas créée.
+  ⚠️ Email Routing **reçoit uniquement**. Pour *envoyer* (clé de licence automatique,
+  mission 22) il faut un service tiers — Resend ou Brevo — avec `orionisacademy.com`
+  vérifié par enregistrements SPF/DKIM. Non fait à ce jour.
+  Scorie à nettoyer : `contact@orionisvoyage.com` figure en *destination address* au statut
+  *Pending* ; c'est une erreur de manipulation (une adresse professionnelle se crée en
+  *routing rule*, pas en destination) et elle ne se vérifiera jamais. À supprimer.
 - **Reprise du 06/10/2026 — le produit N'EST PAS fini** (correction explicite de Massy).
   Trois chantiers manquants, dans cet ordre : **23** plateforme e-learning sur mesure (le
   simulateur devient un cours parmi d'autres, Massy doit pouvoir ajouter des formations sans
   développeur) → **22** paiement Chargily + création/envoi automatique de la clé par e-mail
-  (zéro étape manuelle ; limite connue : pas de domaine, donc envoi réel bloqué jusqu'à
-  l'achat d'un domaine) → **21** fidélité des réponses écran (AN, RT, FXP/TQT, TTP — les
+  (zéro étape manuelle ; **blocage levé le 09/10/2026** — le domaine `orionisacademy.com`
+  est acheté ; reste à vérifier le domaine chez Resend ou Brevo pour pouvoir *envoyer*) → **21** fidélité des réponses écran (AN, RT, FXP/TQT, TTP — les
   affichages ne sont pas identiques au vrai Amadeus). Plateforme = sur mesure sur la stack
   actuelle (Cloudflare + D1), décision Massy.
 - **Chaîne d'implémentation (06/07/2026)** : décision Massy — implémenter TOUTES les commandes
