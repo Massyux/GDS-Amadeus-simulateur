@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Field, Card, PlatformLayout } from "./ui/index.js";
 import { authApi } from "./api.js";
 import { navigate } from "./useRoute.js";
+import { useTheme } from "./useTheme.js";
 
 /**
  * Atteinte via le lien envoyé par e-mail (token en query string) -- Mission
@@ -9,6 +10,7 @@ import { navigate } from "./useRoute.js";
  * d'être connecté.
  */
 export default function ResetPasswordScreen({ t, token }) {
+  useTheme();
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);

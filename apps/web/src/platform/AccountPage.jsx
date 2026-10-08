@@ -5,6 +5,15 @@ import { navigate } from "./useRoute.js";
 import { platformApi } from "./api.js";
 import { PlatformNav } from "./PlatformNav.jsx";
 import { resumeLabel } from "./resumeLabel.js";
+import { useTheme } from "./useTheme.js";
+import { GradientTail } from "./GradientText.jsx";
+import { demoCourses } from "./data/demoCourses.js";
+
+const DEFAULT_ACCENT = "#22D3EE";
+
+function accentFor(slug) {
+  return demoCourses.find((d) => d.slug === slug)?.accentColor || DEFAULT_ACCENT;
+}
 
 /**
  * Mon compte (docs/MAQUETTES.md §6) : "Reprendre" toujours en premier, puis
@@ -14,6 +23,7 @@ import { resumeLabel } from "./resumeLabel.js";
  */
 export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
   const [data, setData] = useState(null);
+  const [theme, toggleTheme] = useTheme();
   const ta = t.platform.account;
   const tn = t.platform.nav;
   const tc = t.platform.catalogue;
@@ -33,7 +43,17 @@ export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
   return (
     <PlatformLayout
       menuLabels={{ open: tn.openMenu, close: tn.closeMenu }}
-      nav={<PlatformNav t={t} lang={lang} onChangeLang={onChangeLang} user={user} onLogout={onLogout} />}
+      nav={
+        <PlatformNav
+          t={t}
+          lang={lang}
+          onChangeLang={onChangeLang}
+          user={user}
+          onLogout={onLogout}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      }
     >
       <h1 style={{ fontSize: "var(--text-2xl)" }}>{ta.title}</h1>
       <p className="pf-field-hint">{ta.connectedAs.replace("{email}", user?.email || "")}</p>
@@ -46,11 +66,16 @@ export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-5)", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 220px", minWidth: "220px" }}>
               <h2 style={{ fontSize: "var(--text-lg)", marginBottom: "var(--space-3)" }}>{resumeCourse.title}</h2>
-              <ProgressBar value={resumeCourse.progressPct} max={100} label={resumeLabel(tc, resumeCourse)} />
+              <ProgressBar
+                value={resumeCourse.progressPct}
+                max={100}
+                label={resumeLabel(tc, resumeCourse)}
+                accentColor={accentFor(resumeCourse.slug)}
+              />
             </div>
             <Link
               to={`/app/cours/${resumeCourse.slug}/lecon/${resumeCourse.nextLessonId}`}
-              className="pf-btn pf-btn--primary"
+              className="pf-btn pf-btn--primary pf-btn--md"
             >
               {ta.continueCta}
             </Link>
@@ -58,7 +83,9 @@ export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
         </div>
       )}
 
-      <h2 style={{ marginTop: "var(--space-7)" }}>{ta.myCourses}</h2>
+      <h2 style={{ marginTop: "var(--space-7)" }}>
+        <GradientTail text={ta.myCourses} />
+      </h2>
 
       {data && data.courses.length === 0 && (
         <EmptyState message={ta.noCourses} actionLabel={ta.browseCatalogue} onAction={() => navigate("/app/catalogue")} />
@@ -73,8 +100,9 @@ export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
                 value={course.completedCount}
                 max={course.lessonCount}
                 label={`${course.completedCount} / ${course.lessonCount}`}
+                accentColor={accentFor(course.slug)}
               />
-              <Link to={`/app/cours/${course.slug}`} className="pf-btn pf-btn--secondary" style={{ marginTop: "var(--space-3)" }}>
+              <Link to={`/app/cours/${course.slug}`} className="pf-btn pf-btn--secondary pf-btn--md" style={{ marginTop: "var(--space-3)" }}>
                 {course.title}
               </Link>
             </Card>
@@ -82,13 +110,19 @@ export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
         </div>
       )}
 
-      <h2 style={{ marginTop: "var(--space-7)" }}>{ta.progressTitle}</h2>
+      <h2 style={{ marginTop: "var(--space-7)" }}>
+        <GradientTail text={ta.progressTitle} />
+      </h2>
       <p style={{ color: "var(--ink-2)" }}>{ta.progressComingSoon}</p>
 
-      <h2 style={{ marginTop: "var(--space-7)" }}>{ta.profileTitle}</h2>
+      <h2 style={{ marginTop: "var(--space-7)" }}>
+        <GradientTail text={ta.profileTitle} />
+      </h2>
       <p style={{ color: "var(--ink-2)" }}>{ta.profileComingSoon}</p>
 
-      <h2 style={{ marginTop: "var(--space-7)" }}>{ta.licenseTitle}</h2>
+      <h2 style={{ marginTop: "var(--space-7)" }}>
+        <GradientTail text={ta.licenseTitle} />
+      </h2>
       <p style={{ color: "var(--ink-2)", marginBottom: "var(--space-7)" }}>{ta.licenseComingSoon}</p>
     </PlatformLayout>
   );

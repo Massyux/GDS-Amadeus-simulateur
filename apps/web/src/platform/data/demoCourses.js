@@ -16,6 +16,7 @@
 export const demoCourses = [
   {
     slug: "amadeus-niveau-1",
+    image: "course-aerien",
     titleKey: "aerien",
     level: "debutant",
     visual: "radar",
@@ -29,6 +30,7 @@ export const demoCourses = [
   },
   {
     slug: "demo-agent-voyage",
+    image: "course-agent",
     titleKey: "agent",
     level: "complet",
     visual: "routes",
@@ -42,6 +44,7 @@ export const demoCourses = [
   },
   {
     slug: "demo-accueil",
+    image: "course-accueil",
     titleKey: "accueil",
     level: "relation",
     visual: "sunrise",
@@ -55,6 +58,7 @@ export const demoCourses = [
   },
   {
     slug: "demo-management",
+    image: "course-management",
     titleKey: "management",
     level: "management",
     visual: "chart",
@@ -68,6 +72,7 @@ export const demoCourses = [
   },
   {
     slug: "demo-anglais",
+    image: "course-anglais",
     titleKey: "anglais",
     level: "langues",
     visual: "orbit",
@@ -81,6 +86,7 @@ export const demoCourses = [
   },
   {
     slug: "demo-billetterie",
+    image: "course-billetterie",
     titleKey: "billetterie",
     level: "avance",
     visual: "ticket",

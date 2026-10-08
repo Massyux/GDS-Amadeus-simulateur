@@ -7,6 +7,8 @@ import { PlatformNav } from "./PlatformNav.jsx";
 import { CourseVignette } from "./CourseVignette.jsx";
 import { demoCourses } from "./data/demoCourses.js";
 import { resumeLabel } from "./resumeLabel.js";
+import { useTheme } from "./useTheme.js";
+import { useRevealGroup } from "./useRevealGroup.js";
 
 // Vignette par défaut pour une vraie formation absente de data/demoCourses.js
 // (le cas normal dès que Massy en ajoute une au lancement, via Mission 23
@@ -22,6 +24,8 @@ const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A"
  */
 export default function CataloguePage({ t, lang, onChangeLang, user, onLogout }) {
   const [courses, setCourses] = useState(null);
+  const [theme, toggleTheme] = useTheme();
+  const [gridRef, gridVisible] = useRevealGroup();
   const tc = t.platform.catalogue;
   const tn = t.platform.nav;
 
@@ -40,7 +44,17 @@ export default function CataloguePage({ t, lang, onChangeLang, user, onLogout })
   return (
     <PlatformLayout
       menuLabels={{ open: tn.openMenu, close: tn.closeMenu }}
-      nav={<PlatformNav t={t} lang={lang} onChangeLang={onChangeLang} user={user} onLogout={onLogout} />}
+      nav={
+        <PlatformNav
+          t={t}
+          lang={lang}
+          onChangeLang={onChangeLang}
+          user={user}
+          onLogout={onLogout}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      }
     >
       <h1 style={{ fontSize: "var(--text-2xl)" }}>{tc.title}</h1>
       <p style={{ color: "var(--ink-2)", marginTop: "var(--space-2)", marginBottom: "var(--space-6)" }}>
@@ -76,7 +90,7 @@ export default function CataloguePage({ t, lang, onChangeLang, user, onLogout })
       )}
       {courses !== null && courses.length === 0 && <EmptyState message={tc.empty} />}
       {courses !== null && courses.length > 0 && (
-        <div className="pf-grid-courses">
+        <div ref={gridRef} className={`pf-grid-courses pf-reveal-group${gridVisible ? " pf-reveal-group--visible" : ""}`}>
           {courses.map((course) => (
             <CourseCard key={course.slug} course={course} t={t} tc={tc} />
           ))}
@@ -91,14 +105,19 @@ function CourseCard({ course, t, tc }) {
   const meta = t.platform.course.lessonCount.replace("{n}", course.lessonCount);
 
   return (
-    <Link to={`/app/cours/${course.slug}`} className="pf-course-card-link">
+    <Link to={`/app/cours/${course.slug}`} className="pf-course-card-link pf-reveal">
       <article className="pf-course-card">
-        <CourseVignette course={visual} label={course.level} />
+        <CourseVignette course={visual} label={course.level} alt={course.title} />
         <div className="pf-course-body">
           <h3 style={{ fontSize: "var(--text-lg)" }}>{course.title}</h3>
           <p style={{ color: "var(--ink-2)", flex: 1 }}>{course.description}</p>
           {course.enrolled && (
-            <ProgressBar value={course.progressPct} max={100} label={`${course.progressPct}%`} />
+            <ProgressBar
+              value={course.progressPct}
+              max={100}
+              label={`${course.progressPct}%`}
+              accentColor={visual.accentColor}
+            />
           )}
           <div className="pf-course-foot">
             <span className="pf-meta">{meta}</span>

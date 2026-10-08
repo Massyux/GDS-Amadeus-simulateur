@@ -49,11 +49,16 @@ Ce qui crée l'identité, par ordre d'importance :
 
 ---
 
-## Les photos (à intégrer quand Massy les aura choisies)
+## Les photos — intégrées le 08/10/2026 (chantier 2, passe « vivant »)
 
-Les vignettes SVG actuelles sont un **remplacement temporaire assumé**, pas une solution
-définitive. À terme, de vraies photos (Unsplash ou Pexels, licence commerciale gratuite),
-stockées dans R2, aux formats modernes et dimensionnées :
+Les vignettes SVG sont restées le **remplacement temporaire** pour toute formation sans photo
+(Étape 4, back-office), mais ne sont plus la solution par défaut : 7 vraies photos Unsplash
+(licence commerciale gratuite) couvrent désormais le héros et les 6 formations de démonstration,
+chacune choisie après comparaison de 2-3 candidates. Stockées dans
+`apps/web/public/img/` — **pas R2** : ce sont des actifs publics du site (comme les SVG
+qu'elles remplacent), pas du contenu sous licence étudiant ; R2 reste réservé aux fichiers
+PDF/vidéo des leçons (`functions/_lib/fileAccess.js`). Correction par rapport à la version
+précédente de ce document, qui suggérait R2 avant que la question ne se pose réellement.
 
 | Emplacement | Thème à chercher |
 |---|---|
@@ -62,7 +67,7 @@ stockées dans R2, aux formats modernes et dimensionnées :
 | Agent de voyage | conseiller face à un client, lumière chaude |
 | Hôte & hôtesse d'accueil | accueil d'aéroport, uniforme, sourire naturel |
 | Management d'agence | réunion d'équipe en petit comité |
-| Formateur | **photo réelle de Massy** — obligatoire, aucune alternative |
+| Formateur | **photo réelle de Massy** — obligatoire, aucune alternative, toujours en attente |
 
 Mots-clés utiles : `cockpit night`, `airport departure board`, `travel agency counter`,
 `aviation sunrise wing`.

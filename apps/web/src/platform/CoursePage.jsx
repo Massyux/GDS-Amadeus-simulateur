@@ -6,6 +6,7 @@ import { PlatformNav } from "./PlatformNav.jsx";
 import { CourseVignette } from "./CourseVignette.jsx";
 import { demoCourses } from "./data/demoCourses.js";
 import { LESSON_TYPE_ICONS } from "./lessonTypeIcons.js";
+import { useTheme } from "./useTheme.js";
 
 const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A", accentColor: "#22D3EE" };
 
@@ -19,6 +20,7 @@ const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A"
 export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slug, onLogout }) {
   const [data, setData] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
+  const [theme, toggleTheme] = useTheme();
   const tc = t.platform.course;
   const tn = t.platform.nav;
   const h = t.platform.home;
@@ -51,7 +53,17 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
   return (
     <PlatformLayout
       menuLabels={{ open: tn.openMenu, close: tn.closeMenu }}
-      nav={<PlatformNav t={t} lang={lang} onChangeLang={onChangeLang} user={user} onLogout={onLogout} />}
+      nav={
+        <PlatformNav
+          t={t}
+          lang={lang}
+          onChangeLang={onChangeLang}
+          user={user}
+          onLogout={onLogout}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      }
     >
       <Link to="/app/catalogue" className="pf-btn pf-btn--discreet">
         {tc.back}
@@ -63,7 +75,7 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
         <>
           <div className="pf-course-head">
             <div>
-              {data.course.level && <Badge>{data.course.level}</Badge>}
+              {data.course.level && <Badge color={visual.accentColor}>{data.course.level}</Badge>}
               <h1 style={{ fontSize: "var(--text-2xl)", marginTop: "var(--space-3)" }}>{data.course.title}</h1>
               <p style={{ color: "var(--ink-2)", marginTop: "var(--space-2)" }}>{data.course.description}</p>
               <p className="pf-meta" style={{ marginTop: "var(--space-3)" }}>
@@ -73,8 +85,13 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
               <div style={{ marginTop: "var(--space-5)" }}>
                 {data.enrolled ? (
                   <>
-                    <p style={{ color: "var(--cyan)", marginBottom: "var(--space-3)" }}>{tc.enrolled}</p>
-                    <ProgressBar value={completedCount} max={lessonCount} label={`${completedCount} / ${lessonCount}`} />
+                    <p style={{ color: visual.accentColor, marginBottom: "var(--space-3)" }}>{tc.enrolled}</p>
+                    <ProgressBar
+                      value={completedCount}
+                      max={lessonCount}
+                      label={`${completedCount} / ${lessonCount}`}
+                      accentColor={visual.accentColor}
+                    />
                   </>
                 ) : (
                   <Button variant="primary" onClick={handleEnroll} disabled={enrolling}>
@@ -85,7 +102,7 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
             </div>
 
             <div style={{ borderRadius: "var(--radius-xl)", overflow: "hidden", height: "180px" }}>
-              <CourseVignette course={visual} />
+              <CourseVignette course={visual} alt={data.course.title} />
             </div>
           </div>
 
@@ -119,6 +136,7 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
                         value={moduleCompleted}
                         max={module.lessons.length}
                         label={`${moduleCompleted} / ${module.lessons.length}`}
+                        accentColor={visual.accentColor}
                       />
                     </div>
                   )}

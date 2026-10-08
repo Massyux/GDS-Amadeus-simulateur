@@ -3,12 +3,18 @@ import { useState } from "react";
 /**
  * @param {{
  *   variant?: "primary"|"secondary"|"discreet"|"danger",
- *   compact?: boolean,
+ *   size?: "sm"|"md"|"lg",
  *   confirmLabel?: string,
  *   className?: string,
  *   children: import("react").ReactNode,
  *   onClick?: (event: import("react").MouseEvent) => void,
  * } & import("react").ButtonHTMLAttributes<HTMLButtonElement>} props
+ *
+ * Trois tailles seulement (DESIGN-SYSTEM §5 bis) : `sm` 34px (dans une carte,
+ * une ligne de tableau), `md` 38px (barre de navigation, formulaires --
+ * défaut), `lg` 46px (action principale d'une page). Un secondaire à côté
+ * d'un primaire de même `size` a structurellement la même hauteur -- les deux
+ * lisent `.pf-btn--{size}` pour cette dimension, jamais pour la couleur.
  *
  * Danger buttons require confirmation before firing (DESIGN-SYSTEM §5:
  * "réservé aux suppressions, avec confirmation obligatoire") -- enforced
@@ -19,7 +25,7 @@ import { useState } from "react";
  */
 export function Button({
   variant = "secondary",
-  compact = false,
+  size = "md",
   confirmLabel,
   children,
   onClick,
@@ -28,12 +34,7 @@ export function Button({
 }) {
   const [confirming, setConfirming] = useState(false);
 
-  const classes = [
-    "pf-btn",
-    `pf-btn--${variant}`,
-    compact ? "pf-btn--compact" : "",
-    className,
-  ]
+  const classes = ["pf-btn", `pf-btn--${variant}`, `pf-btn--${size}`, className]
     .filter(Boolean)
     .join(" ");
 

@@ -21,10 +21,14 @@ const SEQUENCE = [
   { line: "  DOSSIER ENREGISTRÉ — 4KX9TZ", strong: true },
 ];
 
-const TYPE_MS = 28;
-const LINE_PAUSE_MS = 220;
-const CMD_PAUSE_MS = 480;
-const END_PAUSE_MS = 3200;
+// Minutage exact demandé (chantier 4, 08/10/2026, "c'est l'élément le plus
+// vendeur de la page, soigne-le") : ~60ms/caractère, pause de 900ms en fin
+// de ligne (commande ou sortie, même pause -- la distinction précédente
+// entre les deux n'apportait rien), boucle après 3s.
+const TYPE_MS = 60;
+const LINE_PAUSE_MS = 900;
+const CMD_PAUSE_MS = 900;
+const END_PAUSE_MS = 3000;
 
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -91,7 +95,7 @@ export function TerminalDemo({ label }) {
   return (
     <div className="pf-termwrap">
       <div className="pf-termglow" aria-hidden="true" />
-      <div className="pf-term" role="img" aria-label="Démonstration du terminal de réservation">
+      <div className="pf-term" role="img" aria-label={label}>
         <div className="pf-tbar">
           <i /><i /><i />
           <span>{label}</span>

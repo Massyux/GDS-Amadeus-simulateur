@@ -1,6 +1,7 @@
 import { Link } from "./Link.jsx";
+import { ThemeToggle } from "./ThemeToggle.jsx";
 
-export function PlatformNav({ t, lang, onChangeLang, user, onLogout }) {
+export function PlatformNav({ t, lang, onChangeLang, user, onLogout, theme, onToggleTheme }) {
   const tn = t.platform.nav;
   return (
     <>
@@ -18,7 +19,7 @@ export function PlatformNav({ t, lang, onChangeLang, user, onLogout }) {
         <span style={{ display: "inline-flex", gap: "4px" }}>
           <button
             type="button"
-            className="pf-btn pf-btn--discreet"
+            className="pf-lang-toggle"
             aria-current={lang === "fr" || undefined}
             onClick={() => onChangeLang("fr")}
           >
@@ -26,13 +27,16 @@ export function PlatformNav({ t, lang, onChangeLang, user, onLogout }) {
           </button>
           <button
             type="button"
-            className="pf-btn pf-btn--discreet"
+            className="pf-lang-toggle"
             aria-current={lang === "en" || undefined}
             onClick={() => onChangeLang("en")}
           >
             {t.lang.en}
           </button>
         </span>
+      )}
+      {theme && onToggleTheme && (
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} label={tn.toggleTheme} />
       )}
       {user && (
         <button type="button" className="pf-btn pf-btn--discreet" onClick={onLogout}>

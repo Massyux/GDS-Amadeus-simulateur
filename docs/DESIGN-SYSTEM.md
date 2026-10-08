@@ -82,6 +82,67 @@ distingue la plateforme d'un gabarit plat. Coût : zéro image, zéro requête r
 
 ---
 
+## 2 bis. Thème clair « verre liquide » (ajouté le 08/10/2026, demande de Massy)
+
+Deux thèmes coexistent. Le sombre « nuit » reste le défaut. Le clair s'en inspire mais
+bascule sur une esthétique **translucide, vive et lumineuse** — matière type goutte d'eau,
+dans l'esprit des interfaces en verre d'Apple.
+
+```
+/* Fonds — aube */
+--sky            #F2F7FF   /* fond de page */
+--sky-tint-1     #DCEBFF   /* halo bleu ciel */
+--sky-tint-2     #FFE4D6   /* halo pêche */
+--sky-tint-3     #E8E2FF   /* halo lilas */
+
+/* Verre : jamais une couleur pleine */
+--glass          rgba(255,255,255,.68)
+--glass-strong   rgba(255,255,255,.86)
+--glass-border   rgba(255,255,255,.75)
+--glass-inner    inset 0 1px 0 rgba(255,255,255,.92)   /* reflet supérieur */
+--glass-shadow   0 10px 36px rgba(13,30,60,.10)
+
+/* Lignes */
+--line           rgba(13,30,60,.10)
+--line-strong    rgba(13,30,60,.20)
+
+/* Texte (contrastes vérifiés ≥ 4,5:1 sur verre à 68 %) */
+--ink            #0A1733
+--ink-2          #3D5075
+--ink-3          #64789F
+
+/* Accents — mêmes teintes, assombries pour rester lisibles sur fond clair */
+--cyan           #0E9FBF
+--coral          #F2663C
+--violet         #6D5BE0
+```
+
+**Recette du verre** (classe unique réutilisée partout) :
+`background: var(--glass); backdrop-filter: blur(22px) saturate(1.7);
+border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow), var(--glass-inner);
+border-radius: 20px;`
+
+**Règles impératives**
+- **Le terminal reste sombre dans les deux thèmes.** C'est un terminal — il ne devient
+  jamais blanc. Il apparaît en thème clair comme un bloc sombre posé sur le verre, ce qui
+  le met encore plus en valeur.
+- **Rayons plus généreux en thème clair** : 20 px pour les cartes, 14 px pour les boutons —
+  c'est ce qui donne l'effet « goutte ».
+- **Reflet supérieur obligatoire** (`--glass-inner`) sur toute surface de verre : sans lui,
+  c'est du blanc transparent, pas du verre.
+- **Fond vivant** : trois halos radiaux doux (bleu ciel en haut à gauche, pêche à droite,
+  lilas en bas) + grain très léger. Sans eux, le verre n'a rien à filtrer et paraît plat.
+- **Contraste** : tout texte sur verre doit atteindre 4,5:1. En cas de doute, passer la
+  surface à `--glass-strong` plutôt que d'assombrir le texte.
+
+**Performance** : `backdrop-filter` est coûteux. Réservé à la barre de navigation, aux
+cartes visibles sans défiler et aux modales. **Interdit** sur les longues listes et les
+lignes de tableau — on y utilise `--glass-strong` en couleur pleine, sans flou.
+
+**Bascule** : attribut `data-theme="dark|light"` sur `<html>`, mémorisé, initialisé sur
+`prefers-color-scheme` à la première visite, bouton de bascule dans la barre de navigation.
+Transition de 200 ms sur les couleurs seulement — jamais sur la mise en page.
+
 ## 3. Typographie
 
 **Aucune police chargée depuis le réseau.** Décision de performance et de crédibilité :
@@ -160,6 +221,82 @@ d'action**. (« Aucune formation en cours — Parcourir le catalogue »)
 centre d'une page vide. Objectif : zéro saut de mise en page.
 
 ---
+
+## 5 bis. Proportions et rythme — valeurs exactes (ajouté le 08/10/2026)
+
+*Massy a constaté des disproportions sur la première version en ligne : bouton de navigation
+surdimensionné, liens soulignés, chiffres clés d'échelles différentes, vide excessif avant
+le titre. Les valeurs ci-dessous sont **impératives**, pas indicatives. Appliquées à TOUTES
+les pages, de haut en bas.*
+
+### Barre de navigation
+| Élément | Valeur |
+|---|---|
+| Hauteur de barre | **64 px** (fixe, sur toutes les pages) |
+| Nom du produit | **17 px / 600**, mono, curseur de 8×16 px |
+| Liens | **14,5 px / 450**, `--ink-2`, **`text-decoration:none` — jamais de soulignement**, survol = `--ink` |
+| Écart entre liens | **26 px** |
+| Bouton de la barre | **hauteur 38 px**, padding `0 18px`, **14 px / 600**, rayon 9 px |
+| Sélecteur FR/EN | 12,5 px mono, `--ink-3`, actif en `--ink` |
+
+**Règle** : aucun élément de la barre ne dépasse 38 px de haut. Un bouton de barre n'est
+**jamais** à la même échelle qu'un bouton de page.
+
+### Boutons — trois tailles, pas une de plus
+| Taille | Hauteur | Padding | Police | Usage |
+|---|---|---|---|---|
+| `sm` | 34 px | `0 14px` | 13,5 px | dans une carte, une ligne de tableau |
+| `md` | 38 px | `0 18px` | 14 px | barre de navigation, formulaires |
+| `lg` | 46 px | `0 26px` | 15,5 px | action principale d'une page uniquement |
+
+Le bouton secondaire a **exactement la même hauteur** que le primaire à côté de lui, et
+**son libellé n'est jamais souligné**.
+
+### Héros
+| Élément | Valeur |
+|---|---|
+| Padding haut | **72 px** (48 px en mobile) — pas davantage |
+| Pastille de sur-titre | hauteur 28 px, texte 11 px mono, padding `0 13px` |
+| Espace pastille → titre | 20 px |
+| `h1` | `clamp(34px, 4.6vw, 52px)`, interligne **1,06**, graisse 700 |
+| Espace titre → accroche | 20 px |
+| Accroche | 17 px, `max-width: 52ch` |
+| Espace accroche → boutons | 30 px |
+| Mention sous les boutons | 12,5 px mono, 14 px au-dessous |
+| Colonne gauche | `max-width: 580px` |
+
+### Chiffres clés — le défaut à corriger
+Les trois valeurs doivent avoir **strictement la même échelle visuelle** : même police
+(mono), **même taille (26 px)**, même graisse, même ligne de base, `tabular-nums`. Un mot
+(« à vie ») ne doit jamais paraître plus gros qu'un chiffre. Libellés à 12,5 px, `--ink-3`.
+Écart entre blocs : 38 px. Trait de séparation au-dessus : 1 px `--line`, marge 24 px.
+
+### Rythme vertical des sections
+| Élément | Valeur |
+|---|---|
+| Padding de section | **88 px** haut et bas (56 px en mobile) |
+| Sur-titre → `h2` | 14 px |
+| `h2` | **34 px**, interligne 1,14, graisse 700 |
+| `h2` → accroche | 14 px |
+| Accroche de section | 16,5 px, `max-width: 60ch` |
+| Accroche → contenu | **48 px** |
+| Écart entre cartes | 24 px |
+
+### Cartes
+Padding **24 px** partout. **Hauteur uniforme dans une même grille** (`align-items:
+stretch`, contenu en colonne, `flex:1` sur la description). Titre 18,5 px, texte 14 px,
+pied de carte séparé par 1 px `--line` avec 14 px de marge haute.
+
+### Dégradés de titre — règle unique
+Le dégradé `cyan → corail` (`linear-gradient(96deg, var(--cyan) 10%, var(--coral) 85%)`,
+`background-clip:text`) s'applique à :
+- la **deuxième ligne** du `h1` de l'accueil,
+- le **dernier mot ou groupe de mots** de chaque `h2` de section,
+- les **chiffres clés**.
+
+Jamais sur un paragraphe, jamais sur un bouton, jamais sur plus de la moitié d'un titre.
+C'est ce qui donne sa signature à l'ensemble — appliqué partout de la même façon, de la
+page d'accueil au tableau de bord.
 
 ## 6. Mouvement
 

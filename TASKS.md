@@ -16,7 +16,9 @@ production actuelle (simulateur + accès par clé) continue de fonctionner à l'
 
 **Étape 0, Étape 1 et Étape 2 (espace étudiant) CLOSES** — Étape 2 reprise en entier le
 08/10/2026 sur une nouvelle direction artistique (« Nuit & aube », palette rejetée par Massy
-après maquette) ; voir les entrées datées ci-dessous pour le détail complet des deux passes.
+après maquette), puis complétée le même jour par une passe « vivant » (images réelles, couleur,
+animation, double thème clair) après le verdict de Massy sur la version en ligne ; voir les
+entrées datées ci-dessous pour le détail complet des trois passes.
 **Reprise exacte pour la suite** : Étape 3 (intégration du simulateur et des exercices comme
 leçons du cours « Amadeus niveau 1 », déjà créé comme donnée par `scripts/seed-dev-course.sql` —
 Étape 2 rend déjà les types `simulateur`/`exercice` par un message d'attente, c'est l'Étape 3 qui
@@ -85,6 +87,80 @@ prochaine mission une fois le pilote conclu.
   par les futurs appelants (Étape 4, back-office).
 
 ## Fait (par session, datée)
+
+### 08/10/2026 — Mission 23, passe « vivant » (images, couleur, animation, double thème, mode autonome)
+Massy a vu la version en ligne de la refonte « Nuit & aube » (entrée précédente) et a jugé
+l'ensemble « mort et fade : aucune image, aucune couleur, aucune animation fluide ». Six
+chantiers traités dans l'ordre demandé, chacun détaillé avec son statut exigence par exigence
+dans `docs/EXIGENCES-UX.md` §J-M et le bloc de clôture dédié en bas de ce même document (pas
+dupliqué ici). Résumé :
+
+- **Proportions exactes** (`docs/DESIGN-SYSTEM.md` §5 bis, nouveau ce jour, valeurs chiffrées
+  par l'architecte après que Massy a signalé un bouton de nav surdimensionné, des liens
+  soulignés, des chiffres clés d'échelles différentes) : barre 64px, 3 tailles de bouton
+  seulement (34/38/46 — `Button.jsx` perd son ancien `compact` booléen pour un `size`
+  explicite), zéro lien souligné (reset global `.platform-root a`), chiffres clés uniformes à
+  26px mono, rythme vertical des héros/sections aux valeurs exactes données.
+- **Images réelles** (le site était vide sans elles) : 7 photos Unsplash (licence gratuite),
+  choisies après comparaison de 2-3 candidates par emplacement, présentées à Massy en planche de
+  contact avant traitement final (une photo — « Accueil » — changée après qu'il ait signalé un
+  logo tiers visible sur des uniformes). AVIF+WebP+repli JPEG, 3 largeurs, dimensions explicites,
+  lazy sauf le héros. Aucun fichier servi au-delà de 120 Ko. Stockées dans `apps/web/public/img/`
+  (décision : pas R2, ce sont des actifs publics, pas du contenu sous licence — écart volontaire
+  par rapport à une note plus ancienne d'IDENTITE-VISUELLE.md qui suggérait R2, corrigée dans le
+  doc lui-même).
+- **Couleur et vie** : règle unique du dégradé cyan→corail (2ᵉ ligne du h1, dernier mot de
+  chaque h2, chiffres clés) implémentée via un composant partagé `GradientText.jsx` plutôt que
+  de dupliquer chaque titre en deux clés de dictionnaire par langue. Couleur d'identification par
+  formation étendue à `Badge`/`ProgressBar` (nouveau prop `color`/`accentColor`). Alternance
+  subtile de fond entre sections (`.pf-section--tint`).
+- **Animations** : apparition au défilement (`useRevealGroup.js`, IntersectionObserver natif),
+  terminal du héros retimé exactement sur le minutage demandé (60ms/caractère, pause 900ms,
+  boucle après 3s), barre de progression animée à l'apparition, survols boutons/cartes avec
+  élévation et ombre colorée.
+- **Double thème clair « verre liquide »** (`docs/DESIGN-SYSTEM.md` §2 bis, nouveau ce jour) :
+  `useTheme.js` (même convention que `useLang.js`), bouton de bascule dans la barre partout où
+  il y a une barre, recette de verre unique (`--glass*`), le terminal reste figé en dur sur ses
+  couleurs sombres (jamais les jetons qui changent de thème) pour ne jamais blanchir.
+- **Vérification FR/EN** demandée explicitement par Massy : testée réellement par un script qui
+  bascule la langue et relit le texte affiché, pas seulement une relecture du code.
+
+**3 bugs réels trouvés par la revue visuelle, invisibles aux suites automatisées** (détail complet
+et correctifs dans `docs/EXIGENCES-UX.md`, section de clôture dédiée) :
+1. `useRevealGroup.js` posait son observateur via `useRef`+`useEffect(() => {}, [])` -- ne
+   fonctionne que si l'élément existe déjà au premier rendu. La grille du catalogue n'existe
+   qu'après la réponse de `/api/courses` : les cartes restaient invisibles **pour de vrais
+   visiteurs**, pas seulement en capture. Corrigé avec une ref callback.
+2. `.pf-lang-toggle` (nouvelle classe) n'avait aucun reset de bouton natif -- Chromium appliquait
+   son chrome par défaut, rendant le bouton inactif illisible en thème sombre. Corrigé avec le
+   même reset que `.pf-theme-toggle`.
+3. Conséquence des deux bugs précédents : des sections entières de l'accueil semblaient vides sur
+   une capture non scrollée. Diagnostiqué comme un artefact de `page.screenshot({fullPage:true})`
+   (ne scrolle jamais réellement le viewport, donc ne déclenche jamais l'observateur) distinct du
+   bug n°1 réel -- confirmé par un test de scroll incrémental réel avant de corriger le script de
+   capture lui-même, par honnêteté méthodologique.
+
+**Note d'hygiène de session, sans rapport avec le code produit** : les sessions répétées de
+capture d'écran de cette passe ont de nouveau laissé des dizaines de processus `node`/`workerd`
+orphelins s'accumuler (70 cette fois, contre une cinquantaine lors de l'épisode similaire de la
+session précédente) au point de faire échouer/geler un run `test:functions`. Nettoyés avec
+l'accord déjà donné explicitement par Massy pour ce type exact de situation plus tôt dans la
+session -- même leçon déjà notée : toujours tuer l'arbre de processus complet d'un serveur
+jetable, jamais se fier à la seule fin du shell parent.
+
+**Tests** : aucun test automatisé nouveau pour les hooks `useTheme`/`useRevealGroup`/
+`GradientText` eux-mêmes (comportement visuel, couvert par la revue d'écran plutôt que par des
+assertions unitaires qui auraient dû mocker `matchMedia`/`IntersectionObserver` sans valeur
+ajoutée réelle) ; le test existant de `ProgressBar` mis à jour pour attendre la frame d'animation
+avant de lire `transform` (`platform-ui.test.jsx`). **Zéro régression** : 268 core / 9 data / 47
+exercises / 84 web / 45 functions / 32 e2e principal / 4 e2e admin, lint propre. Build : JS
+homepage ≈ 105 Ko gzip, CSS ≈ 7,3 Ko gzip (budgets 180/25 Ko, inchangés malgré l'ajout de tout ce
+qui précède). Rien déployé en production.
+
+**Reporté explicitement** (détail et justification dans `docs/EXIGENCES-UX.md`) : tension non
+résolue entre le bouton `sm` (34px, imposé par §5 bis) et le minimum d'accessibilité mobile
+44×44px (§8) -- signalé pour arbitrage de Massy, pas tranché unilatéralement. Mesure réelle de
+performance (LCP/CLS/INP) et de contraste toujours hors de portée de cet environnement.
 
 ### 08/10/2026 — Mission 23 Étape 2, reprise (nouvelle direction artistique « Nuit & aube », mode autonome)
 **Étape 2 reprise en entier et re-close.** Massy a rejeté la palette précédente (fond gris-bleu,

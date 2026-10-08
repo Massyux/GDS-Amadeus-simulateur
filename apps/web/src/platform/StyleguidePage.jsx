@@ -9,6 +9,8 @@ import {
   Skeleton,
   PlatformLayout,
 } from "./ui/index.js";
+import { useTheme } from "./useTheme.js";
+import { ThemeToggle } from "./ThemeToggle.jsx";
 
 /**
  * Internal-only page (Mission 23, Étape 0): every platform component in
@@ -20,6 +22,7 @@ import {
 export default function StyleguidePage() {
   const [fieldValue, setFieldValue] = useState("");
   const [showEmptyWithAction, setShowEmptyWithAction] = useState(true);
+  const [theme, toggleTheme] = useTheme();
 
   const nav = (
     <>
@@ -32,6 +35,7 @@ export default function StyleguidePage() {
       <a href="#cartes" className="pf-btn pf-btn--discreet">
         Cartes
       </a>
+      <ThemeToggle theme={theme} onToggle={toggleTheme} label="Changer de thème" />
     </>
   );
 
@@ -55,8 +59,11 @@ export default function StyleguidePage() {
           <Button variant="primary" disabled>
             Primaire désactivé
           </Button>
-          <Button variant="primary" compact>
-            Primaire compact
+          <Button variant="primary" size="sm">
+            Primaire petit (sm)
+          </Button>
+          <Button variant="primary" size="lg">
+            Primaire grand (lg)
           </Button>
         </div>
       </section>

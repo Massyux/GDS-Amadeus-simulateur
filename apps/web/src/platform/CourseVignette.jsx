@@ -6,6 +6,7 @@
 //
 // Reprises fidèlement de docs/maquettes/accueil.html (référence absolue
 // pour la composition visuelle) -- six motifs, un par formation.
+import { ResponsiveImage } from "./ResponsiveImage.jsx";
 
 function Radar({ stroke }) {
   return (
@@ -92,10 +93,30 @@ const VISUALS = {
 };
 
 /**
- * @param {{ course: { visual: string, color: string, colorDark: string, accentColor: string } }} props
+ * Chantier 2 (08/10/2026, "passe vivant") : une vraie photo remplace le
+ * motif SVG dès que `course.image` existe -- un voile dégradé aux couleurs
+ * de la formation par-dessus, "pour que les photos s'intègrent au lieu de
+ * jurer" (IDENTITE-VISUELLE.md). Le SVG reste le repli pour toute future
+ * vraie formation qui n'aurait pas encore sa photo (Étape 4, back-office).
+ *
+ * @param {{ course: { visual: string, color: string, colorDark: string, accentColor: string, image?: string } }} props
  */
-export function CourseVignette({ course, label }) {
+export function CourseVignette({ course, label, alt = "" }) {
   const render = VISUALS[course.visual] || VISUALS.radar;
+
+  if (course.image) {
+    return (
+      <div className="pf-course-ph">
+        <ResponsiveImage name={course.image} width={400} height={148} alt={alt} />
+        <div
+          className="pf-course-ph-veil"
+          style={{ background: `linear-gradient(140deg, ${course.color}CC, ${course.colorDark}99)` }}
+        />
+        {label && <span className="pf-course-ph-label">{label}</span>}
+      </div>
+    );
+  }
+
   return (
     <div
       className="pf-course-ph"

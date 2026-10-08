@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button, Field, Card, PlatformLayout } from "./ui/index.js";
 import { authApi } from "./api.js";
 import { TerminalDemo } from "./TerminalDemo.jsx";
+import { useTheme } from "./useTheme.js";
+import { ThemeToggle } from "./ThemeToggle.jsx";
 
 /**
  * Connexion / inscription / mot de passe oublié (docs/MAQUETTES.md §2 :
@@ -12,6 +14,7 @@ import { TerminalDemo } from "./TerminalDemo.jsx";
  * côté client qui tenterait de deviner "compte existant ou pas".
  */
 export default function AuthScreen({ t, onAuthenticated }) {
+  const [theme, toggleTheme] = useTheme();
   const [mode, setMode] = useState("login"); // "login" | "register" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,7 +70,10 @@ export default function AuthScreen({ t, onAuthenticated }) {
   }
 
   return (
-    <PlatformLayout>
+    <PlatformLayout
+      menuLabels={{ open: t.platform.nav.openMenu, close: t.platform.nav.closeMenu }}
+      nav={<ThemeToggle theme={theme} onToggle={toggleTheme} label={t.platform.nav.toggleTheme} />}
+    >
       <div
         aria-hidden="true"
         style={{

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import {
   Button,
   Field,
@@ -100,13 +100,15 @@ describe("ProgressBar", () => {
     expect(screen.getByText("7 / 12 leçons")).toBeTruthy();
   });
 
-  it("clamps the fill between 0 and 1 even for out-of-range values", () => {
+  it("clamps the fill between 0 and 1 even for out-of-range values", async () => {
+    // Le remplissage part de 0 et rejoint sa valeur réelle via
+    // requestAnimationFrame (apparition animée, chantier 4 du 08/10/2026) --
+    // il faut laisser la frame passer avant de lire `transform`.
     const { container, rerender } = render(<ProgressBar value={99} max={12} label="trop" />);
-    let fill = container.querySelector(".pf-progress-fill");
-    expect(fill.style.transform).toBe("scaleX(1)");
+    const fill = container.querySelector(".pf-progress-fill");
+    await waitFor(() => expect(fill.style.transform).toBe("scaleX(1)"));
     rerender(<ProgressBar value={-5} max={12} label="négatif" />);
-    fill = container.querySelector(".pf-progress-fill");
-    expect(fill.style.transform).toBe("scaleX(0)");
+    await waitFor(() => expect(fill.style.transform).toBe("scaleX(0)"));
   });
 });
 

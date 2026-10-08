@@ -6,6 +6,7 @@ import { platformApi } from "./api.js";
 import { renderMarkdownLite } from "./markdownLite.jsx";
 import { buildIcsUrl } from "./ics.js";
 import { LESSON_TYPE_ICONS } from "./lessonTypeIcons.js";
+import { useTheme } from "./useTheme.js";
 
 /**
  * Lecteur de leçon (docs/MAQUETTES.md §5) : "le contenu règne, le reste
@@ -24,6 +25,10 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
   const [course, setCourse] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [moduleDone, setModuleDone] = useState(null);
+  // Pas de barre de navigation ici (ci-dessous), donc pas de bouton de
+  // bascule -- mais le thème doit quand même s'initialiser correctement
+  // pour un visiteur qui atterrit directement sur l'URL d'une leçon.
+  useTheme();
   const tl = t.platform.lesson;
 
   // Pas de remise à zéro manuelle de `completed`/`moduleDone` ici : le
@@ -140,7 +145,7 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
               {tl.moduleDoneCta}
             </Button>
           ) : (
-            <Link to={`/app/cours/${courseSlug}`} className="pf-btn pf-btn--primary">
+            <Link to={`/app/cours/${courseSlug}`} className="pf-btn pf-btn--primary pf-btn--md">
               {t.platform.course.back}
             </Link>
           )}
@@ -180,7 +185,7 @@ function LessonContent({ type, content, tl }) {
           height="600"
           style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}
         />
-        <a href={content?.downloadUrl} className="pf-btn pf-btn--secondary" style={{ marginTop: "var(--space-3)" }}>
+        <a href={content?.downloadUrl} className="pf-btn pf-btn--secondary pf-btn--md" style={{ marginTop: "var(--space-3)" }}>
           {tl.pdfDownload}
         </a>
       </div>
@@ -194,7 +199,7 @@ function LessonContent({ type, content, tl }) {
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "var(--space-2)" }}>
           {(content?.files || []).map((file) => (
             <li key={file.fileName}>
-              <a href={file.downloadUrl} className="pf-btn pf-btn--secondary">
+              <a href={file.downloadUrl} className="pf-btn pf-btn--secondary pf-btn--sm">
                 {file.fileName}
               </a>
             </li>
@@ -218,7 +223,7 @@ function LessonContent({ type, content, tl }) {
           })}
         </p>
         {content?.state !== "passee" && content?.link && (
-          <a href={content.link} target="_blank" rel="noreferrer" className="pf-btn pf-btn--primary">
+          <a href={content.link} target="_blank" rel="noreferrer" className="pf-btn pf-btn--primary pf-btn--md">
             {tl.liveJoin}
           </a>
         )}
@@ -226,7 +231,7 @@ function LessonContent({ type, content, tl }) {
           <a
             href={buildIcsUrl(content)}
             download="session.ics"
-            className="pf-btn pf-btn--secondary"
+            className="pf-btn pf-btn--secondary pf-btn--md"
             style={{ marginLeft: "var(--space-3)" }}
           >
             {tl.liveAddToCalendar}
