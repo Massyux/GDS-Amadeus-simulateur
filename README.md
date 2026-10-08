@@ -79,7 +79,7 @@ de test `GDS-TEST-0001` + serveur Functions/D1, sans toucher à la production, s
 Cloudflare requis) :
 
 ```bash
-npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler pages dev apps/web/dist --port 8788
+npm run build:web && npx wrangler d1 execute gds-licences --local --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-e2e-test-license.sql && npx wrangler d1 execute gds-licences --local --file=scripts/seed-dev-course.sql && npx wrangler pages dev apps/web/dist --port 8788 --r2 CONTENT
 ```
 
 Les deux `wrangler d1 execute` sont idempotents (sans risque à relancer sur une base locale déjà

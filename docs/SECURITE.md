@@ -52,7 +52,7 @@ où tout le monde se connaît.
 
 ```
 Content-Security-Policy: default-src 'self'; img-src 'self' data: https:;
-  frame-src https://www.youtube-nocookie.com https://player.vimeo.com;
+  frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com;
   script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none';
   base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 Strict-Transport-Security: max-age=31536000; includeSubDomains
@@ -62,6 +62,12 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
 Toute exception à la CSP doit être justifiée en commentaire dans le fichier.
+
+*Correction (Mission 23 Étape 2, 06/10/2026) : `frame-src` inclut `'self'`. Contrairement à
+`default-src`, `frame-src` n'hérite jamais implicitement de la même origine quand il est défini
+explicitement — sans `'self'`, le lecteur de leçon n'aurait jamais pu afficher un PDF dans un
+`<iframe>` pointant vers sa propre API (`/api/files/download`). Trouvé et corrigé avant tout
+déploiement, via un test e2e qui vérifie l'absence d'erreur CSP dans la console du navigateur.*
 
 ## 5. Contenu payant
 

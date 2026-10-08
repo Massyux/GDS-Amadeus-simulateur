@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accueil v2 — nuit & aube</title>
+<style>
+:root{
+  /* Palette "nuit & aube" : vol de nuit, instruments de bord, lever de soleil */
+  --night:#070B16;        /* base */
+  --night-2:#0C1222;      /* surface */
+  --night-3:#141C33;      /* élevé */
+  --ink:#F2F6FF;          /* texte */
+  --ink-2:#A8B6D4;        /* secondaire */
+  --ink-3:#6B7A9C;        /* discret */
+  --line:rgba(168,182,212,.14);
+  --cyan:#22D3EE;         /* tech / instruments */
+  --coral:#FF8A5B;        /* aube / chaleur / humain */
+  --violet:#8B7CF6;       /* profondeur */
+  --mint:#34D399;         /* terminal uniquement */
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--night);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+a{color:inherit;text-decoration:none}
+@keyframes bl{50%{opacity:0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes drift{0%{transform:translate(0,0)}100%{transform:translate(-80px,40px)}}
+
+/* ---------- décor de fond ---------- */
+.aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
+.a1{width:620px;height:620px;background:radial-gradient(circle,#1E3A8A 0%,transparent 70%);top:-180px;left:-120px}
+.a2{width:520px;height:520px;background:radial-gradient(circle,#0E7490 0%,transparent 70%);top:40px;right:-140px;opacity:.42}
+.a3{width:460px;height:460px;background:radial-gradient(circle,#C2410C 0%,transparent 70%);top:820px;left:38%;opacity:.26}
+.gridbg{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 75%)}
+
+/* ---------- nav ---------- */
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(7,11,22,.72);border-bottom:1px solid var(--line)}
+.nav-in{height:66px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-family:var(--mono);font-weight:700;font-size:16px;letter-spacing:-.02em;display:flex;align-items:center;gap:2px}
+.brand em{font-style:normal;background:linear-gradient(92deg,var(--cyan),var(--coral));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand i{width:8px;height:16px;background:var(--cyan);animation:bl 1.1s steps(1) infinite;margin-left:4px}
+.nlinks{display:flex;gap:28px;align-items:center;font-size:14.5px;color:var(--ink-2)}
+.nlinks a:hover{color:var(--ink)}
+.btn{border:0;border-radius:10px;padding:11px 20px;font:600 14.5px var(--sans);cursor:pointer;transition:.18s ease}
+.pri{background:linear-gradient(92deg,var(--cyan),#3B82F6);color:#04121A;box-shadow:0 6px 24px rgba(34,211,238,.26)}
+.pri:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(34,211,238,.34)}
+.gho{background:rgba(168,182,212,.07);color:var(--ink);border:1px solid var(--line)}
+.gho:hover{background:rgba(168,182,212,.13)}
+.lg{padding:14px 26px;font-size:15.5px;border-radius:12px}
+
+/* ---------- héros ---------- */
+.hero{display:grid;grid-template-columns:1.02fr .98fr;gap:58px;align-items:center;padding:86px 0 72px}
+.tag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--cyan);background:rgba(34,211,238,.09);border:1px solid rgba(34,211,238,.22);padding:7px 13px;border-radius:999px;margin-bottom:22px}
+.tag b{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+h1{font-size:50px;line-height:1.06;letter-spacing:-.035em;font-weight:700}
+h1 em{font-style:normal;background:linear-gradient(96deg,var(--cyan) 10%,var(--coral) 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--ink-2);font-size:17px;max-width:50ch;margin-top:20px}
+.cta{display:flex;gap:13px;margin-top:32px;flex-wrap:wrap}
+.note{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);margin-top:15px}
+.kpis{display:flex;gap:38px;margin-top:40px;padding-top:24px;border-top:1px solid var(--line)}
+.kpi b{display:block;font-family:var(--mono);font-size:23px;font-variant-numeric:tabular-nums;background:linear-gradient(92deg,var(--cyan),var(--coral));-webkit-background-clip:text;background-clip:text;color:transparent}
+.kpi span{font-size:12.5px;color:var(--ink-3)}
+
+/* terminal (bloc conservé, re-stylé) */
+.termwrap{position:relative;animation:float 7s ease-in-out infinite}
+.termglow{position:absolute;inset:-28px;background:radial-gradient(60% 60% at 50% 40%,rgba(34,211,238,.20),transparent 70%);filter:blur(26px);z-index:0}
+.term{position:relative;z-index:1;background:linear-gradient(170deg,#08101F,#060A13);border:1px solid rgba(168,182,212,.16);border-radius:16px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.tbar{display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid var(--line);background:rgba(168,182,212,.03)}
+.tbar i{width:10px;height:10px;border-radius:50%}
+.tbar i:nth-child(1){background:#FF5F57}.tbar i:nth-child(2){background:#FEBC2E}.tbar i:nth-child(3){background:#28C840}
+.tbar span{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.tbody{font-family:var(--mono);font-size:13px;line-height:1.85;padding:20px;color:var(--ink-2);white-space:pre}
+.cmd{color:var(--mint)}.hl{color:var(--ink)}
+.cur{display:inline-block;width:8px;height:15px;background:var(--mint);vertical-align:-3px;animation:bl 1.1s steps(1) infinite}
+
+/* ---------- sections ---------- */
+section{padding:92px 0;position:relative}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral);margin-bottom:14px}
+h2{font-size:36px;letter-spacing:-.03em;line-height:1.14;font-weight:700}
+.s-lead{color:var(--ink-2);font-size:16.5px;max-width:60ch;margin-top:14px}
+.center{text-align:center}.center .s-lead{margin:14px auto 0}
+
+/* étapes */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:52px}
+.step{background:linear-gradient(165deg,rgba(168,182,212,.07),rgba(168,182,212,.02));border:1px solid var(--line);border-radius:18px;padding:30px;transition:.22s ease;position:relative;overflow:hidden}
+.step:hover{transform:translateY(-4px);border-color:rgba(34,211,238,.3)}
+.step .no{font-family:var(--mono);font-size:12px;color:var(--cyan);letter-spacing:.1em}
+.step h3{font-size:19px;margin:14px 0 9px;letter-spacing:-.01em}
+.step p{font-size:14.5px;color:var(--ink-2)}
+.step svg{position:absolute;right:-14px;bottom:-14px;opacity:.14}
+
+/* formations */
+.courses{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:52px}
+.course{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--night-2);transition:.22s ease;display:flex;flex-direction:column}
+.course:hover{transform:translateY(-5px);border-color:rgba(168,182,212,.3)}
+.ph{height:148px;position:relative;overflow:hidden}
+.ph .lbl{position:absolute;left:16px;bottom:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:rgba(7,11,22,.6);backdrop-filter:blur(6px);padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18)}
+.cbody{padding:22px;display:flex;flex-direction:column;gap:10px;flex:1}
+.course h3{font-size:18.5px;letter-spacing:-.015em}
+.course p{font-size:14px;color:var(--ink-2);flex:1}
+.cfoot{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--line)}
+.meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.price{font-family:var(--mono);font-size:16px;font-weight:600}
+.soon{font-family:var(--mono);font-size:11px;color:var(--ink-3);border:1px dashed var(--line);padding:4px 9px;border-radius:999px}
+
+/* pour qui */
+.who{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.wc{background:linear-gradient(165deg,rgba(255,138,91,.08),rgba(168,182,212,.02));border:1px solid var(--line);border-radius:18px;padding:28px}
+.wc h3{font-size:17px;margin-bottom:8px}
+.wc p{font-size:14.5px;color:var(--ink-2)}
+
+/* formateur */
+.teacher{display:grid;grid-template-columns:150px 1fr;gap:34px;align-items:center;background:linear-gradient(120deg,rgba(34,211,238,.08),rgba(255,138,91,.06));border:1px solid var(--line);border-radius:22px;padding:36px}
+.avatar{width:150px;height:150px;border-radius:18px;background:linear-gradient(160deg,var(--night-3),var(--night-2));border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.5}
+.teacher h3{font-size:22px;letter-spacing:-.02em}
+.teacher .role{font-family:var(--mono);font-size:12.5px;color:var(--cyan);margin:4px 0 14px}
+.teacher p{font-size:15.5px;color:var(--ink-2);max-width:66ch}
+
+/* final */
+.final{text-align:center;background:linear-gradient(150deg,rgba(34,211,238,.10),rgba(139,124,246,.08),rgba(255,138,91,.08));border:1px solid var(--line);border-radius:26px;padding:72px 32px;margin:0 0 96px}
+.final h2{font-size:38px}
+.final p{color:var(--ink-2);margin:14px auto 30px;max-width:48ch;font-size:16.5px}
+
+footer{border-top:1px solid var(--line);padding:42px 0 56px}
+.fgrid{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap}
+.fgrid a{color:var(--ink-2);font-size:14px;margin-right:22px}
+.disc{max-width:60ch;font-size:12.5px;color:var(--ink-3);line-height:1.65}
+
+@media(max-width:980px){
+  .hero{grid-template-columns:1fr;gap:44px;padding:56px 0}
+  h1{font-size:36px}h2{font-size:28px}
+  .steps,.courses,.who{grid-template-columns:1fr}
+  .teacher{grid-template-columns:1fr;text-align:center;justify-items:center}
+  .nlinks a{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+<div class="gridbg"></div>
+
+<nav><div class="wrap nav-in">
+  <div class="brand"><em>Cockpit</em><i></i></div>
+  <div class="nlinks">
+    <a href="#formations">Formations</a><a href="#methode">Méthode</a><a href="#">Tarifs</a><a href="#">Connexion</a>
+    <button class="btn pri">Commencer</button>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <div class="tag"><b></b> Formation professionnelle · Tourisme &amp; aérien</div>
+      <h1>Apprends un métier,<br><em>pas seulement une théorie.</em></h1>
+      <p class="lead">Des formations où l'on pratique sur les vrais outils du secteur, avec correction automatique immédiate. Du terminal de réservation à l'accueil client.</p>
+      <div class="cta">
+        <button class="btn pri lg">Essayer gratuitement</button>
+        <button class="btn gho lg">Voir les formations</button>
+      </div>
+      <div class="note">Aucune carte bancaire · 2 leçons offertes</div>
+      <div class="kpis">
+        <div class="kpi"><b>6</b><span>formations métier</span></div>
+        <div class="kpi"><b>40+</b><span>commandes réelles</span></div>
+        <div class="kpi"><b>à vie</b><span>accès inclus</span></div>
+      </div>
+    </div>
+
+    <div class="termwrap">
+      <div class="termglow"></div>
+      <div class="term">
+        <div class="tbar"><i></i><i></i><i></i><span>terminal de réservation — démonstration</span></div>
+        <div class="tbody"><span class="cmd">&gt; AN15DECALGPAR</span>
+  1  AH1006  Y9 C4   ALG CDG  0810 1120
+  2  AF1655  Y7 C2   ALG CDG  1340 1655
+  3  AH1008  Y4 C0   ALG CDG  1820 2130
+<span class="cmd">&gt; SS1Y1</span>
+  <span class="hl">SEGMENT VENDU — 1 PLACE</span>
+<span class="cmd">&gt; NM1DUPONT/JEAN MR</span>
+<span class="cmd">&gt; ER</span>
+  <span class="hl">DOSSIER ENREGISTRÉ — 4KX9TZ</span>
+<span class="cmd">&gt; <span class="cur"></span></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MÉTHODE -->
+<section id="methode"><div class="wrap">
+  <div class="center">
+    <div class="eyebrow">La méthode</div>
+    <h2>Tu pratiques dès la troisième leçon.</h2>
+    <p class="s-lead">Pas trois heures de vidéo avant de toucher l'outil. Tu agis, l'outil répond, la correction t'explique pourquoi.</p>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="no">01</div><h3>Tu apprends le geste</h3><p>Des leçons courtes de 5 à 10 minutes, en français, avec la fiche mémo à portée de main.</p>
+      <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="1"><path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14M4 19h16M8 8h8M8 12h8M8 16h5"/></svg></div>
+    <div class="step"><div class="no">02</div><h3>Tu pratiques en vrai</h3><p>Des outils professionnels complets dans ton navigateur. Rien de simplifié, rien de simulé à moitié.</p>
+      <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="#8B7CF6" stroke-width="1"><path d="M17.8 19.2 16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2a.5.5 0 0 0-.5.8l4.2 4.2-2 2-2.3-.4a.5.5 0 0 0-.5.8L6 16l2.4 2.3a.5.5 0 0 0 .8-.5l-.4-2.3 2-2 4.2 4.2a.5.5 0 0 0 .8-.5Z"/></svg></div>
+    <div class="step"><div class="no">03</div><h3>Tu es corrigé seul</h3><p>Chaque exercice est évalué automatiquement. Tu vois ce qui est acquis et ce qu'il reste à revoir.</p>
+      <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="#FF8A5B" stroke-width="1"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg></div>
+  </div>
+</div></section>
+
+<!-- FORMATIONS -->
+<section id="formations"><div class="wrap">
+  <div class="eyebrow">Le catalogue</div>
+  <h2>Six métiers du voyage, une seule plateforme.</h2>
+  <p class="s-lead">Chaque formation est bâtie sur la même promesse : de la pratique réelle, pas des diapositives.</p>
+
+  <div class="courses">
+
+    <div class="course">
+      <div class="ph" style="background:linear-gradient(140deg,#0E7490,#1E3A8A)">
+        <svg viewBox="0 0 400 150" width="100%" height="100%" style="position:absolute;inset:0">
+          <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22D3EE" stop-opacity=".5"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></linearGradient></defs>
+          <circle cx="200" cy="150" r="130" fill="none" stroke="#22D3EE" stroke-opacity=".28"/><circle cx="200" cy="150" r="92" fill="none" stroke="#22D3EE" stroke-opacity=".2"/><circle cx="200" cy="150" r="54" fill="none" stroke="#22D3EE" stroke-opacity=".14"/>
+          <path d="M0 150 L200 150 L340 40" stroke="url(#g1)" stroke-width="2" fill="none"/>
+          <path d="M352 28 l14 10 -8 14 -10-10z" fill="#22D3EE" opacity=".85"/>
+        </svg>
+        <span class="lbl">Aérien · Débutant</span>
+      </div>
+      <div class="cbody">
+        <h3>Réservation aérienne</h3>
+        <p>Disponibilité, vente, dossier passager, tarification, émission — sur un vrai terminal professionnel.</p>
+        <div class="cfoot"><span class="meta">24 leçons · 12 h</span><span class="price">9 900 DA</span></div>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="ph" style="background:linear-gradient(140deg,#1E3A8A,#4C1D95)">
+        <svg viewBox="0 0 400 150" width="100%" height="100%" style="position:absolute;inset:0">
+          <path d="M-10 118 Q100 92 200 104 T410 86" stroke="#8B7CF6" stroke-opacity=".45" stroke-width="2" fill="none"/>
+          <path d="M-10 136 Q120 114 230 122 T410 108" stroke="#8B7CF6" stroke-opacity=".22" stroke-width="2" fill="none"/>
+          <circle cx="92" cy="98" r="5" fill="#A78BFA"/><circle cx="218" cy="105" r="5" fill="#A78BFA"/><circle cx="330" cy="92" r="5" fill="#A78BFA"/>
+          <rect x="250" y="26" width="104" height="58" rx="8" fill="none" stroke="#A78BFA" stroke-opacity=".4"/>
+          <path d="M262 46h80M262 58h54M262 70h66" stroke="#A78BFA" stroke-opacity=".32" stroke-width="2"/>
+        </svg>
+        <span class="lbl">Métier · Complet</span>
+      </div>
+      <div class="cbody">
+        <h3>Agent de voyage</h3>
+        <p>Le métier de bout en bout : conseil client, devis, réservation, suivi de dossier et après-vente.</p>
+        <div class="cfoot"><span class="meta">28 leçons · 15 h</span><span class="price">11 900 DA</span></div>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="ph" style="background:linear-gradient(140deg,#C2410C,#7C2D12)">
+        <svg viewBox="0 0 400 150" width="100%" height="100%" style="position:absolute;inset:0">
+          <circle cx="200" cy="124" r="78" fill="#FF8A5B" fill-opacity=".16"/>
+          <circle cx="200" cy="124" r="48" fill="#FFB088" fill-opacity=".22"/>
+          <path d="M0 126h400" stroke="#FFB088" stroke-opacity=".4" stroke-width="1.5"/>
+          <path d="M150 126a50 26 0 0 1 100 0" fill="none" stroke="#FFD2BA" stroke-opacity=".55" stroke-width="2"/>
+          <circle cx="200" cy="86" r="13" fill="none" stroke="#FFD2BA" stroke-opacity=".7" stroke-width="2"/>
+        </svg>
+        <span class="lbl">Relation client</span>
+      </div>
+      <div class="cbody">
+        <h3>Hôte &amp; hôtesse d'accueil</h3>
+        <p>Accueillir, orienter, gérer l'attente et désamorcer un conflit — en agence, à l'aéroport ou en événement.</p>
+        <div class="cfoot"><span class="meta">16 leçons · 8 h</span><span class="price">5 900 DA</span></div>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="ph" style="background:linear-gradient(140deg,#155E75,#0F766E)">
+        <svg viewBox="0 0 400 150" width="100%" height="100%" style="position:absolute;inset:0">
+          <rect x="54" y="92" width="34" height="44" rx="4" fill="#2DD4BF" fill-opacity=".45"/>
+          <rect x="102" y="66" width="34" height="70" rx="4" fill="#2DD4BF" fill-opacity=".6"/>
+          <rect x="150" y="40" width="34" height="96" rx="4" fill="#2DD4BF" fill-opacity=".78"/>
+          <path d="M210 110 l38-30 30 20 46-52" stroke="#5EEAD4" stroke-width="2.5" fill="none"/>
+          <circle cx="324" cy="48" r="6" fill="#5EEAD4"/>
+        </svg>
+        <span class="lbl">Management</span>
+      </div>
+      <div class="cbody">
+        <h3>Management d'agence</h3>
+        <p>Piloter une équipe, organiser le comptoir, suivre la rentabilité et tenir les objectifs commerciaux.</p>
+        <div class="cfoot"><span class="meta">18 leçons · 10 h</span><span class="price">8 900 DA</span></div>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="ph" style="background:linear-gradient(140deg,#3730A3,#1E3A8A)">
+        <svg viewBox="0 0 400 150" width="100%" height="100%" style="position:absolute;inset:0">
+          <circle cx="200" cy="80" r="56" fill="none" stroke="#818CF8" stroke-opacity=".5" stroke-width="1.5"/>
+          <ellipse cx="200" cy="80" rx="56" ry="22" fill="none" stroke="#818CF8" stroke-opacity=".35" stroke-width="1.5"/>
+          <ellipse cx="200" cy="80" rx="22" ry="56" fill="none" stroke="#818CF8" stroke-opacity=".35" stroke-width="1.5"/>
+          <path d="M144 80h112" stroke="#818CF8" stroke-opacity=".35" stroke-width="1.5"/>
+          <circle cx="248" cy="52" r="5" fill="#A5B4FC"/><circle cx="160" cy="98" r="5" fill="#A5B4FC"/>
+        </svg>
+        <span class="lbl">Langues</span>
+      </div>
+      <div class="cbody">
+        <h3>Anglais professionnel</h3>
+        <p>Accueillir, négocier et rédiger en anglais dans un contexte tourisme, aérien et hôtellerie.</p>
+        <div class="cfoot"><span class="meta">18 leçons · 9 h</span><span class="price">4 900 DA</span></div>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="ph" style="background:linear-gradient(140deg,#0C4A6E,#164E63)">
+        <svg viewBox="0 0 400 150" width="100%" height="100%" style="position:absolute;inset:0">
+          <rect x="88" y="44" width="224" height="68" rx="9" fill="none" stroke="#38BDF8" stroke-opacity=".5" stroke-width="1.5"/>
+          <path d="M88 70h224" stroke="#38BDF8" stroke-opacity=".3" stroke-dasharray="5 5"/>
+          <circle cx="88" cy="70" r="7" fill="#070B16" stroke="#38BDF8" stroke-opacity=".5"/>
+          <circle cx="312" cy="70" r="7" fill="#070B16" stroke="#38BDF8" stroke-opacity=".5"/>
+          <path d="M110 86h66M110 96h42M232 86h58" stroke="#7DD3FC" stroke-opacity=".5" stroke-width="2"/>
+        </svg>
+        <span class="lbl">Aérien · Avancé</span>
+      </div>
+      <div class="cbody">
+        <h3>Billetterie &amp; tarification</h3>
+        <p>Construire un tarif, appliquer les taxes, émettre, échanger et rembourser un billet sans erreur.</p>
+        <div class="cfoot"><span class="meta">20 leçons · 11 h</span><span class="soon">bientôt</span></div>
+      </div>
+    </div>
+
+  </div>
+</div></section>
+
+<!-- POUR QUI -->
+<section><div class="wrap">
+  <div class="eyebrow">Pour qui</div>
+  <h2>Si on t'a déjà dit « tu connais l'outil ? »</h2>
+  <div class="who">
+    <div class="wc"><h3>Étudiant en tourisme</h3><p>Tu as la théorie, il te manque la pratique que les écoles n'ont pas les moyens d'offrir.</p></div>
+    <div class="wc"><h3>Candidat en agence</h3><p>Tu passes des entretiens et la question technique revient systématiquement.</p></div>
+    <div class="wc"><h3>Professionnel en poste</h3><p>Tu veux évoluer, ou ton agence n'a pas les moyens de te former en interne.</p></div>
+  </div>
+</div></section>
+
+<!-- FORMATEUR -->
+<section><div class="wrap">
+  <div class="eyebrow">Qui enseigne</div>
+  <div class="teacher" style="margin-top:22px">
+    <div class="avatar">photo réelle<br>à insérer</div>
+    <div>
+      <h3>Massinissa Mehdani</h3>
+      <div class="role">Fondateur · agent de voyage</div>
+      <p>Plusieurs années en agence, du comptoir à la billetterie. J'ai construit cette plateforme parce que j'ai vu trop de bons candidats refusés pour une seule raison : personne ne leur avait jamais laissé toucher l'outil.</p>
+    </div>
+  </div>
+</div></section>
+
+<div class="wrap">
+  <div class="final">
+    <h2>Commence par deux leçons offertes.</h2>
+    <p>Sans inscription payante, sans carte bancaire. Tu verras l'outil en moins d'une minute.</p>
+    <button class="btn pri lg">Essayer gratuitement</button>
+  </div>
+</div>
+
+<footer><div class="wrap fgrid">
+  <div>
+    <div class="brand" style="margin-bottom:14px"><em>Cockpit</em><i></i></div>
+    <a href="#">Contact</a><a href="#">Conditions</a><a href="#">Remboursement</a>
+  </div>
+  <p class="disc">Plateforme de formation indépendante. Non affiliée à Amadeus IT Group ni à aucun éditeur de système de réservation. Les formations préparent à l'usage professionnel d'outils du secteur et ne délivrent pas de certification officielle d'éditeur.</p>
+</div></footer>
+
+</body>
+</html>

@@ -14,12 +14,18 @@ Premier des trois chantiers restants (ordre choisi par Massy : 23 Plateforme →
 déployé en production** pendant tout le chantier (règle explicite du mode autonome) — la
 production actuelle (simulateur + accès par clé) continue de fonctionner à l'identique.
 
-**Étape 0 (fondations visuelles + sécurité) CLOSE (06/10/2026)** et **Étape 1 (modèle de
-données + authentification étudiant) CLOSE (06/10/2026)** — voir les entrées datées ci-dessous
-pour le détail complet. **Reprise exacte pour la suite** : Étape 2 (espace étudiant — catalogue,
-page de formation, lecteur de leçon, reprise en un clic, progression, « Mon compte », les 7
-types de leçon). Rien n'est encore affiché côté étudiant : l'auth d'Étape 1 n'est qu'API, sans
-aucune page de connexion/inscription — c'est l'Étape 2 qui construit les écrans.
+**Étape 0, Étape 1 et Étape 2 (espace étudiant) CLOSES** — Étape 2 reprise en entier le
+08/10/2026 sur une nouvelle direction artistique (« Nuit & aube », palette rejetée par Massy
+après maquette) ; voir les entrées datées ci-dessous pour le détail complet des deux passes.
+**Reprise exacte pour la suite** : Étape 3 (intégration du simulateur et des exercices comme
+leçons du cours « Amadeus niveau 1 », déjà créé comme donnée par `scripts/seed-dev-course.sql` —
+Étape 2 rend déjà les types `simulateur`/`exercice` par un message d'attente, c'est l'Étape 3 qui
+branche le vrai terminal/moteur d'exercices dessus).
+**Rappel production pour la clôture finale (Étape 5)** : trois choses à faire une fois, qui
+n'existent qu'en local pour l'instant — `SESSION_SECRET` (env var Cloudflare Pages, comme
+`ADMIN_SECRET_HASH`), le binding R2 réel (`wrangler.jsonc` n'a volontairement PAS été modifié,
+voir l'entrée Étape 2 ci-dessous) une fois le bucket créé, et `migrations/0002_platform_users.sql`
+appliqué en `--remote`.
 
 **Mission 14 (espace admin + licences par poste) — CLOSE dans son ensemble, y compris l'Étape 3
 (bascule production).** Architecture changée en cours de route par l'architecte (07/07/2026) :
@@ -79,6 +85,192 @@ prochaine mission une fois le pilote conclu.
   par les futurs appelants (Étape 4, back-office).
 
 ## Fait (par session, datée)
+
+### 08/10/2026 — Mission 23 Étape 2, reprise (nouvelle direction artistique « Nuit & aube », mode autonome)
+**Étape 2 reprise en entier et re-close.** Massy a rejeté la palette précédente (fond gris-bleu,
+accent vert) après avoir vu une maquette. Nouvelle direction validée : palette « nuit & aube »
+(bleu nuit profond, cyan instrument, corail aube — le vert ne survit que dans le terminal),
+référence absolue `docs/maquettes/accueil.html`, régie par `docs/DESIGN-SYSTEM.md` §2 (réécrit),
+`docs/IDENTITE-VISUELLE.md` (réécrit — rejette explicitement la précédente « grammaire de
+terminal GDS » pour raison juridique/multi-formation), `docs/MAQUETTES.md` (composition
+écran par écran) et `docs/EXIGENCES-UX.md` (50 exigences numérotées + procédure de clôture
+obligatoire, nouveau document de l'architecte). Tout le visuel de l'Étape 2 (06/10/2026,
+ci-dessous) a été refait sur cette direction ; le backend de cette étape (Functions, schéma D1)
+n'a pas changé.
+
+- **Jetons de design** (`apps/web/src/platform/styles/platform.css`, entièrement réécrit) :
+  palette nuit & aube, atmosphère obligatoire (3 halos radiaux flous fixes + grille en filigrane
+  + barre de navigation en verre dépoli), bouton primaire en dégradé cyan→bleu (un des deux seuls
+  usages de dégradé autorisés par DESIGN-SYSTEM §2, l'autre étant cyan→corail sur les titres
+  forts). Zéro image, zéro requête réseau pour l'atmosphère.
+- **Nouvel accueil public `/`** (`HomePage.jsx`, remplace l'ancien onboarding du simulateur à
+  cette route) : hero avec terminal flottant animé qui se tape seul en boucle (`TerminalDemo.jsx`,
+  respecte `prefers-reduced-motion`), méthode en 3 étapes, catalogue de 6 formations avec vignette
+  SVG par formation (`CourseVignette.jsx`, motifs dessinés à la main, jamais une photo de banque
+  d'images), section « pour qui », encart formateur, CTA final, pied de page avec disclaimer.
+  **Les 6 formations sont des données de démonstration** (`apps/web/src/platform/data/
+  demoCourses.js`) que Massy retirera au lancement (seule « Réservation aérienne », la vraie
+  formation Amadeus déjà en base, restera) — jamais codées en dur dans un composant.
+  L'ancien parcours (Onboarding → AccessGate → Terminal, Mission 06) reste intact et testé,
+  déplacé à `/simulateur` (jamais supprimé — le terminal doit rester joignable tant que l'Étape 3
+  ne l'a pas intégré comme leçon de la vraie formation) ; 4 fichiers e2e historiques mis à jour
+  pour pointer vers cette nouvelle URL, `security-headers.spec.js` volontairement laissé sur `/`
+  (valide toujours, teste maintenant le nouvel accueil).
+- **Catalogue, page de formation, lecteur de leçon et Mon compte refaits sur la même direction** :
+  chaque formation garde sa couleur d'identification (vignette), la coquille reste neutre. Bloc
+  « Reprendre » pleine largeur en haut du catalogue et en premier dans Mon compte dès qu'une
+  formation est en cours (`Continuer — Module X, leçon Y`, calculé serveur — `/api/courses` et
+  `/api/account` enrichis avec `nextModuleIndex`/`nextLessonIndexInModule`/`nextModuleTitle`/
+  `nextLessonTitle`, libellé construit par un petit module partagé `resumeLabel.js` qui retombe
+  sur un simple pourcentage si la position précise manque). Page de formation : en-tête à deux
+  colonnes (texte + vignette), section « Ce que tu sauras faire » (4 puces en verbes d'action par
+  formation démo, avant le sommaire — « c'est ce qui vend »), sommaire par module avec icône par
+  type de leçon (`lessonTypeIcons.js`, glyphes simples, jamais d'emoji) et état (fait/en cours/
+  verrouillé), encart formateur. Lecteur de leçon : barre fine (retour, titre, position « n/total »),
+  sommaire latéral repliable (masqué sous 1024px), bouton unique « Marquer comme terminé et
+  continuer » qui enchaîne directement sur la leçon suivante sauf en fin de module (écran de
+  félicitation dédié avec CTA module suivant ou retour au cours). Écran de connexion : plus de
+  barre de navigation (MAQUETTES.md §2), juste la marque au-dessus d'une carte centrée, terminal
+  de démonstration atténué à 8 % en fond.
+- **Bug de langue corrigé** (exigence explicite de Massy, F1 de EXIGENCES-UX.md) : plus aucun
+  libellé d'interface en dur — libellés du menu mobile, bouton « Marquer comme terminé et
+  continuer », « Module N »/« leçon N » du bloc Reprendre, tout passe maintenant par
+  `dictionary.js`.
+- **3 bugs réels trouvés par la revue visuelle** (captures Playwright à 1280px et 390px contre un
+  vrai `wrangler pages dev` local, PAS par les suites automatisées — invisibles à toutes, par
+  construction) :
+  1. `HomePage.jsx` importait `navigate` depuis `./Link.jsx`, qui n'exporte que `Link`
+     (`navigate` vit dans `useRoute.js`) — chaque bouton de l'accueil aurait levé une exception
+     silencieuse en production. Corrigé.
+  2. `.pf-topbar` imposait une `height: 66px` fixe ; le panneau de menu mobile (nouveau sur
+     l'accueil, et sur toutes les pages authentifiées via `PlatformLayout.jsx`, qui partage la
+     même classe CSS) débordait visuellement SUR le contenu suivant au lieu de le repousser.
+     Changé en `min-height`. Même famille de bug sur les deux en-têtes (CONSTITUTION §3) — cherché
+     et corrigé une seule fois, à la racine CSS partagée.
+  3. (Trouvé pendant la revue, pas un bug visuel mais un écart fonctionnel C4 de
+     EXIGENCES-UX.md) : la page de formation n'affichait aucune progression globale ni par
+     module pour un étudiant déjà inscrit, seulement des coches par leçon. Ajouté (`ProgressBar`
+     globale + une par module dans `CoursePage.jsx`).
+- **1 bug pré-existant corrigé au passage, hors périmètre de cette étape mais trouvé en
+  relançant la suite `functions` en régression** : `functions/__tests__/platform-api.test.js`
+  vérifiait encore la présence du mot « Bienvenue » dans le corps markdown de la première leçon —
+  devenu faux depuis la correction d'un doublon de titre affiché (Mission 23 Étape 2 du
+  06/10/2026, déjà en place). Le test n'avait jamais été remis en cohérence avec le fixture.
+  Corrigé (vérifie maintenant « Au programme », présent dans le corps réel).
+- **Flakiness d'infrastructure de test corrigée** : `functions/__tests__/testServer.js` faisait
+  parfois échouer son nettoyage en `EPERM` sur Windows (`rmSync` sur le dossier D1 temporaire
+  juste après `taskkill` du process wrangler — le handle SQLite n'est pas toujours relâché
+  instantanément). Ajouté une reprise avec court délai (5 tentatives, 200ms) — pas vu nécessiter
+  plus de 2-3 essais en pratique. Sans lien avec le code produit, mais rendait la suite `functions`
+  intermittente.
+- **`docs/EXIGENCES-UX.md` rempli** (nouveau document de l'architecte, 50 exigences A1-I3 + bloc
+  de clôture dédié) : détail complet des statuts par exigence et des écarts assumés/reportés dans
+  le document lui-même plutôt que dupliqué ici. Résumé des reports explicites : photo réelle du
+  formateur et vraies pages Contact/Conditions/Remboursement (attendent du contenu de Massy),
+  relecture orthographique dédiée, mode libre du simulateur intégré (Étape 3), catalogue
+  visuellement clairsemé (une seule vraie formation en base aujourd'hui — mécanique, se résout à
+  l'Étape 4), répétition du CTA sur l'accueil (décision de landing page assumée, à confirmer avec
+  Massy), mesure de performance réelle (pas d'outil Lighthouse/CrUX disponible dans cet
+  environnement), `App`/`AdminApp` pas encore en `lazy()` dans `main.jsx` (pré-existant, piste
+  d'optimisation).
+- **Tests** : 2 nouveaux fichiers utilitaires sans test dédié séparé (`resumeLabel.js`,
+  `lessonTypeIcons.js` — couverts indirectement par les tests de page existants) ; tests existants
+  mis à jour pour la nouvelle marque/structure (`platform-ui.test.jsx` : « Simulateur Amadeus »
+  → « GDS Academy », libellés de menu explicites) et le nouveau bouton unique du lecteur de leçon
+  (`LessonPlayerPage.test.jsx` : plus de bouton « Suivant » séparé, nouveau test de fin de module
+  et de passage direct à la leçon suivante) ; `platform.spec.js` (e2e) réécrit pour la nouvelle UI
+  (navigation par le sommaire au lieu d'un bouton « Suivant », passage par la page de formation
+  pour atteindre « Mon compte » depuis le lecteur). **Zéro régression** : 268 core / 9 data / 47
+  exercises / 84 web / 45 functions / 32 e2e principal / 4 e2e admin, lint et typecheck propres.
+  Build : JS total au premier chargement de l'accueil ≈ 105 Ko gzip, CSS total ≈ 6,2 Ko gzip
+  (budget 180 Ko / 25 Ko). Rien déployé en production.
+- **Note d'hygiène de session, sans rapport avec le code produit** : les sessions répétées de
+  captures d'écran manuelles (serveurs `wrangler pages dev` jetables lancés en arrière-plan pour
+  la revue visuelle) ont laissé une cinquantaine de processus `node`/`workerd` orphelins
+  s'accumuler, ralentissant sévèrement la machine au point de faire échouer un run Vitest
+  (workers incapables de démarrer, pas un vrai échec de test). Nettoyés avec l'accord explicite de
+  Massy (ciblé par horodatage de démarrage, en excluant les processus antérieurs à la session).
+  Confirme une leçon déjà notée ailleurs dans ce fichier : toujours tuer l'arbre de processus
+  complet d'un serveur de test jetable, pas seulement s'appuyer sur la fin du shell parent.
+
+### 06/10/2026 — Mission 23 Étape 2 (espace étudiant, mode autonome)
+**Étape 2 CLOSE.** Premiers écrans réels de la plateforme : catalogue, page de formation,
+inscription, lecteur de leçon (5 des 7 types -- `simulateur`/`exercice` affichent un message
+d'attente, intégration réelle réservée à l'Étape 3 par `missions/MISSION-23.md` lui-même), « Mon
+compte » avec reprise en un clic. Tout sous `/app`, chargé à la demande (`React.lazy`), jamais
+dans le bundle visiteur par défaut.
+
+- **8 nouvelles Functions** (`functions/api/courses/`, `functions/api/lessons/[id]/`,
+  `functions/api/account/`, `functions/api/files/download.js`) : catalogue et détail de
+  formation authentifiés (pas publics -- décision de simplicité, voir note plus bas), inscription
+  libre et immédiate (aucun paiement n'existe encore, Mission 22), **404 identique que la leçon
+  n'existe pas ou que l'appelant n'y soit pas inscrit** (jamais de distinction, même logique
+  anti-énumération que l'Étape 1), marquage de progression `completed`/`in_progress` (score reste
+  NULL, réservé à Mission 24).
+- **URLs signées pour le contenu R2** (`functions/_lib/fileAccess.js`, docs/SECURITE.md §5) : pas
+  de presigned URL S3 natif (aurait demandé des identifiants API R2 en plus du binding déjà
+  suffisant pour tout le reste -- CONSTITUTION §8), un jeton HMAC (réutilise
+  `functions/_lib/token.js`, `SESSION_SECRET`) vérifié et **re-vérifié** : une fois pour fabriquer
+  le lien (`lessons/[id]/index.js`, au moment où l'inscription est déjà confirmée), une seconde
+  fois au téléchargement (`files/download.js`) -- sans la seconde vérification, un lien déjà
+  distribué resterait utilisable pendant ses 10 minutes même si l'inscription venait d'être
+  retirée entre-temps. Testé explicitement (un jeton correctement signé mais dont
+  l'utilisateur n'est pas inscrit est quand même rejeté).
+- **R2 en local sans toucher `wrangler.jsonc`** : ce fichier est lu par Cloudflare Pages en
+  production (incident déjà documenté pour le `database_id` D1) -- le bucket réel n'existe pas
+  encore, y ajouter un binding maintenant aurait risqué la même panne de déploiement. Solution :
+  `--r2 CONTENT` en CLI uniquement dans les commandes locales/test (`testServer.js`,
+  `playwright.config.js`, README). **Découverte en testant** : `wrangler r2 object put` valide
+  les noms de bucket selon les règles S3 réelles (minuscules) même en `--local`, alors que
+  `--r2 CONTENT` (binding nu, sans `wrangler.jsonc`) garde la casse du binding comme espace de
+  stockage local -- les deux ne se rejoignent jamais en passant par le CLI. Résolu par une route
+  interne `functions/api/dev/seed-file.js` (même garde `MAIL_DEV_ECHO` que
+  `reset-rate-limits.js`) qui écrit depuis l'intérieur du worker déjà démarré, donc forcément
+  dans le même espace que celui que les Functions liront.
+- **Fixture de développement** (`scripts/seed-dev-course.sql`, PAS une migration, jamais en
+  production) : un cours "Amadeus — Niveau 1" avec les 5 types de leçon déjà jouables (texte,
+  vidéo, live, pdf, fichier) -- rien d'autre ne peut créer de formation avant le back-office de
+  l'Étape 4.
+- **Rendu markdown allégé sans librairie** (`apps/web/src/platform/markdownLite.jsx`) :
+  construit des éléments React directement depuis le texte, jamais de
+  `dangerouslySetInnerHTML` -- aucune leçon ne peut injecter de script, même une fois le
+  contenu modifiable sans relecture de code (Étape 4). `.ics` généré côté client sans
+  dépendance (`apps/web/src/platform/ics.js`) pour "ajouter à mon agenda" (leçons live).
+- **Bug trouvé par les tests avant tout commit** : `functions/api/lessons/[id]/index.js`
+  appelait une fonction `notFound()` jamais définie dans ce fichier (faute de frappe/oubli en
+  écrivant le fichier) -- invisible tant que le chemin d'erreur n'était pas exercé, détecté
+  immédiatement par le premier test qui vérifie qu'un étudiant non inscrit ne peut pas lire une
+  leçon (500 au lieu de 404). Corrigé avant tout commit.
+- **Bug de CSP trouvé par relecture, confirmé par un test e2e dédié** : le lecteur de PDF affiche
+  un `<iframe>` vers sa propre API (`/api/files/download`, même origine) ; la CSP de l'Étape 0
+  avait `frame-src` sans `'self'` -- contrairement à `default-src`, `frame-src` n'hérite jamais
+  implicitement du same-origin une fois défini explicitement. Aurait bloqué silencieusement
+  l'aperçu PDF en production. Corrigé dans `_headers` et `docs/SECURITE.md` (avec la correction
+  documentée) ; un test e2e vérifie maintenant l'absence d'erreur CSP en console en plus de la
+  présence de l'iframe -- pas seulement que l'élément existe dans le DOM.
+- **Décisions de simplicité, consignées ici plutôt qu'en "à valider"** (CONSTITUTION §8 couvre
+  chacune, pas des questions sans réponse) : catalogue/page de formation réservés aux comptes
+  connectés pour l'instant (pas publics -- DESIGN-PSYCHOLOGIE §6 en parle pour la page d'accueil
+  marketing, hors périmètre explicite de cette étape) ; inscription gratuite et immédiate, le
+  rattachement aux licences (`licenses.user_id`, reporté à l'Étape 1) et le paiement (Mission 22)
+  viendront se greffer sur `enrollments` sans le refondre.
+- **Tests** : 13 nouveaux tests d'intégration Functions (`functions/__tests__/platform-api.test.js`,
+  vrai `wrangler pages dev` + D1 + R2 local), 17 nouveaux tests Vitest (AuthScreen, CataloguePage,
+  LessonPlayerPage -- les 7 types de rendu, AccountPage), 2 nouveaux tests Playwright e2e
+  (`apps/web/e2e/platform.spec.js` : parcours complet inscription→catalogue→cours→inscription→
+  les 5 types de leçon→progression→compte→déconnexion→reconnexion avec progression conservée ;
+  et visite déconnectée bloquée). **Zéro régression** : les 6 suites + les 3 e2e (principal,
+  admin, et le nouveau) relancées en entier.
+- **Checklist sécurité de fin d'étape** (docs/SECURITE.md §9) : `npm audit` -- 3 vulnérabilités
+  hautes **nouvellement publiées** depuis la dernière vérification (CVE librsvg via
+  sharp←miniflare←wrangler, devDependency, aucune exposition en production), pas de correctif
+  disponible encore (`npm audit fix`/`--force` n'ont rien à proposer) -- suivi, pas forcé sans
+  piste réelle ; aucun secret dans le bundle (vérifié) ; test prouvant qu'un étudiant non inscrit
+  ne peut pas lire une leçon payante (ci-dessus) ; non-admin toujours bloqué sur `/api/admin/*`
+  (suites Mission 14 inchangées) ; en-têtes de sécurité vérifiés servis, CSP corrigée.
+- 268 core / 9 data / 47 exercises / **83 web (+17)** / **45 functions (+13)** / **32 e2e (+2)**
+  / 4 e2e admin, lint et typecheck propres, build vérifié : chunk `/app` 4,59 Ko gzip (budget
+  180 Ko). Rien déployé en production.
 
 ### 06/10/2026 — Mission 23 Étape 1 (modèle de données + authentification étudiant, mode autonome)
 **Étape 1 CLOSE.** Aucun écran construit (voulu : "rien d'affiché encore", c'est l'Étape 2) --

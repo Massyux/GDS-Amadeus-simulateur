@@ -17,7 +17,7 @@ test.describe("Exercise mode", () => {
   test("a valid solution passes the exercise with per-objectif feedback", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await page.getByRole("button", { name: "Mode exercices" }).click();
     await page.getByLabel("Clé d'accès").fill(TEST_KEY);
     await page.getByRole("button", { name: "Valider" }).click();
@@ -41,7 +41,7 @@ test.describe("Exercise mode", () => {
   test("an incomplete attempt fails the exercise with a precise objectif failure", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await page.getByRole("button", { name: "Mode exercices" }).click();
     await page.getByLabel("Clé d'accès").fill(TEST_KEY);
     await page.getByRole("button", { name: "Valider" }).click();
@@ -143,7 +143,7 @@ const ALL_EXERCISES = [
 test.describe("Exercise mode -- all 10 exercises playable end to end", () => {
   for (const { titre, commands } of ALL_EXERCISES) {
     test(`"${titre}" passes with its verified solution`, async ({ page }) => {
-      await page.goto("/");
+      await page.goto("/simulateur");
       await page.getByRole("button", { name: "Mode exercices" }).click();
       await page.getByLabel("Clé d'accès").fill(TEST_KEY);
       await page.getByRole("button", { name: "Valider" }).click();

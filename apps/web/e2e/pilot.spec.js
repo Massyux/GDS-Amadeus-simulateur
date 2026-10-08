@@ -8,7 +8,7 @@ test.describe("Pilot readiness (missions/MISSION-07.md Partie A)", () => {
   test("quick start guide and feedback button are reachable from the homepage", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
 
     await expect(page.getByRole("link", { name: "Feedback" })).toBeVisible();
 
@@ -28,7 +28,7 @@ test.describe("Pilot readiness (missions/MISSION-07.md Partie A)", () => {
   test("quick start guide and feedback button are reachable from the terminal", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await page.getByRole("button", { name: "J'ai une clé d'accès" }).click();
     await page.getByLabel("Clé d'accès").fill(TEST_KEY);
     await page.getByRole("button", { name: "Valider" }).click();

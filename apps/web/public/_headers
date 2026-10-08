@@ -4,9 +4,14 @@
 # nécessaire : les composants de apps/web/src/platform/ui utilisent des
 # styles inline (barre de progression, squelettes) plutôt qu'une librairie
 # CSS-in-JS supplémentaire (DESIGN-SYSTEM §7 : aucune dépendance sans
-# justification). Toute autre exception à la CSP doit être justifiée ici.
+# justification). `frame-src` ajoute 'self' (Mission 23 Étape 2) : le
+# lecteur de leçon affiche un PDF dans un <iframe> pointant vers
+# /api/files/download (même origine) -- sans 'self', frame-src n'inclut PAS
+# le same-origin par défaut (contrairement à default-src), donc l'aperçu PDF
+# aurait été bloqué silencieusement. Toute autre exception à la CSP doit
+# être justifiée ici.
 /*
-  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

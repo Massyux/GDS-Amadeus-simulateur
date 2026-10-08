@@ -150,13 +150,13 @@ describe("PlatformLayout", () => {
         <p>Contenu</p>
       </PlatformLayout>
     );
-    expect(screen.getByText("Simulateur Amadeus")).toBeTruthy();
+    expect(screen.getByText("GDS Academy")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /menu/i })).toBeNull();
   });
 
   it("toggles the mobile nav open/closed when a nav is given", () => {
     render(
-      <PlatformLayout nav={<a href="#x">Lien</a>}>
+      <PlatformLayout nav={<a href="#x">Lien</a>} menuLabels={{ open: "Ouvrir le menu", close: "Fermer le menu" }}>
         <p>Contenu</p>
       </PlatformLayout>
     );

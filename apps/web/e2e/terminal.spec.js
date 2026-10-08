@@ -17,7 +17,7 @@ test.describe("Terminal", () => {
   });
 
   test("shows the initial banner", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await expect(page.getByText("AMADEUS SELLING PLATFORM")).toBeVisible();
     await expect(page.getByText("TRAINING MODE")).toBeVisible();
   });
@@ -25,7 +25,7 @@ test.describe("Terminal", () => {
   test("AN shows availability rows and arrow keys move the token selection", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await runCommand(page, "AN26DECALGPAR");
     await expect(page.getByText(/AMADEUS AVAILABILITY - AN/)).toBeVisible();
 
@@ -38,13 +38,13 @@ test.describe("Terminal", () => {
   });
 
   test("airline filter shows NO FLIGHTS when nothing matches", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await runCommand(page, "AN26DECALGPAR/ZZ");
     await expect(page.getByText("NO FLIGHTS")).toBeVisible();
   });
 
   test("Enter on a selected token builds and runs an SS command", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await runCommand(page, "AN26DECALGPAR");
     await expect(page.getByText(/AMADEUS AVAILABILITY - AN/)).toBeVisible();
 
@@ -56,7 +56,7 @@ test.describe("Terminal", () => {
   test("full happy path AN -> SS -> NM -> AP -> RF -> ER -> RT records a PNR", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await runCommand(page, "AN26DECALGPAR");
     await runCommand(page, "SS1Y1");
     await runCommand(page, "NM1DOE/JOHN MR");
@@ -73,7 +73,7 @@ test.describe("Terminal", () => {
   });
 
   test("keeps the prompt line centered in the viewport as output grows", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     for (let i = 0; i < 20; i++) {
       await runCommand(page, "HE");
     }

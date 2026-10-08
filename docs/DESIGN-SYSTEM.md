@@ -26,37 +26,59 @@ qui attirent l'œil sans raison.
 Thème sombre par défaut (cohérent avec le terminal, repose les yeux en session longue).
 Un thème clair peut venir plus tard ; **ne pas le construire maintenant**.
 
-```
-/* Fonds */
---bg-base        #0B0F14   /* fond de page */
---bg-surface     #121821   /* cartes, panneaux */
---bg-elevated    #1A2230   /* survol, menus, modales */
---bg-inset       #080B0F   /* zone terminal, blocs de code */
+> **RÉVISION DU 07/10/2026 — palette « nuit & aube ».** La palette initiale (fond gris-bleu,
+> accent vert) a été rejetée par Massy après maquette : trop froide, trop proche d'un
+> terminal générique, et le vert ne pouvait pas servir une plateforme multi-formations.
+> Nouvelle direction : **le vol de nuit vu du cockpit** — bleu nuit profond, cyan des
+> instruments, corail du lever de soleil. Le vert ne subsiste **que dans le terminal**.
+> Maquette de référence : `docs/maquettes/accueil.html`.
 
-/* Bordures et séparations */
---border         #243040
---border-strong  #35455A
+```
+/* Fonds — nuit */
+--night          #070B16   /* fond de page */
+--night-2        #0C1222   /* cartes, panneaux */
+--night-3        #141C33   /* survol, menus, modales */
+--inset          #060A13   /* zone terminal, blocs de code */
+
+/* Bordures : translucides, jamais opaques (profondeur) */
+--line           rgba(168,182,212,.14)
+--line-strong    rgba(168,182,212,.28)
 
 /* Texte */
---text-primary   #E6EDF3
---text-secondary #9FB0C0
---text-muted     #6B7E90
---text-inverse   #0B0F14
+--ink            #F2F6FF
+--ink-2          #A8B6D4
+--ink-3          #6B7A9C
+--ink-inverse    #04121A
 
-/* Accent (unique) */
---accent         #34D399   /* vert terminal : actions principales, progression, succès */
---accent-hover   #2BB885
---accent-subtle  #34D3991A /* 10% — fonds de badges, surbrillance */
+/* Accents — trois rôles distincts, jamais interchangeables */
+--cyan           #22D3EE   /* technologie, instruments : actions principales, liens */
+--coral          #FF8A5B   /* humain, chaleur : titres de section, relation client */
+--violet         #8B7CF6   /* profondeur : illustrations, accents secondaires */
+--mint           #34D399   /* UNIQUEMENT à l'intérieur du terminal */
 
 /* États */
 --success        #34D399
 --warning        #FBBF24
 --danger         #F87171
---info           #60A5FA
+--info           #38BDF8
 ```
 
-**Règle d'usage** : une seule couleur d'accent dans toute l'interface. Un seul bouton
-`--accent` par écran (l'action principale). Tout le reste est neutre ou bordé.
+**Règles d'usage**
+- **Un seul bouton `--cyan` par écran** (l'action principale). Les autres sont fantômes
+  (fond translucide + bordure).
+- `--coral` ne sert jamais à un bouton : c'est une couleur de **signalisation** (sur-titres,
+  accents de texte, illustrations humaines).
+- `--mint` est **interdit hors du terminal** — c'est ce qui garde au terminal son caractère.
+- **Dégradés autorisés, mais seulement deux usages** : `cyan → bleu` sur le bouton principal,
+  et `cyan → corail` sur les titres forts et les chiffres clés. Jamais sur un fond de page.
+- **Couleur par formation** : chaque formation porte une teinte d'identification (vignette +
+  sur-titre). La coquille du site, elle, reste neutre — c'est ce qui permet d'accueillir
+  n'importe quelle formation sans que rien ne jure.
+
+### Atmosphère (nouveau, obligatoire)
+Trois halos radiaux flous en fond fixe (bleu nuit en haut à gauche, cyan à droite, corail
+plus bas), plus une grille fine estompée en dégradé. C'est ce qui donne la profondeur et
+distingue la plateforme d'un gabarit plat. Coût : zéro image, zéro requête réseau.
 
 ---
 

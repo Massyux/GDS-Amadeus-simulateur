@@ -36,7 +36,7 @@ export default function StyleguidePage() {
   );
 
   return (
-    <PlatformLayout logoLabel="Styleguide — interne" nav={nav}>
+    <PlatformLayout nav={nav}>
       <h1 style={{ fontSize: "var(--text-3xl)" }}>Styleguide de la plateforme</h1>
       <p className="pf-field-hint">
         Mission 23, Étape 0. Valeurs figées dans docs/DESIGN-SYSTEM.md — page interne, jamais

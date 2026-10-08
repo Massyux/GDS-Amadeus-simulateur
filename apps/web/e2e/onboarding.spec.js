@@ -12,7 +12,7 @@ test.describe("Onboarding", () => {
   test("shows the marketing homepage on first visit, terminal stays hidden", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await expect(
       page.getByRole("heading", { name: "Simulateur Amadeus GDS" })
     ).toBeVisible();
@@ -21,7 +21,7 @@ test.describe("Onboarding", () => {
   });
 
   test("toggles to English", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await page.getByRole("button", { name: "EN" }).click();
     await expect(
       page.getByRole("heading", { name: "Amadeus GDS Simulator" })
@@ -33,7 +33,7 @@ test.describe("Access gate", () => {
   test("rejects an invalid access key and keeps the terminal hidden", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await page.getByRole("button", { name: "J'ai une clé d'accès" }).click();
     await page.getByLabel("Clé d'accès").fill("GDS-0000-0000");
     await page.getByRole("button", { name: "Valider" }).click();
@@ -44,7 +44,7 @@ test.describe("Access gate", () => {
   test("accepts a valid access key and persists after reload", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/simulateur");
     await page.getByRole("button", { name: "J'ai une clé d'accès" }).click();
     await page.getByLabel("Clé d'accès").fill(TEST_KEY);
     await page.getByRole("button", { name: "Valider" }).click();

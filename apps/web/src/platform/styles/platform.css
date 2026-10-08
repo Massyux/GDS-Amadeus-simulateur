@@ -1,50 +1,56 @@
-/* Plateforme de formation — feuille de style unique (Mission 23, Étape 0).
+/* Plateforme de formation — feuille de style unique (Mission 23).
  *
- * Toutes les valeurs viennent de docs/DESIGN-SYSTEM.md, figé par l'architecte
- * le 06/10/2026 : ce ne sont pas des choix de cette session, elles sont
- * copiées telles quelles. Scopée sous .platform-root (jamais sur :root ou
- * body globalement) pour ne jamais affecter le terminal, l'onboarding ou
- * l'admin existants, qui vivent dans apps/web/src/index.css et doivent
- * rester strictement identiques (CLAUDE.md, CONSTITUTION §3).
+ * RÉVISION DU 07/10/2026 : palette « nuit & aube » (docs/DESIGN-SYSTEM.md §2,
+ * docs/IDENTITE-VISUELLE.md). La palette précédente (gris-bleu + vert) est
+ * rejetée. Référence absolue pour toute valeur : docs/maquettes/accueil.html
+ * — ce fichier en reprend fidèlement les règles, traduites dans les noms de
+ * jetons du système de design.
+ *
+ * Scopée sous .platform-root (jamais sur :root ou body globalement) pour ne
+ * jamais affecter le terminal, l'onboarding ou l'admin existants, qui vivent
+ * dans apps/web/src/index.css et doivent rester strictement identiques
+ * (CLAUDE.md, CONSTITUTION §3).
  *
  * N'anime que opacity/transform (DESIGN-SYSTEM §6) ; prefers-reduced-motion
  * respecté en bas de fichier.
  */
 
 .platform-root {
-  /* Fonds */
-  --bg-base: #0B0F14;
-  --bg-surface: #121821;
-  --bg-elevated: #1A2230;
-  --bg-inset: #080B0F;
+  /* Fonds — nuit */
+  --night: #070B16;
+  --night-2: #0C1222;
+  --night-3: #141C33;
+  --inset: #060A13;
 
-  /* Bordures */
-  --border: #243040;
-  --border-strong: #35455A;
+  /* Bordures : translucides, jamais opaques (profondeur) */
+  --line: rgba(168, 182, 212, 0.14);
+  --line-strong: rgba(168, 182, 212, 0.28);
 
   /* Texte */
-  --text-primary: #E6EDF3;
-  --text-secondary: #9FB0C0;
-  --text-muted: #6B7E90;
-  --text-inverse: #0B0F14;
+  --ink: #F2F6FF;
+  --ink-2: #A8B6D4;
+  --ink-3: #6B7A9C;
+  --ink-inverse: #04121A;
 
-  /* Accent (unique dans toute l'interface — DESIGN-SYSTEM §2) */
-  --accent: #34D399;
-  --accent-hover: #2BB885;
-  --accent-subtle: #34D3991A;
+  /* Accents — trois rôles distincts, jamais interchangeables */
+  --cyan: #22D3EE;
+  --cyan-2: #3B82F6;
+  --cyan-subtle: rgba(34, 211, 238, 0.09);
+  --coral: #FF8A5B;
+  --violet: #8B7CF6;
+  /* --mint n'est JAMAIS utilisé par un composant d'interface -- seulement
+     par le curseur du logo (exception explicite, docs/MAQUETTES.md §0 :
+     "ça dit immédiatement terminal") et par Terminal.jsx lui-même, hors
+     de ce fichier. */
+  --mint: #34D399;
 
-  /* États — déclinaisons "subtle" (10% alpha) dérivées par le même motif
-     que --accent-subtle ci-dessus, pour les badges warning/danger/info
-     (DESIGN-SYSTEM §2 ne fixe que les couleurs pleines ; la déclinaison
-     10% est une extension mécanique, pas une nouvelle décision). */
-  --success: #34D399;
-  --success-subtle: #34D3991A;
+  /* États (badges de statut uniquement -- jamais un bouton) */
   --warning: #FBBF24;
-  --warning-subtle: #FBBF241A;
+  --warning-subtle: rgba(251, 191, 36, 0.12);
   --danger: #F87171;
-  --danger-subtle: #F871711A;
-  --info: #60A5FA;
-  --info-subtle: #60A5FA1A;
+  --danger-subtle: rgba(248, 113, 113, 0.12);
+  --info: #38BDF8;
+  --info-subtle: rgba(56, 189, 248, 0.12);
 
   /* Typographie */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -56,6 +62,7 @@
   --text-xl: 25px;
   --text-2xl: 31px;
   --text-3xl: 39px;
+  --text-hero: 50px;
 
   /* Espacement (échelle 4px, DESIGN-SYSTEM §4) */
   --space-1: 4px;
@@ -71,17 +78,19 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  --radius-xl: 20px;
 
   --motion-duration: 150ms;
   --motion-duration-page: 250ms;
   --motion-ease: ease-out;
 
-  background: var(--bg-base);
-  color: var(--text-primary);
+  background: var(--night);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: 1.6;
   min-height: 100vh;
+  position: relative;
 }
 
 .platform-root * {
@@ -92,7 +101,8 @@
 .platform-root h2,
 .platform-root h3 {
   line-height: 1.2;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 var(--space-3);
 }
 
@@ -101,25 +111,88 @@
 }
 
 .platform-root :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
 
-/* ---------- Gabarit de page ---------- */
+/* ---------- Atmosphère (DESIGN-SYSTEM §2, obligatoire) ---------- */
+/* Trois halos flous + grille estompée, fixes, derrière tout le contenu.
+   Zéro image, zéro requête réseau -- juste des gradients radiaux. */
+
+.pf-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pf-atmosphere i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+}
+
+.pf-halo-1 {
+  width: 620px;
+  height: 620px;
+  background: radial-gradient(circle, #1E3A8A 0%, transparent 70%);
+  top: -180px;
+  left: -120px;
+}
+
+.pf-halo-2 {
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, #0E7490 0%, transparent 70%);
+  top: 40px;
+  right: -140px;
+  opacity: 0.42;
+}
+
+.pf-halo-3 {
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle, #C2410C 0%, transparent 70%);
+  top: 820px;
+  left: 38%;
+  opacity: 0.26;
+}
+
+.pf-gridbg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 75%);
+}
+
+/* ---------- Gabarit de page / navigation (verre dépoli) ---------- */
 
 .pf-topbar {
   position: sticky;
   top: 0;
-  z-index: 10;
-  height: 56px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
+  z-index: 50;
+  /* min-height, pas height: le panneau mobile (.pf-topbar-nav--mobile)
+     s'ajoute sous la barre quand le menu est ouvert -- une hauteur figée
+     le laissait déborder visuellement sur le contenu de la page (le flux
+     normal réservait seulement 66px, pas la hauteur réelle du panneau). */
+  min-height: 66px;
+  backdrop-filter: blur(14px);
+  background: rgba(7, 11, 22, 0.72);
+  border-bottom: 1px solid var(--line);
 }
 
 .pf-topbar-inner {
   max-width: 1200px;
   margin: 0 auto;
-  height: 56px;
+  height: 66px;
   padding: 0 var(--space-5);
   display: flex;
   align-items: center;
@@ -127,16 +200,40 @@
   gap: var(--space-4);
 }
 
-.pf-topbar-brand {
-  font-weight: 600;
-  color: var(--text-primary);
+.pf-brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--text-base);
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   white-space: nowrap;
+  color: var(--ink);
+}
+
+.pf-brand-grad {
+  font-style: normal;
+  background: linear-gradient(92deg, var(--cyan), var(--coral));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pf-brand-cursor {
+  width: 8px;
+  height: 16px;
+  background: var(--mint);
+  margin-left: 4px;
+  animation: pf-blink 1.1s steps(1) infinite;
 }
 
 .pf-topbar-nav--desktop {
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-6);
   align-items: center;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
 }
 
 .pf-topbar-menu-btn {
@@ -147,14 +244,14 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--text-primary);
+  color: var(--ink);
   font-size: var(--text-lg);
   cursor: pointer;
   border-radius: var(--radius-md);
 }
 
 .pf-topbar-menu-btn:hover {
-  background: var(--bg-elevated);
+  background: var(--night-3);
 }
 
 .pf-topbar-nav--mobile {
@@ -162,14 +259,20 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
+  background: rgba(7, 11, 22, 0.94);
+  border-bottom: 1px solid var(--line);
 }
 
 .pf-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--space-5) var(--space-5);
+  position: relative;
+  z-index: 1;
+}
+
+.pf-container--wide {
+  max-width: 1200px;
 }
 
 @media (max-width: 767px) {
@@ -202,11 +305,13 @@
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color var(--motion-duration) var(--motion-ease),
+  transition: transform var(--motion-duration) var(--motion-ease),
+    box-shadow var(--motion-duration) var(--motion-ease),
+    background-color var(--motion-duration) var(--motion-ease),
     border-color var(--motion-duration) var(--motion-ease),
     color var(--motion-duration) var(--motion-ease);
 }
@@ -216,35 +321,46 @@
   padding: 8px 16px;
 }
 
+.pf-btn--lg {
+  height: 48px;
+  padding: 14px 26px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-lg);
+}
+
+/* Seul bouton en dégradé autorisé (DESIGN-SYSTEM §2) : cyan -> bleu, action
+   principale. Un seul par écran. */
 .pf-btn--primary {
-  background: var(--accent);
-  color: var(--text-inverse);
+  background: linear-gradient(92deg, var(--cyan), var(--cyan-2));
+  color: var(--ink-inverse);
+  box-shadow: 0 6px 24px rgba(34, 211, 238, 0.26);
 }
 
 .pf-btn--primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(34, 211, 238, 0.34);
 }
 
 .pf-btn--secondary {
-  background: transparent;
-  border-color: var(--border-strong);
-  color: var(--text-primary);
+  background: rgba(168, 182, 212, 0.07);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .pf-btn--secondary:hover:not(:disabled) {
-  background: var(--bg-elevated);
+  background: rgba(168, 182, 212, 0.13);
 }
 
 .pf-btn--discreet {
   background: transparent;
   border-color: transparent;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   height: auto;
   padding: var(--space-1) 2px;
 }
 
 .pf-btn--discreet:hover:not(:disabled) {
-  color: var(--text-primary);
+  color: var(--ink);
   text-decoration: underline;
 }
 
@@ -256,7 +372,7 @@
 
 .pf-btn--danger:hover:not(:disabled) {
   background: var(--danger);
-  color: var(--text-inverse);
+  color: var(--ink-inverse);
 }
 
 .pf-btn:disabled {
@@ -274,27 +390,27 @@
 
 .pf-field-label {
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 .pf-field-input {
   height: 40px;
   padding: 0 var(--space-3);
-  background: var(--bg-inset);
-  border: 1px solid var(--border);
+  background: var(--inset);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  color: var(--text-primary);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: var(--text-base);
   transition: border-color var(--motion-duration) var(--motion-ease);
 }
 
 .pf-field-input::placeholder {
-  color: var(--text-muted);
+  color: var(--ink-3);
 }
 
 .pf-field-input:focus-visible {
-  border-color: var(--accent);
+  border-color: var(--cyan);
 }
 
 .pf-field-input--error {
@@ -314,22 +430,25 @@
 
 .pf-field-hint {
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--ink-3);
   margin: 0;
 }
 
 /* ---------- Carte ---------- */
 
 .pf-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--night-2);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
-  transition: background-color var(--motion-duration) var(--motion-ease);
+  transition: background-color var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease),
+    transform var(--motion-duration) var(--motion-ease);
 }
 
 .pf-card--hoverable:hover {
-  background: var(--bg-elevated);
+  background: var(--night-3);
+  transform: translateY(-2px);
 }
 
 /* ---------- Badge ---------- */
@@ -341,8 +460,8 @@
   font-size: var(--text-xs);
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: var(--cyan-subtle);
+  color: var(--cyan);
 }
 
 .pf-badge--warning {
@@ -361,8 +480,8 @@
 }
 
 .pf-badge--neutral {
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
+  background: var(--night-3);
+  color: var(--ink-2);
 }
 
 /* ---------- Barre de progression ---------- */
@@ -375,14 +494,14 @@
 
 .pf-progress-track {
   height: 6px;
-  background: var(--border);
+  background: var(--line);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .pf-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(92deg, var(--cyan), var(--coral));
   border-radius: var(--radius-sm);
   transition: transform var(--motion-duration) var(--motion-ease);
   transform-origin: left;
@@ -391,7 +510,7 @@
 
 .pf-progress-label {
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  color: var(--ink-2);
   margin: 0;
 }
 
@@ -404,12 +523,12 @@
   gap: var(--space-3);
   padding: var(--space-7) var(--space-4);
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 .pf-empty-icon {
   font-size: var(--text-2xl);
-  color: var(--text-muted);
+  color: var(--ink-3);
 }
 
 .pf-empty-message {
@@ -425,7 +544,7 @@
 .pf-skeleton {
   position: relative;
   overflow: hidden;
-  background: var(--bg-elevated);
+  background: var(--night-3);
   border-radius: var(--radius-sm);
 }
 
@@ -444,6 +563,558 @@
   }
 }
 
+@keyframes pf-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ---------- Terminal flottant (héros, connexion) ---------- */
+
+.pf-termwrap {
+  position: relative;
+  animation: pf-float 7s ease-in-out infinite;
+}
+
+.pf-termglow {
+  position: absolute;
+  inset: -28px;
+  background: radial-gradient(60% 60% at 50% 40%, rgba(34, 211, 238, 0.2), transparent 70%);
+  filter: blur(26px);
+  z-index: 0;
+}
+
+.pf-term {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(170deg, #08101F, #060A13);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.pf-tbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(168, 182, 212, 0.03);
+}
+
+.pf-tbar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.pf-tbar i:nth-child(1) {
+  background: #FF5F57;
+}
+
+.pf-tbar i:nth-child(2) {
+  background: #FEBC2E;
+}
+
+.pf-tbar i:nth-child(3) {
+  background: #28C840;
+}
+
+.pf-tbar span {
+  margin-left: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.pf-tbody {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.85;
+  padding: var(--space-5);
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  min-height: 220px;
+}
+
+.pf-tbody .pf-cmd {
+  color: var(--mint);
+}
+
+.pf-tbody .pf-hl {
+  color: var(--ink);
+}
+
+.pf-cur {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  background: var(--mint);
+  vertical-align: -3px;
+  animation: pf-blink 1.1s steps(1) infinite;
+}
+
+/* ---------- Héros (accueil public) ---------- */
+
+.pf-hero {
+  display: grid;
+  grid-template-columns: 1.02fr 0.98fr;
+  gap: var(--space-8);
+  align-items: center;
+  padding: var(--space-9) 0 var(--space-8);
+}
+
+@media (max-width: 1023px) {
+  .pf-hero {
+    grid-template-columns: 1fr;
+    gap: var(--space-7);
+    padding: var(--space-7) 0;
+  }
+}
+
+.pf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  background: var(--cyan-subtle);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  padding: 7px 13px;
+  border-radius: 999px;
+  margin-bottom: var(--space-5);
+}
+
+.pf-tag b {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  display: inline-block;
+}
+
+.pf-h1 {
+  font-size: var(--text-hero);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+
+@media (max-width: 1023px) {
+  .pf-h1 {
+    font-size: 36px;
+  }
+}
+
+.pf-h1-em {
+  font-style: normal;
+  background: linear-gradient(96deg, var(--cyan) 10%, var(--coral) 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pf-lead {
+  color: var(--ink-2);
+  font-size: var(--text-lg);
+  max-width: 50ch;
+  margin-top: var(--space-5);
+}
+
+.pf-cta-row {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.pf-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  margin-top: var(--space-4);
+}
+
+.pf-kpis {
+  display: flex;
+  gap: var(--space-7);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.pf-kpi b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(92deg, var(--cyan), var(--coral));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pf-kpi span {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.pf-course-card-link {
+  display: block;
+  color: inherit;
+}
+
+/* ---------- Sections (accueil public) ---------- */
+
+.pf-section {
+  padding: var(--space-9) 0;
+  position: relative;
+}
+
+.pf-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-bottom: var(--space-3);
+}
+
+.pf-center {
+  text-align: center;
+}
+
+.pf-center .pf-s-lead {
+  margin: var(--space-3) auto 0;
+}
+
+.pf-s-lead {
+  color: var(--ink-2);
+  font-size: var(--text-lg);
+  max-width: 60ch;
+  margin-top: var(--space-3);
+}
+
+.pf-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.pf-grid-courses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-8);
+}
+
+@media (max-width: 1023px) {
+  .pf-grid-courses {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .pf-grid-3,
+  .pf-grid-courses {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pf-step {
+  background: linear-gradient(165deg, rgba(168, 182, 212, 0.07), rgba(168, 182, 212, 0.02));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease);
+}
+
+.pf-step:hover {
+  transform: translateY(-4px);
+  border-color: rgba(34, 211, 238, 0.3);
+}
+
+.pf-step-no {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+}
+
+/* ---------- Carte formation (catalogue) ---------- */
+
+.pf-course-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--night-2);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease);
+}
+
+.pf-course-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--line-strong);
+}
+
+.pf-course-ph {
+  height: 148px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pf-course-ph-label {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(7, 11, 22, 0.6);
+  backdrop-filter: blur(6px);
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.pf-course-body {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.pf-course-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.pf-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-price {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.pf-soon {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+/* ---------- Bloc "Reprendre" (catalogue, Mon compte) ---------- */
+
+.pf-resume {
+  background: linear-gradient(120deg, rgba(34, 211, 238, 0.1), rgba(255, 138, 91, 0.06));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+/* ---------- Page de formation ---------- */
+
+.pf-course-head {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-7);
+  align-items: start;
+  margin-top: var(--space-4);
+}
+
+.pf-will-learn {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 767px) {
+  .pf-course-head,
+  .pf-will-learn {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Formateur ---------- */
+
+.pf-teacher {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: var(--space-6);
+  align-items: center;
+  background: linear-gradient(120deg, rgba(34, 211, 238, 0.08), rgba(255, 138, 91, 0.06));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+}
+
+.pf-avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, var(--night-3), var(--night-2));
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+@media (max-width: 767px) {
+  .pf-teacher {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+}
+
+/* ---------- Appel final ---------- */
+
+.pf-final {
+  text-align: center;
+  background: linear-gradient(150deg, rgba(34, 211, 238, 0.1), rgba(139, 124, 246, 0.08), rgba(255, 138, 91, 0.08));
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  padding: var(--space-9) var(--space-6);
+  margin: 0 0 var(--space-9);
+}
+
+/* ---------- Pied de page ---------- */
+
+.pf-footer {
+  border-top: 1px solid var(--line);
+  padding: var(--space-6) 0 var(--space-7);
+}
+
+.pf-footer-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.pf-disclaimer {
+  max-width: 60ch;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  line-height: 1.65;
+}
+
+/* ---------- Lecteur de leçon : sommaire latéral + barre d'action fixe ---------- */
+
+.pf-lesson-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .pf-lesson-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-lesson-sidebar {
+    display: none;
+  }
+}
+
+.pf-lesson-sidebar {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pf-lesson-sidebar a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.pf-lesson-sidebar a:hover {
+  background: var(--night-2);
+  color: var(--ink);
+}
+
+.pf-lesson-sidebar a[aria-current="true"] {
+  background: var(--cyan-subtle);
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.pf-lesson-content {
+  max-width: 68ch;
+}
+
+.pf-lesson-content--wide {
+  max-width: none;
+}
+
+.pf-lesson-actionbar {
+  position: sticky;
+  bottom: 0;
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  background: rgba(7, 11, 22, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 /* ---------- Mouvement réduit (DESIGN-SYSTEM §6, obligatoire) ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -453,5 +1124,9 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  .pf-termwrap {
+    animation: none;
   }
 }
