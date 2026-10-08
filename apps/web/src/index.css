@@ -851,3 +851,158 @@ body {
   color: #2f2a7a;
   cursor: pointer;
 }
+
+/* Back-office formations (Mission 23 Étape 4) -- même palette/police que le
+   reste de l'admin ci-dessus, pas une nouvelle direction visuelle. */
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 32px 0;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.admin-tabs button {
+  font-family: inherit;
+  font-size: 0.9em;
+  padding: 6px 14px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px 4px 0 0;
+  border-bottom: none;
+  background: transparent;
+  color: #2f2a7a;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.admin-tabs button.active {
+  opacity: 1;
+  background: #eef2fa;
+  font-weight: bold;
+}
+
+.admin-course-publish {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-course-publish button {
+  font-family: inherit;
+  font-size: 0.85em;
+  padding: 6px 12px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: transparent;
+  color: #2f2a7a;
+  cursor: pointer;
+}
+
+.admin-module-block {
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+}
+
+.admin-module-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.admin-module-head h2 {
+  margin: 0;
+  font-size: 1em;
+}
+
+.admin-lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-lesson-row {
+  padding: 8px 10px;
+  border: 1px solid rgba(47, 42, 122, 0.3);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.admin-lesson-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-lesson-type {
+  font-size: 0.75em;
+  padding: 1px 6px;
+  border: 1px solid #2f2a7a;
+  border-radius: 3px;
+  opacity: 0.75;
+}
+
+.admin-tabs button,
+.admin-course-publish button,
+.admin-module-head button,
+.admin-lesson-row-head button {
+  font-family: inherit;
+}
+
+.admin-module-head button,
+.admin-lesson-row-head button {
+  font-size: 0.8em;
+  padding: 4px 10px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: transparent;
+  color: #2f2a7a;
+  cursor: pointer;
+}
+
+.admin-lesson-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(47, 42, 122, 0.3);
+  border-radius: 4px;
+  background: #eef2fa;
+}
+
+.admin-lesson-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85em;
+}
+
+.admin-lesson-form input,
+.admin-lesson-form select,
+.admin-lesson-form textarea {
+  font-family: inherit;
+  padding: 6px 8px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+}
+
+.admin-lesson-form button {
+  align-self: flex-start;
+  font-family: inherit;
+  padding: 6px 14px;
+  border: 1px solid #2f2a7a;
+  border-radius: 4px;
+  background: #2f2a7a;
+  color: #eef2fa;
+  cursor: pointer;
+}

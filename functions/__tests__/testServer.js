@@ -30,10 +30,12 @@ async function waitForReady(url, timeoutMs = 30000) {
 
 /**
  * @param {{ extraSqlFiles?: string[] }} [options] Additional .sql files
- *   (repo-relative) applied after the two migrations, before the server
- *   starts -- e.g. scripts/seed-dev-course.sql for tests that need a real
- *   course/module/lesson to exercise (Mission 23 Étape 2). Opt-in: the
- *   license/auth test files don't need any course data.
+ *   (repo-relative) applied after the three schema migrations, before the
+ *   server starts -- e.g. scripts/seed-dev-course.sql for tests that need a
+ *   real course/module/lesson to exercise (Mission 23 Étape 2). Opt-in: the
+ *   license/auth test files don't need any course data. Schema migrations
+ *   themselves (0001/0002/0003) are never opt-in -- every test server gets
+ *   the full current schema.
  */
 export async function startTestServer(options = {}) {
   const persistDir = mkdtempSync(path.join(tmpdir(), "gds-d1-test-"));
@@ -42,6 +44,7 @@ export async function startTestServer(options = {}) {
   const files = [
     "migrations/0001_init.sql",
     "migrations/0002_platform_users.sql",
+    "migrations/0003_audit_log.sql",
     ...(options.extraSqlFiles || []),
   ];
   for (const file of files) {

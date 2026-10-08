@@ -43,8 +43,13 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
+    // Mission 23 Étape 4 (back-office formations) : migration 0003
+    // (audit_log) + `--r2 CONTENT` ajoutés -- l'admin peut maintenant
+    // téléverser des fichiers (functions/api/admin/upload.js) et consulter
+    // le journal d'audit, tous deux absents quand cette config a été écrite
+    // pour Mission 14 (licences seules, pas de fichier, pas de journal).
     command:
-      `npm run build:web && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0002_platform_users.sql && npx wrangler pages dev apps/web/dist --port 8799 --persist-to="${persistDir}"`,
+      `npm run build:web && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0003_audit_log.sql && npx wrangler pages dev apps/web/dist --port 8799 --persist-to="${persistDir}" --r2 CONTENT`,
     cwd: REPO_ROOT,
     url: "http://localhost:8799",
     reuseExistingServer: !process.env.CI,
