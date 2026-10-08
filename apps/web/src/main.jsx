@@ -1,8 +1,6 @@
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.jsx'
-import AdminApp from './admin/AdminApp.jsx'
 import { initAnalytics } from './analytics.js'
 
 initAnalytics()
@@ -14,13 +12,18 @@ initAnalytics()
 // pulling in a library.
 const path = window.location.pathname
 
-// Lazy: internal-only (styleguide) and whole separate areas (accueil
-// public, espace étudiant) -- loading on demand keeps each out of the
+// Lazy pour toutes les zones -- loading on demand keeps each out of the
 // bundle for every OTHER path (DESIGN-SYSTEM §7 budget: "chargé à la
-// demande", same principle as the simulator).
+// demande"). App.jsx (terminal libre, Terminal.jsx/@simulateur/core/data)
+// et AdminApp.jsx étaient encore importés statiquement jusqu'au
+// 08/10/2026 (Mission 23 Étape 3) -- ils gonflaient le bundle de l'accueil
+// de tout le poids du simulateur alors que personne ne les charge sur "/".
+// Corrigé pour de bon ici : chaque route a maintenant son propre chunk.
 const StyleguidePage = lazy(() => import('./platform/StyleguidePage.jsx'))
 const PlatformApp = lazy(() => import('./platform/PlatformApp.jsx'))
 const HomePage = lazy(() => import('./platform/HomePage.jsx'))
+const App = lazy(() => import('./App.jsx'))
+const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
 
 // Mission 23 (reprise Étape 2, 07/10/2026) : la nouvelle page d'accueil
 // publique remplace l'ancien onboarding à "/" (docs/MAQUETTES.md §1 :

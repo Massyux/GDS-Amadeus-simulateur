@@ -49,3 +49,26 @@ VALUES
     '{"files":[{"fileKey":"fiche1.txt","fileName":"fiche1.txt"},{"fileKey":"fiche2.txt","fileName":"fiche2.txt"}]}'
   )
 ON CONFLICT (id) DO NOTHING;
+
+-- Module 2 -- pratique au clavier (Mission 23 Étape 3) : chaque leçon
+-- `exercice` pointe vers un fichier de packages/exercises/content/ par son
+-- id (`content.exerciseId`), évalué côté client par @simulateur/exercises --
+-- rien à dupliquer ici. Terminé par un accès libre au vrai terminal.
+INSERT INTO modules (id, course_id, title, sort_order)
+VALUES (2, 1, 'Module 2 — Pratique au clavier', 2)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO lessons (id, module_id, type, title, sort_order, content)
+VALUES
+  (6, 2, 'exercice', 'Lire une disponibilité', 1, '{"exerciseId":"ex-01-read-availability"}'),
+  (7, 2, 'exercice', 'Décoder ville, pays et compagnie', 2, '{"exerciseId":"ex-02-decode"}'),
+  (8, 2, 'exercice', 'Première vente', 3, '{"exerciseId":"ex-03-first-sale"}'),
+  (9, 2, 'exercice', 'Un dossier complet', 4, '{"exerciseId":"ex-04-full-pnr"}'),
+  (10, 2, 'exercice', 'Vente directe sans disponibilité', 5, '{"exerciseId":"ex-05-long-sell"}'),
+  (11, 2, 'exercice', 'Retrouver et modifier un dossier', 6, '{"exerciseId":"ex-06-retrieve-modify"}'),
+  (12, 2, 'exercice', 'Corriger des erreurs', 7, '{"exerciseId":"ex-07-fix-mistakes"}'),
+  (13, 2, 'exercice', 'Tarifer et émettre', 8, '{"exerciseId":"ex-08-price-and-issue"}'),
+  (14, 2, 'exercice', 'Liste d''attente', 9, '{"exerciseId":"ex-09-waitlist"}'),
+  (15, 2, 'exercice', 'Dossier complet de A à Z', 10, '{"exerciseId":"ex-10-full-workflow"}'),
+  (16, 2, 'simulateur', 'Terminal libre', 11, '{}')
+ON CONFLICT (id) DO NOTHING;

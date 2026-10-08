@@ -35,12 +35,28 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Toutes les leçons déclenchent un SECOND appel réseau après le premier
+// (platformApi.course(courseSlug), pour le sommaire/fil d'Ariane -- voir
+// LessonPlayerPage.jsx). Un test qui se termine sans l'attendre laisse sa
+// promesse en vol jusqu'après le `vi.unstubAllGlobals()` du `afterEach`
+// suivant, qui retombe alors sur le vrai `fetch` réseau avec une URL
+// relative ("Invalid URL") -- un vrai bug de fiabilité de cette suite,
+// invisible en isolation (chaque fichier passe seul) mais réel dès que
+// plusieurs fichiers tournent dans le même run (découvert par un hook
+// pre-commit qui lance toute la suite d'un coup, Mission 23 Étape 4,
+// 09/10/2026). Chaque test attend donc explicitement ce second appel avant
+// de se terminer, même quand il ne teste rien qui en dépende directement.
+async function waitForCourseSidebar() {
+  await screen.findByText("Module 1");
+}
+
 describe("LessonPlayerPage content renderers", () => {
   it("renders texte as headings/paragraphs, not raw markdown", async () => {
     mockLesson({ id: 1, type: "texte", title: "Bienvenue", content: { body: "# Titre\n\nUn paragraphe." } });
     render(<LessonPlayerPage t={t} csrfToken="x" lessonId={1} />);
     expect(await screen.findByRole("heading", { name: "Titre" })).toBeTruthy();
     expect(screen.getByText("Un paragraphe.")).toBeTruthy();
+    await waitForCourseSidebar();
   });
 
   it("renders a video embed iframe", async () => {
@@ -48,6 +64,7 @@ describe("LessonPlayerPage content renderers", () => {
     render(<LessonPlayerPage t={t} csrfToken="x" lessonId={2} />);
     const iframe = await screen.findByTitle("video");
     expect(iframe.getAttribute("src")).toContain("youtube-nocookie.com");
+    await waitForCourseSidebar();
   });
 
   it("renders a pdf download link from the signed URL", async () => {
@@ -55,6 +72,7 @@ describe("LessonPlayerPage content renderers", () => {
     render(<LessonPlayerPage t={t} csrfToken="x" lessonId={3} />);
     const link = await screen.findByRole("link", { name: t.platform.lesson.pdfDownload });
     expect(link.getAttribute("href")).toBe("/api/files/download?token=abc");
+    await waitForCourseSidebar();
   });
 
   it("renders every file in a fichier lesson", async () => {
@@ -67,6 +85,7 @@ describe("LessonPlayerPage content renderers", () => {
     render(<LessonPlayerPage t={t} csrfToken="x" lessonId={4} />);
     expect(await screen.findByRole("link", { name: "a.txt" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "b.txt" })).toBeTruthy();
+    await waitForCourseSidebar();
   });
 
   it("shows a join button for an ongoing live session, none for a past one", async () => {
@@ -79,12 +98,38 @@ describe("LessonPlayerPage content renderers", () => {
     render(<LessonPlayerPage t={t} csrfToken="x" lessonId={5} />);
     expect(await screen.findByText(t.platform.lesson.livePast)).toBeTruthy();
     expect(screen.queryByRole("link", { name: t.platform.lesson.liveJoin })).toBeNull();
+    await waitForCourseSidebar();
   });
 
-  it("shows the Étape 3 stub for simulateur/exercice types", async () => {
+  it("shows a launch card for a simulateur lesson on desktop, not the terminal itself", async () => {
     mockLesson({ id: 6, type: "simulateur", title: "Terminal", content: {} });
-    render(<LessonPlayerPage t={t} csrfToken="x" lessonId={6} />);
-    expect(await screen.findByText(t.platform.lesson.comingInStep3)).toBeTruthy();
+    render(<LessonPlayerPage t={t} lang="fr" csrfToken="x" lessonId={6} />);
+    expect(await screen.findByRole("button", { name: t.platform.lesson.openSimulator })).toBeTruthy();
+    expect(screen.queryByText(t.platform.lesson.mobileBlockedTitle)).toBeNull();
+    await waitForCourseSidebar();
+  });
+
+  it("shows a launch card for an exercice lesson on desktop", async () => {
+    mockLesson({ id: 9, type: "exercice", title: "Exercice", content: { exerciseId: "ex-01-read-availability" } });
+    render(<LessonPlayerPage t={t} lang="fr" csrfToken="x" lessonId={9} />);
+    expect(await screen.findByRole("button", { name: t.platform.lesson.openExercise })).toBeTruthy();
+    await waitForCourseSidebar();
+  });
+
+  it("shows the mobile-blocked message instead of a launch card under 768px", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query) => ({
+        matches: query.includes("767px"),
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }))
+    );
+    mockLesson({ id: 8, type: "exercice", title: "Exercice", content: { exerciseId: "ex-01-read-availability" } });
+    render(<LessonPlayerPage t={t} lang="fr" csrfToken="x" lessonId={8} />);
+    expect(await screen.findByText(t.platform.lesson.mobileBlockedTitle)).toBeTruthy();
+    await screen.findByText("Module 1");
+    expect(screen.queryByRole("button", { name: t.platform.lesson.openExercise })).toBeNull();
   });
 
   it("disables Précédent when there is no neighbour, and shows the end-of-module screen on completion", async () => {
@@ -123,6 +168,11 @@ describe("LessonPlayerPage content renderers", () => {
     render(<LessonPlayerPage t={t} csrfToken="x" lessonId={10} />);
 
     const completeBtn = await screen.findByRole("button", { name: t.platform.lesson.markCompleted });
+    // Attend le sommaire avant de cliquer : "dernière leçon du module" se
+    // calcule à partir du second appel (platformApi.course) -- cliquer trop
+    // tôt le traiterait comme dernière leçon par défaut (liste vide), menant
+    // à l'écran de fin de module au lieu de la leçon suivante.
+    await waitForCourseSidebar();
     await user.click(completeBtn);
 
     await screen.findByText("Contenu A.");

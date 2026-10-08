@@ -73,7 +73,7 @@ describe(
         const course = body.courses.find((c) => c.slug === "amadeus-niveau-1");
         assert.ok(course, "seeded course must appear in the catalogue");
         assert.equal(course.enrolled, false);
-        assert.equal(course.lessonCount, 5);
+        assert.equal(course.lessonCount, 16);
       });
 
       it("requires a session", async () => {

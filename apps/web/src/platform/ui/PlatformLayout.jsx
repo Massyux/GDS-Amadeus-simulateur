@@ -17,10 +17,11 @@ import { Brand } from "../Brand.jsx";
  * @param {{
  *   nav?: import("react").ReactNode,
  *   menuLabels?: { open: string, close: string },
+ *   brandTo?: string,
  *   children: import("react").ReactNode,
  * }} props
  */
-export function PlatformLayout({ nav, menuLabels, children }) {
+export function PlatformLayout({ nav, menuLabels, brandTo = "/", children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const openLabel = menuLabels?.open ?? "Open menu";
   const closeLabel = menuLabels?.close ?? "Close menu";
@@ -30,7 +31,7 @@ export function PlatformLayout({ nav, menuLabels, children }) {
       <Atmosphere />
       <header className="pf-topbar">
         <div className="pf-topbar-inner">
-          <Brand />
+          <Brand to={brandTo} />
           {nav && <nav className="pf-topbar-nav--desktop">{nav}</nav>}
           {nav && (
             <button

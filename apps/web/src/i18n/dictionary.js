@@ -84,6 +84,7 @@ export const dictionary = {
     },
     platform: {
       nav: {
+        home: "Accueil",
         catalogue: "Catalogue",
         account: "Mon compte",
         logout: "Se déconnecter",
@@ -158,7 +159,11 @@ export const dictionary = {
         mobileBlockedTitle: "Cette leçon se pratique au clavier",
         mobileBlockedBody:
           "Reprends cette leçon sur ordinateur — ta progression est gardée.",
-        comingInStep3: "Cette leçon arrive à l'Étape 3 (intégration du simulateur).",
+        simulatorIntro: "Entraîne-toi librement sur le vrai terminal Amadeus — rien à valider ici.",
+        exerciseIntro: "Cet exercice se résout sur le vrai terminal Amadeus.",
+        openSimulator: "Ouvrir le terminal",
+        openExercise: "Commencer l'exercice",
+        exitToLesson: "Retour à la leçon",
         sidebarTitle: "Sommaire",
         progressLabel: "{done} / {total}",
         moduleDoneTitle: "Module terminé !",
@@ -274,6 +279,7 @@ export const dictionary = {
         kpi3Value: "à vie",
         kpi3Label: "accès inclus",
         termLabel: "terminal de réservation — démonstration",
+        heroImageAlt: "Cockpit de nuit, instruments allumés",
         methodEyebrow: "La méthode",
         methodTitle: "Tu pratiques dès la troisième leçon.",
         methodLead:
@@ -394,6 +400,7 @@ export const dictionary = {
     },
     platform: {
       nav: {
+        home: "Home",
         catalogue: "Catalogue",
         account: "My account",
         logout: "Log out",
@@ -466,7 +473,11 @@ export const dictionary = {
         liveAddToCalendar: "Add to my calendar",
         mobileBlockedTitle: "This lesson needs a keyboard",
         mobileBlockedBody: "Come back to this lesson on a computer — your progress is saved.",
-        comingInStep3: "This lesson arrives in Step 3 (simulator integration).",
+        simulatorIntro: "Practice freely on the real Amadeus terminal — nothing to validate here.",
+        exerciseIntro: "This exercise is solved on the real Amadeus terminal.",
+        openSimulator: "Open the terminal",
+        openExercise: "Start the exercise",
+        exitToLesson: "Back to the lesson",
         sidebarTitle: "Outline",
         progressLabel: "{done} / {total}",
         moduleDoneTitle: "Module completed!",
@@ -582,6 +593,7 @@ export const dictionary = {
         kpi3Value: "lifetime",
         kpi3Label: "access included",
         termLabel: "booking terminal — demo",
+        heroImageAlt: "Night cockpit, instruments lit up",
         methodEyebrow: "The method",
         methodTitle: "You practice from the third lesson on.",
         methodLead:

@@ -9,7 +9,11 @@
 //  - pdf      : { fileName, downloadUrl }               (URL signée 10 min)
 //  - fichier  : { files: [{ fileName, sizeBytes, downloadUrl }] }
 //  - live     : { title, startsAt, durationMinutes, link, state, icsUrl }
-//  - simulateur / exercice : {} -- intégration réelle en Étape 3, pas ici.
+//  - simulateur : {} -- terminal libre, rien à stocker.
+//  - exercice   : { exerciseId } -- id d'un fichier de packages/exercises/content/.
+//    Les deux sont transmis tels quels (branche par défaut de buildContent
+//    ci-dessous) : l'évaluation réelle vit côté client (@simulateur/exercises),
+//    pas ici (Mission 23 Étape 3).
 //
 // 404 neutre si la leçon n'existe pas OU si l'appelant n'est pas inscrit au
 // cours qui la contient -- jamais de distinction entre les deux (un étudiant

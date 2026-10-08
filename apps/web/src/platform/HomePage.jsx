@@ -78,9 +78,6 @@ export default function HomePage() {
 
       <div className="pf-container">
         <section className="pf-hero">
-          <div className="pf-hero-media" aria-hidden="true">
-            <ResponsiveImage name="hero-cockpit" width={1440} height={700} alt="" lazy={false} />
-          </div>
           <div className="pf-hero-col">
             <span className="pf-tag">
               <b /> {h.tag}
@@ -106,7 +103,12 @@ export default function HomePage() {
               <Kpi value={h.kpi3Value} label={h.kpi3Label} />
             </div>
           </div>
-          <TerminalDemo label={h.termLabel} />
+          <div className="pf-hero-visual">
+            <div className="pf-hero-photo">
+              <ResponsiveImage name="hero-cockpit" width={720} height={220} alt={h.heroImageAlt} lazy={false} />
+            </div>
+            <TerminalDemo label={h.termLabel} />
+          </div>
         </section>
       </div>
 

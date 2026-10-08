@@ -19,7 +19,7 @@ le deviennent ici.*
 | # | Exigence | Vérification | Statut (Étape 2, 08/10/2026) |
 |---|---|---|---|
 | A1 | Une page d'accueil visiteur existe et se charge en moins de 2 s | ouvrir `/` | ✅ Fait — JS total au chargement de `/` ≈ 105 Ko gzip (budget 180 Ko), pas de mesure LCP en lab réel |
-| A2 | Le **terminal en démonstration animée** y est visible sans défiler | capture d'écran | ✅ Fait — hero, capturé à 1280 et 390, flotte devant une vraie photo de cockpit (chantier 2, 08/10/2026) |
+| A2 | Le **terminal en démonstration animée** y est visible sans défiler | capture d'écran | ✅ Fait — hero, capturé à 1280 et 390 ; la photo de cockpit (chantier 2) est sortie du fond le 08/10/2026 (Étape 3, retour Massy « floue et bizarre ») : cadre net, pleine opacité, posée au-dessus du terminal plutôt qu'en texture derrière le texte |
 | A3 | Le nom du produit et son identité (curseur monospace) sont partout | toutes les pages | ✅ Fait — `Brand.jsx` sur toutes les pages, y compris écran de connexion |
 | A4 | Photo et nom réels du formateur sur l'accueil | visuel | ⏳ Partiel — nom réel (Massinissa Mehdani) ; la photo reste un placeholder texte « photo réelle à insérer », Massy doit fournir le fichier (seule exception délibérée, IDENTITE-VISUELLE.md : "aucune alternative") |
 | A5 | Prix affiché en clair, sans « nous contacter » | visuel | ✅ Fait — 5/6 formations démo avec prix en DA, la 6ᵉ porte juste « bientôt » (pas de prix caché) |
@@ -55,7 +55,7 @@ le deviennent ici.*
 | D1 | « Ce que tu sauras faire » en verbes d'action sur chaque page de cours | visuel | ✅ Fait pour la formation réelle (4 puces) ; dépend d'un contenu `willLearn` par formation — à fournir pour toute future vraie formation sans entrée dans `demoCourses.js` |
 | D2 | Retour immédiat après chaque action d'apprentissage | parcours réel | ✅ Fait — statut du bouton d'inscription, coche immédiate dans le sommaire |
 | D3 | Le chemin parcouru est montré, pas seulement ce qui reste | visuel | ✅ Fait — coches ✓ dans le sommaire et la barre latérale |
-| D4 | Mode libre du simulateur accessible sans parcours imposé | parcours réel | ⏳ Partiel — l'ancien parcours (`/simulateur`) reste joignable mais n'est lié depuis aucun écran de la nouvelle plateforme ; intégration réelle = Étape 3 |
+| D4 | Mode libre du simulateur accessible sans parcours imposé | parcours réel | ✅ Fait (Étape 3, 08/10/2026) — leçon « Terminal libre » (type `simulateur`) dans le vrai cours ; l'ancien parcours (`/simulateur`) reste aussi joignable séparément, inchangé |
 | D5 | Leçons de 5 à 10 minutes | revue du contenu | — N/A pour cette étape (contenu de fixture dev, pas le vrai contenu pédagogique) |
 
 ## E. Clarté et absence de vide (MQ §7)
@@ -82,7 +82,7 @@ le deviennent ici.*
 |---|---|---|---|
 | G1 | Tous les écrans vérifiés à **390 px** et 1280 px | captures des deux | ✅ Fait — captures prises aux deux tailles, dans les deux thèmes, pour chaque écran touché (chantier 1-5, 08/10/2026) |
 | G2 | Zones cliquables ≥ 44 × 44 px en mobile | revue | ⚠️ Tension documentée (08/10/2026) — DESIGN-SYSTEM §5 bis fixe le bouton `sm` à 34 px de haut ("dans une carte, une ligne de tableau"), sous le minimum de 44 px du §8. Appliqué tel qu'écrit (valeurs "impératives, pas indicatives") ; `md`/`lg` (38/46 px avec padding horizontal) restent confortables. Signalé pour arbitrage plutôt que résolu unilatéralement dans un sens ou l'autre |
-| G3 | Leçons simulateur/exercice : message clair sur mobile | test mobile | ✅ Fait a minima (texte `comingInStep3`) — expérience complète = Étape 3 |
+| G3 | Leçons simulateur/exercice : message clair sur mobile | test mobile | ✅ Fait (Étape 3, 08/10/2026) — sous 768 px, aucune tentative de charger le terminal, juste `mobileBlockedTitle`/`Body` ; testé par un `matchMedia` forcé en Vitest |
 | G4 | Théorie, vidéo, PDF, quiz pleinement utilisables sur mobile | test mobile | ✅ Fait pour texte/vidéo/PDF (layout responsive vérifié) ; quiz n'existe pas encore (Mission 24) |
 
 ## H. Performance et finition (DS §6-7)
@@ -91,7 +91,7 @@ le deviennent ici.*
 |---|---|---|---|
 | H1 | LCP < 2,0 s / CLS < 0,05 / INP < 200 ms | mesure réelle | ⏳ Non mesuré en conditions réelles (pas d'outil Lighthouse/CrUX disponible dans cet environnement) ; architecture compatible (code-splitting, squelettes, animations transform/opacity uniquement, dimensions explicites sur toutes les images) |
 | H2 | JS plateforme < 180 Ko gzip, CSS < 25 Ko | sortie de build | ✅ Fait — JS total homepage ≈ 105 Ko gzip, CSS total ≈ 7,3 Ko gzip (chantiers 1+3+5 ajoutés). Les 63 fichiers image (chantier 2, hors de ce budget par nature — DESIGN-SYSTEM §7 ne couvre que JS/CSS) pèsent chacun entre 4 et 101 Ko servis (AVIF/WebP/JPEG × 3 largeurs), aucun au-delà du budget de 120 Ko/image fixé par la mission |
-| H3 | Simulateur et exercices chargés à la demande | analyse du bundle | ⏳ Partiel — `HomePage`/`PlatformApp`/`StyleguidePage` sont bien `lazy()` ; `App`/`AdminApp` (simulateur, admin) restent importés en dur dans `main.jsx` depuis des missions antérieures, donc présents dans le chunk partagé même pour un visiteur qui ne les utilise jamais. Pas introduit par cette étape, budget global toujours respecté, mais optimisation à faire une prochaine fois |
+| H3 | Simulateur et exercices chargés à la demande | analyse du bundle | ✅ Fait (Étape 3, 08/10/2026) — `App`/`AdminApp` passés en `lazy()` dans `main.jsx` (ils restaient importés en dur depuis des missions antérieures, gonflant le chunk partagé de tout le poids du terminal même pour un visiteur de l'accueil) ; `Terminal.jsx`/`@simulateur/exercises` ne se chargent plus qu'à l'ouverture réelle d'une leçon `simulateur`/`exercice` (`LessonSimulatorView.jsx`, `React.lazy`). Effet mesuré : chunk partagé 101,7 Ko → 60,9 Ko gzip |
 | H4 | Aucun saut de mise en page au chargement | observation | ✅ Fait — `Skeleton` aux dimensions finales partout où un chargement réseau est visible |
 | H5 | `prefers-reduced-motion` respecté | test | ✅ Fait — bloc dédié dans `platform.css`, couvre aussi `.pf-termwrap` |
 
@@ -154,6 +154,27 @@ le deviennent ici.*
 | M4 | Le terminal reste en anglais Amadeus dans les deux langues | test manuel | ✅ Fait — non touché par cette passe |
 
 **Ce qui ne fonctionnait pas, précisément** (ce que Massy avait demandé de rapporter) : le script de vérification automatisée n'a trouvé qu'un seul vrai résidu francophone (le aria-label du terminal ci-dessus) — invisible à l'écran, seulement pour un lecteur d'écran en anglais. Aucun texte visible en français n'a survécu au passage en anglais sur les écrans vérifiés.
+
+## N. Navigation (retour Massy, Étape 3, 08/10/2026)
+
+| # | Exigence | Vérification | Statut |
+|---|---|---|---|
+| N1 | Le nom du produit ramène toujours à l'accueil (visiteur → `/`, connecté → catalogue) | revue + code | ✅ Fait — `PlatformLayout` accepte `brandTo` (défaut `/`) ; `CataloguePage`/`CoursePage`/`AccountPage`/`LessonPlayerPage` passent `/app/catalogue` |
+| N2 | Fil d'Ariane sur les pages profondes : Accueil › Formations › Formation › Leçon | parcours réel | ✅ Fait — `Breadcrumb.jsx`, câblé sur `CoursePage` (3 maillons) et `LessonPlayerPage` (4 maillons) |
+| N3 | Bouton retour explicite dans le lecteur de leçon | revue + code | ✅ Fait — déjà présent avant cette étape (`tl.back` → `/app/cours/:slug`), conservé en plus du fil d'Ariane |
+| N4 | Le bouton précédent du navigateur fonctionne partout sans casser l'état | test e2e réel | ✅ Fait — `useRoute.js` écoute déjà `popstate` ; vérifié par un vrai `page.goBack()` (leçon → formation) dans `platform.spec.js` |
+| N5 | Parcours complet accueil → formation → leçon → retour → catalogue → accueil | test e2e réel | ✅ Fait — `platform.spec.js`, nouveau test « breadcrumb, explicit back links, and the browser back button all work » |
+
+## O. Intégration du simulateur (Étape 3, 08/10/2026)
+
+| # | Exigence | Vérification | Statut |
+|---|---|---|---|
+| O1 | La formation « Réservation aérienne » est une DONNÉE (pas de JSX en dur) : leçons `exercice` → `packages/exercises`, leçon `simulateur` → terminal libre | revue + code | ✅ Fait — `scripts/seed-dev-course.sql` Module 2, chaque leçon `exercice` porte `content.exerciseId` (un id de fichier `packages/exercises/content/`), résolu à l'affichage par `LessonExercisePanel.jsx` (`exercisesById`) |
+| O2 | La progression des exercices alimente `lesson_progress` | parcours réel | ✅ Fait — `ExercisePanel.jsx` appelle `onPassed` dès la première réussite de `evaluate()` ; `LessonPlayerPage.jsx` l'utilise pour `POST /api/lessons/:id/progress` |
+| O3 | Chargement à la demande : simulateur/exercices jamais dans le bundle par défaut | analyse du bundle | ✅ Fait — `LessonSimulatorView.jsx` (`React.lazy`) ; voir H3 pour l'effet mesuré sur le chunk partagé |
+| O4 | Le terminal reste STRICTEMENT identique au mode libre (mêmes pixels, clavier, scroll) | test obligatoire comparant les deux modes | ✅ Fait — `LessonSimulatorView` rend `<Terminal>`/`<ExercisePanel>` **en dehors de `.platform-root`** (jamais nesté dans `<PlatformLayout>`) : c'est le seul moyen d'empêcher `platform.css` (`font-family`/`color`/`background` posés sur `.platform-root`) de déteindre sur `index.css`, qui n'a aucune classe scopée. Vérifié structurellement en e2e (`expect(page.locator(".platform-root .terminal")).toHaveCount(0)`) plutôt que par une comparaison de captures pixel à pixel |
+| O5 | Mobile : message prévu, aucune expérience dégradée | test mobile | ✅ Fait — voir G3 |
+| O6 | Le thème clair n'éclaircit pas le terminal | revue + code | ✅ Fait — sans objet pour la nouvelle vue (elle ne monte jamais sous `.platform-root`, donc `html[data-theme]` ne peut pas l'atteindre) ; déjà vérifié pour `TerminalDemo`/héros (L4) |
 
 ---
 
@@ -274,6 +295,45 @@ cette passe) a dû être nettoyé en cours de route, avec l'accord explicite de 
 tôt dans la session pour ce type exact de situation — même famille de leçon que celle déjà notée
 dans `TASKS.md` : toujours tuer l'arbre de processus complet d'un serveur jetable, jamais se fier
 à la seule fin du shell parent. Captures non committées (fichiers temporaires de session).
+
+---
+
+## Clôture Mission 23 Étape 3 (navigation + intégration réelle du simulateur, 08/10/2026)
+
+Deux retours de Massy sur la version en ligne de la passe « vivant » : navigation cassée (pas de
+retour à l'accueil) et image de héros « floue et bizarre ». Les deux corrigés, puis cœur de
+l'Étape 3 : le cours réel gagne 11 vraies leçons de pratique (10 `exercice` + 1 `simulateur`),
+raccordées au vrai terminal/moteur d'exercices. Détail exhaustif dans les sections N et O
+ci-dessus.
+
+**1 bug réel trouvé par la revue visuelle, invisible à toutes les suites automatisées** : la règle
+CSS qui cache le sommaire latéral du lecteur de leçon sous 1024px était déclarée **avant** la
+règle de base qu'elle devait neutraliser — à spécificité égale, l'ordre dans le fichier tranche,
+donc la règle de base (plus tardive) gagnait toujours. Le sommaire ne disparaissait jamais sur
+mobile depuis l'Étape 2, pour aucun type de leçon. Repéré en capturant l'écran mobile de la leçon
+« Terminal libre » (sommaire affiché en pleine largeur au-dessus du message attendu au lieu de
+disparaître). Corrigé en réordonnant les deux règles ; revérifié par une nouvelle capture. Aucun
+test automatisé (Vitest/jsdom n'applique pas le cascade CSS réel ; les tests e2e existants ne
+vérifiaient jamais la visibilité du sommaire à une largeur mobile) n'aurait pu l'attraper —
+seule une vraie capture dans un vrai navigateur l'a montré.
+
+**Confirmé conforme aux suites automatisées** (relancées après le fix CSS) : lint propre, 86
+Vitest `apps/web`, 45 `functions`, 35 e2e Playwright principal (+3 nouveaux : fil d'Ariane et
+bouton précédent du navigateur ; leçon `exercice` bout en bout avec le vrai terminal, structurellement
+vérifié hors de `.platform-root` ; leçon `simulateur` bout en bout avec sortie explicite), 4 e2e
+admin ; build : chunk partagé de l'accueil 101,7 Ko → **60,9 Ko gzip** (App/AdminApp enfin en
+`lazy()`), CSS ≈ 7,4 Ko gzip (budgets 180/25 Ko).
+
+**Non encore satisfait, reporté explicitement** : rien de nouveau — tout ce qui était déjà reporté
+aux clôtures précédentes (A4, A6, A9, G2, H1/K8, L6) reste dans le même état, hors périmètre de
+cette étape.
+
+**Note méthode** : captures 1280px/390px, dark/light, script Playwright jetable contre un vrai
+`wrangler pages dev` local, avec un vrai passage de scroll avant chaque capture pleine page (même
+artefact méthodologique que la clôture précédente). Le rate limit d'inscription (partagé par tout
+process `wrangler`/test local sous la même IP factice) a été épuisé deux fois par l'enchaînement
+de runs manuels et de suites e2e dans la même session — purgé via la route de test dédiée
+(`/api/dev/reset-rate-limits`), pas un bug produit. Un seul serveur de dev, arrêté à la fin.
 
 ---
 

@@ -8,11 +8,22 @@ import { applySeedState, evaluate } from "@simulateur/exercises";
 // terminal itself never knows it's running inside an exercise), plus
 // Verifier/Indice/Abandonner and a result screen driven by
 // @simulateur/exercises' evaluate().
-export default function ExercisePanel({ exercise, t, lang, onAbandon, onBackToHome }) {
+export default function ExercisePanel({
+  exercise,
+  t,
+  lang,
+  onAbandon,
+  onBackToHome,
+  onPassed,
+  abandonLabel,
+  backToHomeLabel,
+  showBackToPicker = true,
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [result, setResult] = useState(null);
   const terminalRef = useRef(null);
+  const passedReportedRef = useRef(false);
   // Seeded once per mount -- ExercisePanel always fully unmounts (via the
   // picker screen) before a different exercise's panel mounts, so
   // `exercise` never changes under a live instance.
@@ -25,7 +36,15 @@ export default function ExercisePanel({ exercise, t, lang, onAbandon, onBackToHo
   function handleVerify() {
     const state = terminalRef.current?.getState();
     if (!state) return;
-    setResult(evaluate(exercise, state, state.commandHistory || [], { hintsUsed }));
+    const outcome = evaluate(exercise, state, state.commandHistory || [], { hintsUsed });
+    setResult(outcome);
+    // Alimente lesson_progress (Mission 23 Étape 3) dès la première réussite
+    // -- jamais ré-appelé sur une revérification déjà réussie, pour ne pas
+    // spammer l'API à chaque clic sur "Vérifier".
+    if (outcome.passed && !passedReportedRef.current) {
+      passedReportedRef.current = true;
+      onPassed?.(outcome);
+    }
   }
 
   function handleHint() {
@@ -74,7 +93,7 @@ export default function ExercisePanel({ exercise, t, lang, onAbandon, onBackToHo
           {hasMoreHints ? t.exerciseMode.hint : t.exerciseMode.noMoreHints}
         </button>
         <button type="button" className="exercise-toolbar-abandon" onClick={onAbandon}>
-          {t.exerciseMode.abandon}
+          {abandonLabel ?? t.exerciseMode.abandon}
         </button>
       </div>
 
@@ -108,11 +127,13 @@ export default function ExercisePanel({ exercise, t, lang, onAbandon, onBackToHo
               <button type="button" onClick={() => setResult(null)}>
                 {t.exerciseMode.retry}
               </button>
-              <button type="button" onClick={onAbandon}>
-                {t.exerciseMode.backToPicker}
-              </button>
+              {showBackToPicker && (
+                <button type="button" onClick={onAbandon}>
+                  {t.exerciseMode.backToPicker}
+                </button>
+              )}
               <button type="button" onClick={onBackToHome}>
-                {t.exerciseMode.backToHome}
+                {backToHomeLabel ?? t.exerciseMode.backToHome}
               </button>
             </div>
           </div>

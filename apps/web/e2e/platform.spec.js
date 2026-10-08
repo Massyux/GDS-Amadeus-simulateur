@@ -10,6 +10,16 @@ import { test, expect } from "@playwright/test";
 // MAIL_DEV_ECHO-gated, never reachable in production).
 
 test.beforeAll(async ({ baseURL }) => {
+  // Ce fichier enregistre plusieurs comptes (1 par test) contre
+  // /api/auth/register, qui partage un seul compteur de rate-limit
+  // (5/15min) pour toute l'"IP" factice locale (functions/_lib/rateLimit.js)
+  // -- et ce compteur vit dans le D1 persisté sur disque, donc survit à
+  // chaque relance de `npm run test:e2e` dans la même fenêtre de 15 minutes
+  // (playwright.config.js réutilise même le process serveur existant,
+  // `reuseExistingServer`). Sans ce reset, quelques exécutions rapprochées
+  // de ce fichier pendant une session de dev suffisent à épuiser le quota
+  // et à faire échouer l'inscription pour de vrai -- constaté en Étape 3.
+  await fetch(`${baseURL}/api/dev/reset-rate-limits`, { method: "POST" });
   await fetch(`${baseURL}/api/dev/seed-file`, {
     method: "POST",
     headers: { "X-Seed-Key": "support.pdf" },
@@ -95,7 +105,7 @@ test.describe("Espace étudiant (Mission 23 Étape 2)", () => {
     // page de formation pour atteindre "Mon compte".
     await page.getByRole("link", { name: "Retour à la formation" }).click();
     await page.getByRole("link", { name: "Mon compte" }).click();
-    await expect(page.getByText("1 / 5")).toBeVisible();
+    await expect(page.getByText("1 / 16")).toBeVisible();
     await expect(page.getByRole("link", { name: "Continuer" })).toBeVisible();
 
     await page.getByRole("button", { name: "Se déconnecter" }).click();
@@ -107,7 +117,7 @@ test.describe("Espace étudiant (Mission 23 Étape 2)", () => {
     await expect(page.getByRole("heading", { name: "Formations" })).toBeVisible();
 
     await page.goto("/app/compte");
-    await expect(page.getByText("1 / 5")).toBeVisible();
+    await expect(page.getByText("1 / 16")).toBeVisible();
   });
 
   test("a logged-out visit to any /app/* path shows the auth screen, never the content", async ({
@@ -115,5 +125,114 @@ test.describe("Espace étudiant (Mission 23 Étape 2)", () => {
   }) => {
     await page.goto("/app/compte");
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+  });
+});
+
+// Mission 23 Étape 3: navigation (fil d'Ariane, retour à l'accueil par la
+// marque, bouton précédent du navigateur) + intégration réelle du
+// simulateur dans une leçon. La contrainte la plus stricte de cette étape --
+// "le terminal doit rester strictement identique au mode libre" -- est
+// vérifiée ici structurellement : le vrai .terminal (apps/web/src/Terminal.jsx)
+// ne doit JAMAIS se retrouver sous .platform-root (sinon il hériterait des
+// couleurs/polices de platform.css, voir LessonSimulatorView.jsx).
+test.describe("Navigation et simulateur intégré (Mission 23 Étape 3)", () => {
+  test("breadcrumb, explicit back links, and the browser back button all work", async ({ page }) => {
+    const email = uniqueEmail();
+    await page.goto("/app");
+    await page.getByLabel("Adresse e-mail").fill(email);
+    await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
+    await page.getByRole("button", { name: "Pas encore de compte ? Créer un compte" }).click();
+    await page.getByLabel("Adresse e-mail").fill(email);
+    await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
+    await page.getByRole("button", { name: "Créer mon compte" }).click();
+    await expect(page.getByRole("heading", { name: "Formations" })).toBeVisible();
+
+    await page.getByText("Amadeus — Niveau 1").click();
+    await expect(page.getByRole("heading", { name: "Amadeus — Niveau 1" })).toBeVisible();
+
+    const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
+    await expect(breadcrumb.getByRole("link", { name: "Accueil" })).toBeVisible();
+    await expect(breadcrumb.getByRole("link", { name: "Formations" })).toBeVisible();
+    await expect(breadcrumb.getByText("Amadeus — Niveau 1")).toBeVisible();
+
+    await page.getByRole("button", { name: "S'inscrire" }).click();
+    await page.getByRole("link", { name: "Bienvenue" }).click();
+    await expect(page.getByText("Ceci est une leçon de démonstration")).toBeVisible();
+    // Le fil d'Ariane d'une leçon va jusqu'à son propre titre.
+    await expect(breadcrumb.getByText("Bienvenue")).toBeVisible();
+
+    // Bouton précédent du navigateur : leçon -> formation, sans état cassé.
+    await page.goBack();
+    await expect(page.getByRole("heading", { name: "Amadeus — Niveau 1" })).toBeVisible();
+
+    // Le nom du produit ramène au catalogue pour un visiteur connecté.
+    await page.getByText("Orionis Academy").click();
+    await expect(page.getByRole("heading", { name: "Formations" })).toBeVisible();
+  });
+
+  test("an exercice lesson runs the real terminal (not nested under .platform-root) and reports completion", async ({
+    page,
+  }) => {
+    const email = uniqueEmail();
+    await page.goto("/app");
+    await page.getByLabel("Adresse e-mail").fill(email);
+    await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
+    await page.getByRole("button", { name: "Pas encore de compte ? Créer un compte" }).click();
+    await page.getByLabel("Adresse e-mail").fill(email);
+    await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
+    await page.getByRole("button", { name: "Créer mon compte" }).click();
+    await page.getByText("Amadeus — Niveau 1").click();
+    await page.getByRole("button", { name: "S'inscrire" }).click();
+
+    await page.getByRole("link", { name: "Lire une disponibilité" }).click();
+    await expect(page.getByRole("button", { name: "Commencer l'exercice" })).toBeVisible();
+    await page.getByRole("button", { name: "Commencer l'exercice" }).click();
+
+    await expect(page.getByText("AMADEUS SELLING PLATFORM")).toBeVisible();
+    await expect(page.locator(".platform-root .terminal")).toHaveCount(0);
+    await expect(page.locator(".terminal")).toHaveCount(1);
+
+    const input = page.locator(".prompt-input");
+    await input.fill("AN26DECALGPAR");
+    await input.press("Enter");
+    await expect(page.getByText(/AMADEUS AVAILABILITY - AN/)).toBeVisible();
+    await input.fill("SS2Y1");
+    await input.press("Enter");
+
+    await page.getByRole("button", { name: "Vérifier" }).click();
+    await expect(page.getByText("Exercice réussi")).toBeVisible();
+
+    // Le résultat est une modale (fond plein écran) : le bouton de sortie
+    // réellement cliquable est celui de la modale, pas celui de la barre
+    // d'outils qu'elle recouvre -- les deux portent le même libellé "Retour
+    // à la leçon" (ExercisePanel.jsx, `backToHomeLabel`/`abandonLabel`).
+    await page.getByRole("dialog").getByRole("button", { name: "Retour à la leçon" }).click();
+    await expect(page.getByRole("button", { name: "Commencer l'exercice" })).toBeVisible();
+    await expect(page.locator(".terminal")).toHaveCount(0);
+  });
+
+  test("a simulateur lesson opens the free terminal full-screen with an explicit exit", async ({
+    page,
+  }) => {
+    const email = uniqueEmail();
+    await page.goto("/app");
+    await page.getByLabel("Adresse e-mail").fill(email);
+    await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
+    await page.getByRole("button", { name: "Pas encore de compte ? Créer un compte" }).click();
+    await page.getByLabel("Adresse e-mail").fill(email);
+    await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
+    await page.getByRole("button", { name: "Créer mon compte" }).click();
+    await page.getByText("Amadeus — Niveau 1").click();
+    await page.getByRole("button", { name: "S'inscrire" }).click();
+
+    await page.getByRole("link", { name: "Terminal libre" }).click();
+    await expect(page.getByRole("button", { name: "Ouvrir le terminal" })).toBeVisible();
+    await page.getByRole("button", { name: "Ouvrir le terminal" }).click();
+
+    await expect(page.getByText("AMADEUS SELLING PLATFORM")).toBeVisible();
+    await expect(page.locator(".platform-root .terminal")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Retour à la leçon" }).click();
+    await expect(page.getByRole("button", { name: "Ouvrir le terminal" })).toBeVisible();
   });
 });

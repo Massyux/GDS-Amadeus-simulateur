@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Badge, PlatformLayout } from "./ui/index.js";
+import { Button, Badge, Card, PlatformLayout } from "./ui/index.js";
 import { Link } from "./Link.jsx";
 import { navigate } from "./useRoute.js";
 import { platformApi } from "./api.js";
@@ -7,6 +7,24 @@ import { renderMarkdownLite } from "./markdownLite.jsx";
 import { buildIcsUrl } from "./ics.js";
 import { LESSON_TYPE_ICONS } from "./lessonTypeIcons.js";
 import { useTheme } from "./useTheme.js";
+import { Breadcrumb } from "./Breadcrumb.jsx";
+import LessonSimulatorView from "./LessonSimulatorView.jsx";
+
+const MOBILE_QUERY = "(max-width: 767px)";
+
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && Boolean(window.matchMedia?.(MOBILE_QUERY).matches)
+  );
+  useEffect(() => {
+    const mql = window.matchMedia?.(MOBILE_QUERY);
+    if (!mql) return undefined;
+    const handler = (event) => setIsMobile(event.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
 
 /**
  * Lecteur de leçon (docs/MAQUETTES.md §5) : "le contenu règne, le reste
@@ -19,12 +37,20 @@ import { useTheme } from "./useTheme.js";
  * fois son slug connu -- pour construire le sommaire et la position "3/12"
  * (functions/api/courses/[slug]/index.js n'est pas dupliqué, juste réutilisé
  * comme CoursePage.jsx le fait déjà).
+ *
+ * Leçons simulateur/exercice (Mission 23 Étape 3) : quand `showSimulator`
+ * est actif, cette page ne rend PAS <PlatformLayout> -- elle rend
+ * <LessonSimulatorView> à la place, en dehors de `.platform-root`. C'est
+ * voulu (voir LessonSimulatorView.jsx) : c'est la seule façon de garantir
+ * que le vrai Terminal reste pixel pour pixel identique au mode libre.
  */
-export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonId }) {
+export default function LessonPlayerPage({ t, lang, csrfToken, courseSlugHint, lessonId }) {
   const [data, setData] = useState(null);
   const [course, setCourse] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [moduleDone, setModuleDone] = useState(null);
+  const [showSimulator, setShowSimulator] = useState(false);
+  const isMobile = useIsMobileViewport();
   // Pas de barre de navigation ici (ci-dessous), donc pas de bouton de
   // bascule -- mais le thème doit quand même s'initialiser correctement
   // pour un visiteur qui atterrit directement sur l'URL d'une leçon.
@@ -65,9 +91,12 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
   const isLastOfModule = currentFlat ? !flat[position + 1] || flat[position + 1].moduleId !== currentFlat.moduleId : false;
   const nextModule = currentFlat ? course.modules.find((m) => m.id !== currentFlat.moduleId && m.lessons[0]?.id === data?.nav?.nextId) : null;
 
-  async function handleMarkCompletedAndContinue() {
+  async function markCompleted() {
     await platformApi.setLessonStatus(lessonId, "completed", csrfToken);
     setCompleted(true);
+  }
+
+  function goNext() {
     if (isLastOfModule) {
       setModuleDone({ nextLessonId: data.nav.nextId, nextModuleTitle: nextModule?.title || null });
     } else if (data.nav.nextId) {
@@ -75,8 +104,44 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
     }
   }
 
+  async function handleMarkCompletedAndContinue() {
+    await markCompleted();
+    goNext();
+  }
+
+  // L'exercice est déjà évalué par @simulateur/exercises (ExercisePanel) --
+  // on se contente d'alimenter lesson_progress dès la première réussite,
+  // sans naviguer : l'étudiant reste sur l'écran de résultat tant qu'il n'a
+  // pas explicitement choisi de revenir à la leçon.
+  async function handleExercisePassed() {
+    await markCompleted();
+  }
+
+  if (showSimulator && data?.lesson) {
+    return (
+      <LessonSimulatorView
+        type={data.lesson.type}
+        exerciseId={data.lesson.content?.exerciseId}
+        t={t}
+        lang={lang}
+        onExit={() => setShowSimulator(false)}
+        onPassed={handleExercisePassed}
+      />
+    );
+  }
+
   return (
-    <PlatformLayout>
+    <PlatformLayout brandTo="/app/catalogue">
+      {courseSlug && (
+        <Breadcrumb
+          items={[
+            { label: t.platform.nav.home, to: "/" },
+            { label: t.platform.catalogue.title, to: "/app/catalogue" },
+            { label: course?.course?.title || "…", to: `/app/cours/${courseSlug}` },
+            { label: data?.lesson?.title || "…" },
+          ]}
+        />
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", flexWrap: "wrap", marginBottom: "var(--space-5)" }}>
         {courseSlug && (
           <Link to={`/app/cours/${courseSlug}`} className="pf-btn pf-btn--discreet">
@@ -117,8 +182,14 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
             ))}
           </nav>
 
-          <div className={`pf-lesson-content${["video", "pdf", "simulateur"].includes(data.lesson.type) ? " pf-lesson-content--wide" : ""}`}>
-            <LessonContent type={data.lesson.type} content={data.lesson.content} tl={tl} />
+          <div className={`pf-lesson-content${["video", "pdf", "simulateur", "exercice"].includes(data.lesson.type) ? " pf-lesson-content--wide" : ""}`}>
+            <LessonContent
+              type={data.lesson.type}
+              content={data.lesson.content}
+              tl={tl}
+              isMobile={isMobile}
+              onOpenSimulator={() => setShowSimulator(true)}
+            />
 
             <div className="pf-lesson-actionbar">
               <Button
@@ -128,9 +199,17 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
               >
                 {tl.prev}
               </Button>
-              <Button variant="primary" onClick={handleMarkCompletedAndContinue} disabled={completed}>
-                {completed ? tl.completed : tl.markCompleted}
-              </Button>
+              {data.lesson.type === "exercice" ? (
+                completed && (
+                  <Button variant="primary" onClick={goNext}>
+                    {tl.next}
+                  </Button>
+                )
+              ) : (
+                <Button variant="primary" onClick={handleMarkCompletedAndContinue} disabled={completed}>
+                  {completed ? tl.completed : tl.markCompleted}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -155,7 +234,7 @@ export default function LessonPlayerPage({ t, csrfToken, courseSlugHint, lessonI
   );
 }
 
-function LessonContent({ type, content, tl }) {
+function LessonContent({ type, content, tl, isMobile, onOpenSimulator }) {
   if (type === "texte") {
     return <div>{renderMarkdownLite(content?.body)}</div>;
   }
@@ -241,6 +320,27 @@ function LessonContent({ type, content, tl }) {
     );
   }
 
-  // simulateur / exercice : intégration réelle en Étape 3 (MISSION-23.md).
-  return <p>{tl.comingInStep3}</p>;
+  // simulateur / exercice (Mission 23 Étape 3). Sur mobile, aucune tentative
+  // de charger le terminal -- juste le message prévu (DESIGN-SYSTEM,
+  // demande explicite de Massy : "sans expérience dégradée").
+  if (isMobile) {
+    return (
+      <div>
+        <h2 style={{ fontSize: "var(--text-lg)" }}>{tl.mobileBlockedTitle}</h2>
+        <p style={{ color: "var(--ink-2)", marginTop: "var(--space-2)" }}>{tl.mobileBlockedBody}</p>
+      </div>
+    );
+  }
+
+  const isExercise = type === "exercice";
+  return (
+    <Card>
+      <p style={{ color: "var(--ink-2)", marginBottom: "var(--space-4)" }}>
+        {isExercise ? tl.exerciseIntro : tl.simulatorIntro}
+      </p>
+      <Button variant="primary" onClick={onOpenSimulator}>
+        {isExercise ? tl.openExercise : tl.openSimulator}
+      </Button>
+    </Card>
+  );
 }

@@ -43,6 +43,7 @@ export default function AccountPage({ t, lang, onChangeLang, user, onLogout }) {
   return (
     <PlatformLayout
       menuLabels={{ open: tn.openMenu, close: tn.closeMenu }}
+      brandTo="/app/catalogue"
       nav={
         <PlatformNav
           t={t}

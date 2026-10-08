@@ -899,39 +899,51 @@ html[data-theme="light"] .pf-btn--secondary {
   }
 }
 
-/* Image de héros (chantier 2) : photo réelle en fond, voile dégradé cohérent
-   avec la palette par-dessus (DESIGN-SYSTEM/IDENTITE-VISUELLE : "pour que
-   les photos s'intègrent au lieu de jurer"). Un seul <img> avec
-   object-fit:cover, jamais de background-image (dimensions explicites
-   anti-CLS impossibles sur un fond CSS). */
-.pf-hero-media {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
+/* Image de héros (chantier 2, REVU le 08/10/2026 -- retour Massy : "floue et
+   bizarre" en texture de fond à 38% d'opacité sous un voile. Corrigé : la
+   photo sort du fond, pleine opacité, dans un cadre net (bords définis,
+   rayon 20px) composé AU-DESSUS du terminal plutôt que derrière le texte --
+   "une image doit être clairement une image". Le ton de couleur du thème
+   s'intègre via une fine couche de superposition (::after, mix-blend-mode),
+   jamais en réduisant l'opacité de la photo elle-même. */
+.pf-hero-visual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.pf-hero-photo {
+  position: relative;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  border-radius: 0 0 28px 28px;
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
 }
 
-.pf-hero-media img {
+.pf-hero-photo img {
+  display: block;
   width: 100%;
-  height: 100%;
+  height: 220px;
   object-fit: cover;
-  opacity: 0.38;
 }
 
-html[data-theme="light"] .pf-hero-media img {
-  opacity: 0.22;
-}
-
-.pf-hero-media::after {
+.pf-hero-photo::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--night) 0%, rgba(7, 11, 22, 0.55) 55%, var(--night) 100%);
+  background: linear-gradient(140deg, rgba(34, 211, 238, 0.22), rgba(255, 138, 91, 0.16));
+  mix-blend-mode: hard-light;
+  pointer-events: none;
 }
 
-html[data-theme="light"] .pf-hero-media::after {
-  background: linear-gradient(180deg, var(--night) 0%, rgba(242, 247, 255, 0.5) 55%, var(--night) 100%);
+html[data-theme="light"] .pf-hero-photo::after {
+  background: linear-gradient(140deg, rgba(14, 159, 191, 0.18), rgba(242, 102, 60, 0.14));
+}
+
+@media (max-width: 1023px) {
+  .pf-hero-photo img {
+    height: 180px;
+  }
 }
 
 .pf-tag {
@@ -1253,6 +1265,46 @@ html[data-theme="light"] .pf-resume {
   background: linear-gradient(120deg, rgba(14, 159, 191, 0.12), rgba(242, 102, 60, 0.08)), var(--surface);
 }
 
+/* ---------- Fil d'Ariane (Mission 23 Étape 3) ---------- */
+
+.pf-breadcrumb {
+  margin-bottom: var(--space-4);
+}
+
+.pf-breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.pf-breadcrumb li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pf-breadcrumb a {
+  color: var(--ink-3);
+}
+
+.pf-breadcrumb a:hover {
+  color: var(--cyan);
+}
+
+.pf-breadcrumb span[aria-current="page"] {
+  color: var(--ink-2);
+}
+
+.pf-breadcrumb-sep {
+  color: var(--ink-3);
+  opacity: 0.6;
+}
+
 /* ---------- Page de formation ---------- */
 
 .pf-course-head {
@@ -1374,6 +1426,22 @@ html[data-theme="light"] .pf-final {
   align-items: start;
 }
 
+.pf-lesson-sidebar {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* RÉEL CORRIGÉ (Étape 3, 08/10/2026) : cette règle responsive vivait AVANT
+   la règle de base ci-dessus dans le fichier. Les deux sélecteurs ont la
+   même spécificité (une classe) -- en cas d'égalité, c'est l'ORDRE dans le
+   fichier qui tranche, pas la media query : la règle de base (déclarée
+   après) gagnait donc toujours, même sous 1023px. Le sommaire ne
+   disparaissait jamais sur mobile, pour AUCUN type de leçon -- repéré en
+   capturant l'écran bloqué simulateur à 390px (Étape 3) et en voyant le
+   sommaire s'afficher en pleine largeur au-dessus du message attendu. */
 @media (max-width: 1023px) {
   .pf-lesson-layout {
     grid-template-columns: 1fr;
@@ -1382,14 +1450,6 @@ html[data-theme="light"] .pf-final {
   .pf-lesson-sidebar {
     display: none;
   }
-}
-
-.pf-lesson-sidebar {
-  position: sticky;
-  top: 90px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
 }
 
 /* Liste longue -- jamais de backdrop-filter ici (DESIGN-SYSTEM §2 bis),

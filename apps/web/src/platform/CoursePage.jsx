@@ -3,6 +3,7 @@ import { Button, Card, Badge, ProgressBar, PlatformLayout } from "./ui/index.js"
 import { Link } from "./Link.jsx";
 import { platformApi } from "./api.js";
 import { PlatformNav } from "./PlatformNav.jsx";
+import { Breadcrumb } from "./Breadcrumb.jsx";
 import { CourseVignette } from "./CourseVignette.jsx";
 import { demoCourses } from "./data/demoCourses.js";
 import { LESSON_TYPE_ICONS } from "./lessonTypeIcons.js";
@@ -53,6 +54,7 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
   return (
     <PlatformLayout
       menuLabels={{ open: tn.openMenu, close: tn.closeMenu }}
+      brandTo="/app/catalogue"
       nav={
         <PlatformNav
           t={t}
@@ -65,9 +67,13 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
         />
       }
     >
-      <Link to="/app/catalogue" className="pf-btn pf-btn--discreet">
-        {tc.back}
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: tn.home, to: "/" },
+          { label: t.platform.catalogue.title, to: "/app/catalogue" },
+          { label: data?.course?.title || "…" },
+        ]}
+      />
 
       {!data && <p>…</p>}
 
