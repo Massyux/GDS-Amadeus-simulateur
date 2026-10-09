@@ -13,8 +13,11 @@
 1. Lire la mission en entier avant de commencer. Ne PAS élargir le périmètre (CONSTITUTION §6).
 2. Toute observation hors périmètre → la noter dans `TASKS.md` section "Backlog", ne pas la traiter.
 3. Rituel de clôture obligatoire : toutes les suites vertes (`npm run test`, `test:data`,
-   `test:web`, `test:e2e`, `lint`, typecheck core) → mise à jour `TASKS.md` + `CLAUDE.md`
-   (statut) + `PROJECT_MEMORY` si une règle métier a changé → commit(s) clairs → `git push`.
+   `test:web`, `test:e2e`, `lint`, typecheck core) → **entrée datée en haut de `JOURNAL.md`**
+   (le compte rendu de session) + mise à jour de `TASKS.md` §En cours (état courant et reprise
+   exacte seulement, jamais de compte rendu daté : séparation du 09/10/2026, `TASKS.md` est relu
+   à chaque démarrage) + `CLAUDE.md` (statut) + `PROJECT_MEMORY` si une règle métier a changé →
+   commit(s) clairs → `git push`.
 4. Si un critère d'acceptation ne peut pas être atteint : s'arrêter, documenter le blocage dans
    `TASKS.md`, terminer proprement la session. Pas de contournement silencieux.
 
