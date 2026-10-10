@@ -20,5 +20,11 @@
       "database_name": "gds-licences",
       "database_id": "6af85642-3628-4f14-bac9-7794c89124f3"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CONTENT",
+      "bucket_name": "gds-content"
+    }
   ]
 }

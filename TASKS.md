@@ -25,6 +25,28 @@ vidéo/PDF/fichier/live, journal d'audit) ; voir les entrées datées ci-dessous
 complet des cinq passes.
 **Reprise exacte pour la suite** : Étape 5 (clôture finale, bascule production — voir le rappel
 ci-dessous). Rien d'autre en attente sur cette mission.
+**🔴 Découverte du 11/10/2026, pendant la Phase 3 de l'Étape 5 : `ADMIN_SECRET_HASH` est
+ABSENT des variables d'environnement du projet Pages** (constaté par Massy à l'écran, section
+*Variables and secrets*, environnement Production — une seule ligne, `SESSION_SECRET`, qu'il
+venait d'ajouter). Or `README.md` affirme depuis le 27/07/2026 : « `ADMIN_SECRET_HASH`
+configuré », et le compte rendu de cette date présente la bascule production comme faite et
+vérifiée. **La documentation était fausse.**
+Conséquence probable, à confirmer : **la connexion `/admin` n'a jamais fonctionné en
+production.** Elle n'a jamais été testée en ligne — l'épisode « Phrase secrète invalide » du
+06/10/2026 était un test en local, et la vérification du 06/10 ne portait que sur
+`/api/license/check`, qui n'utilise pas cette variable. Jusqu'au correctif du 10/10/2026, le
+repli `|| ""` faisait que l'absence ne produisait aucune erreur visible — elle était donc
+indétectable sans aller regarder le dashboard.
+**À faire avant le déploiement** : Massy recalcule l'empreinte SHA-256 de la phrase secrète
+(`D:\cowork\secrets-gds\admin-passphrase-production.txt`) et pose `ADMIN_SECRET_HASH` en
+*Secret* sur **Production ET Preview**. Depuis le correctif, une absence fait échouer la
+connexion admin franchement au lieu de passer en silence — c'est voulu, mais ça veut dire que
+sans cette variable, `/admin` sera cassé dès la mise en ligne.
+**Même classe d'erreur qu'en juillet** (`TASKS.md` disait la Mission 14 Étape 3 non faite alors
+qu'elle l'était ; ici `README.md` dit une configuration faite alors qu'elle ne l'est pas) :
+une affirmation écrite sans vérification sur le système réel. À la clôture, ne pas écrire
+« configuré » sans l'avoir constaté à l'écran ou par une requête.
+
 **Rappel production pour la clôture finale (Étape 5)** : quatre choses à faire une fois, qui
 n'existent qu'en local pour l'instant — `SESSION_SECRET` (env var Cloudflare Pages, comme
 `ADMIN_SECRET_HASH`), le binding R2 réel (`wrangler.jsonc` n'a volontairement PAS été modifié,
