@@ -14,6 +14,7 @@
 // ADMIN_SECRET_HASH already invalidates every outstanding token at once.
 import { sha256Hex, constantTimeEqual } from "../../_lib/hash.js";
 import { signToken } from "../../_lib/token.js";
+import { requireSecret } from "../../_lib/requiredEnv.js";
 
 const MIN_DELAY_MS = 300;
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8h
@@ -25,14 +26,19 @@ export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
     const secret = typeof body?.secret === "string" ? body.secret.trim() : "";
-    const configuredHash = (env.ADMIN_SECRET_HASH || "").trim().toLowerCase();
+    // requireSecret lève si ADMIN_SECRET_HASH est absent/trop court -- avalé
+    // par ce même try/catch, qui retombe sur le résultat neutre {valid:false}
+    // déjà utilisé pour une mauvaise phrase : un environnement mal configuré
+    // ne doit jamais se distinguer d'un simple échec de connexion.
+    const adminHash = requireSecret(env, "ADMIN_SECRET_HASH");
+    const configuredHash = adminHash.trim().toLowerCase();
 
-    if (secret && configuredHash) {
+    if (secret) {
       const hash = await sha256Hex(secret);
       if (constantTimeEqual(hash, configuredHash)) {
         const token = await signToken(
           { role: "admin", exp: Date.now() + SESSION_TTL_MS },
-          env.ADMIN_SECRET_HASH
+          adminHash
         );
         result = { valid: true, token };
       }

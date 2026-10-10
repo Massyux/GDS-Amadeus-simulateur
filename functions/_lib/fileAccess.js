@@ -15,20 +15,21 @@
 // d'être révoquée entre-temps -- la même philosophie de révocation instantanée
 // que /api/license/check.
 import { signToken, verifyToken } from "./token.js";
+import { requireSecret } from "./requiredEnv.js";
 
 const DOWNLOAD_TTL_MS = 10 * 60 * 1000;
 
 export async function signDownloadUrl(env, { fileKey, userId, courseId }) {
   const token = await signToken(
     { fileKey, userId, courseId, exp: Date.now() + DOWNLOAD_TTL_MS },
-    env.SESSION_SECRET || ""
+    requireSecret(env, "SESSION_SECRET")
   );
   return `/api/files/download?token=${encodeURIComponent(token)}`;
 }
 
 export async function verifyDownloadToken(env, token) {
   if (typeof token !== "string" || !token) return null;
-  const payload = await verifyToken(token, env.SESSION_SECRET || "");
+  const payload = await verifyToken(token, requireSecret(env, "SESSION_SECRET"));
   if (!payload || typeof payload.fileKey !== "string") return null;
   return payload;
 }

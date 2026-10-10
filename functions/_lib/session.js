@@ -14,6 +14,7 @@
 // admin vs des milliers d'étudiants) ne doivent pas partager un rayon de
 // rotation.
 import { signToken, verifyToken } from "./token.js";
+import { requireSecret } from "./requiredEnv.js";
 
 const COOKIE_NAME = "session";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -38,6 +39,10 @@ function cookieAttributes(request, maxAgeSeconds) {
 }
 
 export async function createSession(env, request, userId) {
+  // Vérifié avant toute écriture D1 : échouer avant d'avoir créé une ligne
+  // de session qu'on ne pourrait pas signer correctement.
+  const secret = requireSecret(env, "SESSION_SECRET");
+
   const sessionId = randomSessionId();
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS).toISOString();
 
@@ -45,7 +50,7 @@ export async function createSession(env, request, userId) {
     .bind(sessionId, userId, expiresAt)
     .run();
 
-  const token = await signToken({ sid: sessionId, uid: userId }, env.SESSION_SECRET || "");
+  const token = await signToken({ sid: sessionId, uid: userId }, secret);
   const cookie = `${COOKIE_NAME}=${token}; ${cookieAttributes(request, SESSION_DURATION_MS / 1000)}`;
   return { sessionId, cookie };
 }
@@ -68,7 +73,7 @@ export async function getSession(env, request) {
   const raw = readCookieValue(request);
   if (!raw) return null;
 
-  const payload = await verifyToken(raw, env.SESSION_SECRET || "");
+  const payload = await verifyToken(raw, requireSecret(env, "SESSION_SECRET"));
   if (!payload || typeof payload.sid !== "string" || typeof payload.uid !== "number") return null;
 
   const row = await env.DB.prepare(

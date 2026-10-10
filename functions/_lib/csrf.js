@@ -13,6 +13,7 @@
 // domaine pour y trouver le jeton à renvoyer. Pas de secret supplémentaire à
 // faire configurer à Massy : réutilise SESSION_SECRET.
 import { constantTimeEqual } from "./hash.js";
+import { requireSecret } from "./requiredEnv.js";
 
 async function hmacHex(message, secret) {
   const key = await crypto.subtle.importKey(
@@ -27,7 +28,7 @@ async function hmacHex(message, secret) {
 }
 
 export async function csrfTokenForSession(env, sessionId) {
-  return hmacHex(sessionId, env.SESSION_SECRET || "");
+  return hmacHex(sessionId, requireSecret(env, "SESSION_SECRET"));
 }
 
 export async function verifyCsrfToken(env, sessionId, candidate) {
