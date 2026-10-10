@@ -141,6 +141,7 @@ export const dictionary = {
         willLearnTitle: "Ce que tu sauras faire",
         preview: "Aperçu",
         lockedLesson: "Inscris-toi pour y accéder",
+        certificateCta: "Télécharger mon attestation",
       },
       lesson: {
         back: "Retour à la formation",
@@ -456,6 +457,7 @@ export const dictionary = {
         willLearnTitle: "What you'll be able to do",
         preview: "Preview",
         lockedLesson: "Enroll to unlock",
+        certificateCta: "Download my certificate",
       },
       lesson: {
         back: "Back to course",

@@ -24,5 +24,8 @@
     "lint-staged": "^17.0.8",
     "typescript": "^6.0.3",
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
   }
 }

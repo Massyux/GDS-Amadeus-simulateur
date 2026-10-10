@@ -98,6 +98,17 @@ export default function CoursePage({ t, lang, onChangeLang, user, csrfToken, slu
                       label={`${completedCount} / ${lessonCount}`}
                       accentColor={visual.accentColor}
                     />
+                    {lessonCount > 0 && completedCount === lessonCount && (
+                      <a
+                        href={`/api/courses/${slug}/certificate?lang=${lang}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="pf-btn pf-btn--secondary pf-btn--md"
+                        style={{ marginTop: "var(--space-4)", display: "inline-block" }}
+                      >
+                        {tc.certificateCta}
+                      </a>
+                    )}
                   </>
                 ) : (
                   <Button variant="primary" onClick={handleEnroll} disabled={enrolling}>
