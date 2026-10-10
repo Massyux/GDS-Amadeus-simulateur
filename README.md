@@ -63,11 +63,30 @@ table `licenses`), pas un mauvais mot de passe.
 Système de licences : palier individuel (1 poste) ou école (2-4 postes), un espace `/admin` pour
 Massy (générer/révoquer les clés, voir les appareils activés), sur **Cloudflare D1** (SQLite
 gratuit, même compte que Pages — décision architecte du 07/07/2026, remplace le Supabase envisagé
-au départ). **En production depuis l'Étape 3 (27/07/2026)** : base créée, schéma appliqué, binding
-`DB` actif sur le projet Pages, `ADMIN_SECRET_HASH` configuré, `AccessGate.jsx` branché dessus.
-Les 4 étapes de mise en place (créer la base, lier le binding, générer la phrase secrète admin,
-appliquer le schéma) ont été faites une fois et n'ont pas à être répétées — gardées ci-dessous
-pour mémoire seulement en cas de nouvelle base (changement de compte Cloudflare, etc).
+au départ). Base créée, schéma appliqué, binding `DB` actif sur le projet Pages depuis l'Étape 3
+(27/07/2026), `AccessGate.jsx` branché dessus.
+
+⚠️ **Correction du 11/10/2026** : ce paragraphe affirmait depuis le 27/07/2026 que
+`ADMIN_SECRET_HASH` était « configuré » en production. **C'était faux** — la variable était
+absente du projet Pages, et l'a été pendant plus de deux mois sans que personne ne le voie,
+parce que le repli `env.ADMIN_SECRET_HASH || ""` (corrigé depuis, voir `functions/_lib/
+requiredEnv.js`) rendait l'absence silencieuse au lieu de faire échouer la connexion. La
+connexion `/admin` n'avait donc probablement jamais fonctionné en production avant ce jour.
+Massy a constaté l'absence lui-même à l'écran (dashboard Cloudflare, *Settings → Environment
+variables*), régénéré une nouvelle phrase secrète (l'ancienne est caduque), et posé la nouvelle
+empreinte en **Secret** sur **Production et Preview** le 11/10/2026, de même pour
+`SESSION_SECRET` (absent lui aussi jusqu'à cette date — c'est la variable qui protège les
+sessions étudiant, les jetons CSRF et les liens de téléchargement signés de Mission 23).
+Les 4 étapes de mise en place ci-dessous ont donc été refaites, pas seulement faites une fois —
+ne pas réécrire « fait, à ne pas répéter » sur la base d'une affirmation non vérifiée : la même
+erreur s'est produite deux fois sur ce projet (`TASKS.md` en juillet sur la Mission 14, ce
+paragraphe depuis juillet sur Mission 14/23). Elles restent décrites ci-dessous pour mémoire,
+en cas de nouvelle base.
+
+**Une variable d'environnement Cloudflare Pages ne prend effet qu'au déploiement suivant** — la
+poser dans le dashboard ne change rien au site actuellement en ligne ; il faut un nouveau
+déploiement (ici : le prochain `git push`, Pages étant connecté au dépôt GitHub) pour qu'elle
+s'applique. À garder en tête avant de conclure qu'une variable juste posée « ne marche pas ».
 
 `https://orionisacademy.com/admin` : connexion avec la phrase secrète, tableau des
 licences, bouton **Nouvelle clé** (génère et affiche une clé une seule fois — à distribuer

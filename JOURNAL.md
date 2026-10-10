@@ -21,6 +21,88 @@
 
 ## Fait (par session, datée)
 
+### 11/10/2026 — Mission 23 Étape 5 (bascule production) — correctif sécurité, attestation PDF, infrastructure, déploiement
+
+Session hors mode autonome (contrairement aux Étapes 0-4) : touche à la production réelle et à
+des secrets que Massy seul manipule. Cinq phases, chacune confirmée avant la suivante, trois
+points d'arrêt explicites (🛑 STOP) tenus.
+
+**Phase 1 — correctif critique (commit `6469155`)** : `env.SESSION_SECRET || ""` et
+`env.ADMIN_SECRET_HASH || ""` (bug trouvé par l'architecte le 09/10/2026) retombaient
+silencieusement sur la chaîne vide comme clé HMAC si la variable était absente — jetons de
+session/CSRF/téléchargement forgeables, sans aucun signal. Corrigé en famille
+(`CONSTITUTION.md` §5) par un helper unique qui lève, `functions/_lib/requiredEnv.js`
+(initialement nommé `secrets.js` — renommé car le `.gitignore` `*secret*`, volontairement large,
+le cachait entièrement à `git status`, pas seulement à la casse). Appliqué aux quatre appels
+`SESSION_SECRET` **et** à `ADMIN_SECRET_HASH` (`adminAuth.js`, `admin/login.js`, motif identique
+trouvé en vérifiant au passage). 13 tests dédiés qui échouaient avant, passent après.
+
+**Phase 2 — attestation de fin de parcours (commit `803e6e6`)** : dernier élément manquant de
+Mission 23. PDF généré à la demande (jamais stocké en D1), via `pdf-lib` (pur JS, compatible
+Workers, zéro dépendance native, choisi plutôt qu'une API tierce — le nom de l'étudiant ne doit
+jamais sortir du Worker). `functions/_lib/certificate.js` + route
+`functions/api/courses/[slug]/certificate.js` : nom (repli sur l'email si prénom/nom absents —
+`AuthScreen.jsx` ne les rend pas obligatoires), titre de formation, date d'obtention (calculée
+depuis `lesson_progress.completed_at`, pas la date de téléchargement), mention obligatoire de
+non-valeur officielle **imprimée sur le document lui-même**. 404 neutre si la formation n'existe
+pas ou si l'étudiant n'est pas inscrit (jamais distingué) ; 403 si incomplet. 7 tests d'intégration
++ 3 tests de composant (lien visible seulement à 100 %).
+
+**Phase 3 — infrastructure production (commit `456779f`)**, les trois points d'arrêt accordés
+par l'architecte après vérification directe (relecture ligne à ligne des migrations, test de
+`requiredEnv.test.js`) :
+- 🛑 STOP 1 : bucket R2 `gds-content` créé, binding `CONTENT` posé dans `wrangler.jsonc` (bucket
+  créé AVANT l'édition du fichier, comme l'exige son propre commentaire — précédent de l'incident
+  de juillet). Bloqué une première fois sur l'auth wrangler (environnement non-interactif,
+  `wrangler login` fait par Massy dans un terminal séparé), une seconde fois sur R2 non activé
+  sur le compte (activé par Massy dans le dashboard).
+- 🛑 STOP 3 : migrations `0002_platform_users.sql` et `0003_audit_log.sql` appliquées en
+  `--remote`. **`wrangler d1 execute --remote --file=...` a échoué de façon systématique sur
+  cette machine** (5 tentatives identiques) : l'upload PUT réussit, le POST `"ingest"` suivant
+  échoue toujours (`fetch failed`) — lecture du code source de wrangler
+  (`uploadAndBeginIngestion`, `wrangler-dist/cli.js`) : POST n'est pas dans la liste des méthodes
+  auto-retryables d'undici, contrairement à PUT. Contournement (pas un correctif du bug) :
+  migrations appliquées via `--command` (chemin à une seule requête, vérifié fonctionnel),
+  invoqué directement via `node wrangler-dist/cli.js` pour éviter toute réinterprétation shell des
+  caractères spéciaux du SQL ; seules des lignes de commentaire entières retirées pour tenir sous
+  la limite de ligne Windows, aucune instruction SQL modifiée. Vérifié par une requête réelle sur
+  `sqlite_master` : les 11 tables attendues sont présentes. Documenté en détail dans `TASKS.md`
+  comme bizarrerie d'environnement.
+- 🛑 STOP 2 : `SESSION_SECRET` et `ADMIN_SECRET_HASH` posés par Massy lui-même (jamais générés,
+  lus ni écrits par Claude Code) en *Secret* sur Production et Preview. **Découverte au passage
+  (11/10/2026) : `ADMIN_SECRET_HASH` était absent du projet Pages depuis toujours** —
+  `README.md` affirmait depuis le 27/07/2026 qu'il était configuré, à tort ; la connexion `/admin`
+  n'avait donc probablement jamais fonctionné en production. Massy a régénéré une nouvelle phrase
+  (l'ancienne est caduque) et reposé les deux secrets. `README.md` corrigé pour ne plus affirmer
+  un état non vérifié, et documente désormais qu'une variable d'environnement Cloudflare Pages ne
+  prend effet qu'au déploiement suivant.
+
+**Phase 4 — déploiement** : 17 commits locaux poussés (`9430c9d..456779f`) — Pages étant
+connecté au dépôt GitHub, le `git push` est le déploiement, il n'y en a pas d'autre. Déploiement
+suivi jusqu'au bout (`wrangler pages deployment list`), confirmé en ligne par une requête réelle
+sur `https://orionisacademy.com/` (200) et `/api/license/check` (200).
+
+**Phase 5 — vérification par l'usage, partielle** : le point le plus important de la checklist —
+la connexion réelle à `/admin` en production, jamais testée avant ce jour — **confirmée par
+Massy lui-même** (il a tapé la phrase, l'architecte ne l'a jamais vue). Deux mécanismes vérifiés
+par requête réelle sans avoir besoin de données de test : téléchargement sans jeton signé → 404
+neutre ; activation avec une clé de licence inconnue → rejet propre. **Le reste de la checklist
+(formation complète créée depuis `/admin`, inscription/progression étudiant, attestation à 100 %,
+protection d'un vrai document payant, terminal/exercices en mode libre et en mode cours) n'a pas
+pu être vérifié en production, faute de toute formation ou clé de licence de test existante** —
+aucun pilote n'a jamais été lancé (Mission 07 Partie B jamais démarrée). Décision de Massy :
+noter ce manque explicitement plutôt que bloquer la clôture — voir `TASKS.md` §En cours pour la
+reprise exacte. Mission 23 n'est donc pas déclarée entièrement close ; un chantier correctif
+« accueil » proposé par l'architecte le même jour (démo du terminal, route d'inscription directe,
+pages légales, habillage `/admin`) est explicitement mis en file derrière cette clôture.
+
+**Rituel de clôture** : suites complètes vertes à chaque commit (78/78 `functions`, 89/89
+`apps/web`, 35/35 e2e, 6/6 e2e admin, 268/268 `core`, 9/9 `data`, 47/47 `exercises`), lint et
+typecheck relancés en clôture (clean). Deux incidents d'environnement résolus pendant la session,
+sans rapport avec le code produit : verrous git périmés (`find .git -name "*.lock" -delete`,
+même technique qu'en Phase 1 de la session précédente) et le bug `wrangler --file --remote`
+documenté ci-dessus.
+
 ### 09/10/2026 — Mission 23 Étape 4 (back-office formations, mode autonome) + marque Orionis Academy + domaine
 Session de suite directe sur la même conversation que l'entrée Étape 3 ci-dessous — reprise par
 un message explicite de l'architecte (`missions/PROMPT-SUITE-23-ETAPE4.md`) pointant un vrai

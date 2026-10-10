@@ -109,18 +109,27 @@ rédigées et auditées par l'architecte (Claude Cowork).
 **Terminé et en production** : le moteur GDS (`packages/core`), le terminal fidèle, les messages
 d'erreur Amadeus, les 10 exercices guidés auto-corrigés (`packages/exercises`), l'accès par clé
 de licence avec verrouillage par poste et espace admin (D1 + Functions), le déploiement
-Cloudflare Pages. Site en ligne sur **https://orionisacademy.com**.
+Cloudflare Pages. Site en ligne sur **https://orionisacademy.com**. Depuis le 11/10/2026 :
+la plateforme e-learning Mission 23 est déployée en production (bucket R2, migrations D1,
+secrets `SESSION_SECRET`/`ADMIN_SECRET_HASH` posés, connexion `/admin` confirmée par Massy).
 
 **En cours** : **Mission 23** — plateforme e-learning, le simulateur devient un cours parmi
-d'autres. Étapes 0 à 4 closes (fondations, modèle de données, espace étudiant, intégration du
-simulateur, back-office formations). **Reste l'Étape 5** : bascule production
-(binding R2, `SESSION_SECRET`, migrations 0002 et 0003 en `--remote`) — **précédée du bug
-critique `SESSION_SECRET` consigné dans `TASKS.md`, à corriger d'abord.**
+d'autres. Étapes 0 à 4 closes, Étape 5 (bascule production) **en grande partie close** le
+11/10/2026 — reste à vérifier en production, faute de données de test existantes aujourd'hui :
+création d'une vraie formation depuis `/admin`, parcours étudiant complet (inscription →
+progression → attestation), et l'accès par clé de licence (aucune clé pilote n'a jamais été
+distribuée). Détail et reprise exacte dans `TASKS.md` §En cours.
+**Chantier correctif « accueil » en file, à ne démarrer qu'une fois Mission 23 entièrement
+close** (prompt de l'architecte du 11/10/2026) : démonstration du terminal depuis l'accueil
+(route `/demo`, limitée à un PNR ou 15 commandes), route `/app/inscription` directe (« Commencer »
+mène aujourd'hui à l'écran de connexion, pas d'inscription), pages légales du pied de page
+(Contact traitable, Conditions/Remboursement en attente du texte de Massy — **bloquent Mission
+22**, on n'encaisse pas sans elles), habillage visuel de `/admin` sur `docs/DESIGN-SYSTEM.md`.
 
 **Après, dans cet ordre** (décision Massy 06/10/2026) : **22** paiement Chargily + envoi
-automatique de la clé par e-mail → **21** fidélité des réponses écran (AN, RT, FXP/TQT, TTP —
-**Massy pilote cette mission lui-même, ne pas la démarrer seul**) → **24** quiz et notation →
-**25** assistant IA pédagogique.
+automatique de la clé par e-mail (bloqué en partie par les pages légales ci-dessus) → **21**
+fidélité des réponses écran (AN, RT, FXP/TQT, TTP — **Massy pilote cette mission lui-même, ne
+pas la démarrer seul**) → **24** quiz et notation → **25** assistant IA pédagogique.
 
 **En attente côté Massy, pas côté code** : Mission 07 Partie B (recruter 5-15 pilotes, consigner
 les retours dans `docs/PILOTE.md`), l'agrément de l'agence, et la vérification auprès d'un

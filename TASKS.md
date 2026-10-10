@@ -23,35 +23,96 @@ sur la navigation + cœur de l'intégration simulateur/exercices), puis l'Étape
 back-office complet : créer/modifier/réordonner/publier formations-modules-leçons, upload R2,
 vidéo/PDF/fichier/live, journal d'audit) ; voir les entrées datées ci-dessous pour le détail
 complet des cinq passes.
-**Reprise exacte pour la suite** : Étape 5 (clôture finale, bascule production — voir le rappel
-ci-dessous). Rien d'autre en attente sur cette mission.
-**🔴 Découverte du 11/10/2026, pendant la Phase 3 de l'Étape 5 : `ADMIN_SECRET_HASH` est
-ABSENT des variables d'environnement du projet Pages** (constaté par Massy à l'écran, section
-*Variables and secrets*, environnement Production — une seule ligne, `SESSION_SECRET`, qu'il
-venait d'ajouter). Or `README.md` affirme depuis le 27/07/2026 : « `ADMIN_SECRET_HASH`
-configuré », et le compte rendu de cette date présente la bascule production comme faite et
-vérifiée. **La documentation était fausse.**
-Conséquence probable, à confirmer : **la connexion `/admin` n'a jamais fonctionné en
-production.** Elle n'a jamais été testée en ligne — l'épisode « Phrase secrète invalide » du
-06/10/2026 était un test en local, et la vérification du 06/10 ne portait que sur
-`/api/license/check`, qui n'utilise pas cette variable. Jusqu'au correctif du 10/10/2026, le
-repli `|| ""` faisait que l'absence ne produisait aucune erreur visible — elle était donc
-indétectable sans aller regarder le dashboard.
-**À faire avant le déploiement** : Massy recalcule l'empreinte SHA-256 de la phrase secrète
-(`D:\cowork\secrets-gds\admin-passphrase-production.txt`) et pose `ADMIN_SECRET_HASH` en
-*Secret* sur **Production ET Preview**. Depuis le correctif, une absence fait échouer la
-connexion admin franchement au lieu de passer en silence — c'est voulu, mais ça veut dire que
-sans cette variable, `/admin` sera cassé dès la mise en ligne.
+**Étape 5 (clôture finale, bascule production) EN GRANDE PARTIE CLOSE le 11/10/2026** — voir le
+détail Phases 1-4 ci-dessous (toutes faites et vérifiées : correctif sécurité, attestation PDF,
+bucket R2 + migrations + secrets en production, déploiement). **Reste un point avant de
+considérer la mission entièrement close** : la Phase 5 (vérification par l'usage réel en
+production, checklist complète de `missions/MISSION-23.md`) n'a pu être menée qu'en partie —
+**aucune formation ni aucune clé de licence n'existe encore en production** pour exercer le
+parcours étudiant complet (inscription → leçons → progression → attestation) ni le parcours
+licence. Ce qui est réellement vérifié aujourd'hui, par constat direct et pas par supposition :
+- ✅ **Connexion `/admin` en production** : confirmée par Massy lui-même (11/10/2026) — le point
+  le plus important de la checklist, jamais testé avant ce jour (voir le constat ci-dessous).
+- ✅ Téléchargement de fichier sans jeton signé valide → `404` neutre (`functions/api/files/
+  download.js`), conforme à `docs/SECURITE.md` §5 — vérifié par requête réelle.
+- ✅ Activation avec une clé de licence inconnue → `{"valid":false,"reason":"NOT_FOUND"}` —
+  vérifié par requête réelle. **Non vérifié** : l'activation avec une *vraie* clé existante
+  (aucune clé pilote n'a jamais été distribuée, `Mission 07 Partie B` jamais lancée — il n'existe
+  simplement aucune clé réelle à tester).
+- ❌ **Non vérifié** (faute de données de test en production, pas faute de code) : création
+  d'une formation complète depuis `/admin` (vidéo/PDF/fichier/live), inscription étudiant et
+  persistance de la progression, génération de l'attestation à 100 %, protection d'un document
+  payant *avec un vrai document*, terminal/exercices en mode libre et en mode cours (aucune clé
+  de licence de test n'existe pour entrer en mode libre).
+**Reprise exacte pour la suite** : créer une formation de test (ou utiliser la première
+formation réelle de Massy) et une clé de licence de test en production, puis rejouer la
+checklist complète de Phase 5 de `missions/MISSION-23.md`. Une fois cela fait, Mission 23 peut
+être déclarée entièrement close. **En attendant, un chantier correctif « accueil » est en
+file** (prompt de l'architecte du 11/10/2026 : démo du terminal `/demo`, route `/app/inscription`,
+pages légales du pied de page, habillage `/admin`) — **explicitement à ne démarrer qu'après la
+clôture complète de Mission 23**, pas avant.
+
+**🟢 Découverte du 11/10/2026, pendant la Phase 3 de l'Étape 5, résolue le même jour :
+`ADMIN_SECRET_HASH` était absent des variables d'environnement du projet Pages** (constaté par
+Massy à l'écran, section *Variables and secrets*, environnement Production — une seule ligne,
+`SESSION_SECRET`, qu'il venait d'ajouter). Or `README.md` affirmait depuis le 27/07/2026
+« `ADMIN_SECRET_HASH` configuré », et le compte rendu de cette date présentait la bascule
+production comme faite et vérifiée — **la documentation était fausse** (corrigée dans ce même
+`README.md` le 11/10/2026, voir §Administration). Jusqu'au correctif de la Phase 1 (10/10/2026),
+le repli `|| ""` faisait que l'absence ne produisait aucune erreur visible — indétectable sans
+aller regarder le dashboard. La connexion `/admin` n'avait donc probablement jamais fonctionné
+en production avant ce jour (l'épisode « Phrase secrète invalide » du 06/10/2026 était un test
+en local ; la vérification du 06/10 ne portait que sur `/api/license/check`, qui n'utilise pas
+cette variable).
+**Résolu le 11/10/2026** : Massy a régénéré une nouvelle phrase (l'ancienne est caduque) et posé
+`ADMIN_SECRET_HASH` en *Secret* sur Production et Preview, de même que `SESSION_SECRET`. La
+connexion `/admin` en production est confirmée fonctionnelle par Massy lui-même le même jour.
 **Même classe d'erreur qu'en juillet** (`TASKS.md` disait la Mission 14 Étape 3 non faite alors
-qu'elle l'était ; ici `README.md` dit une configuration faite alors qu'elle ne l'est pas) :
-une affirmation écrite sans vérification sur le système réel. À la clôture, ne pas écrire
-« configuré » sans l'avoir constaté à l'écran ou par une requête.
+qu'elle l'était ; ici `README.md` disait une configuration faite alors qu'elle ne l'était pas) :
+une affirmation écrite sans vérification sur le système réel. Leçon reconfirmée pour la
+troisième fois sur ce projet — ne jamais écrire « configuré »/« fait »/« vérifié » sans l'avoir
+constaté à l'écran ou par une requête.
 
 **Rappel production pour la clôture finale (Étape 5)** : quatre choses à faire une fois, qui
 n'existent qu'en local pour l'instant — `SESSION_SECRET` (env var Cloudflare Pages, comme
 `ADMIN_SECRET_HASH`), le binding R2 réel (`wrangler.jsonc` n'a volontairement PAS été modifié,
 voir l'entrée Étape 2 ci-dessous) une fois le bucket créé, `migrations/0002_platform_users.sql`
 **et** `migrations/0003_audit_log.sql` appliqués en `--remote` (dans cet ordre, après 0001).
+**Fait le 11/10/2026** : bucket `gds-content` créé, binding `CONTENT` posé dans `wrangler.jsonc`,
+les deux migrations appliquées — vérifié par une requête réelle sur `sqlite_master` listant les
+11 tables attendues.
+
+**🟢 Correctif ci-dessus appliqué et vérifié le 10/10/2026 (Phase 1 de l'Étape 5, commit
+`6469155`)** : `functions/_lib/requiredEnv.js` lève désormais si `SESSION_SECRET` ou
+`ADMIN_SECRET_HASH` est absent/trop court, dans les quatre modules listés plus
+`adminAuth.js`/`admin/login.js` (même motif trouvé et corrigé sur `ADMIN_SECRET_HASH`, pas
+seulement `SESSION_SECRET`) — 13 tests dédiés, `functions/__tests__/requiredEnv.test.js`, qui
+échouaient avant le correctif et passent après. Zéro `env.X || ""` restant sur une variable
+sensible dans `functions/` (vérifié par recherche exhaustive).
+
+**Bizarrerie d'environnement constatée le 11/10/2026 : `wrangler d1 execute --remote --file=...`
+échoue systématiquement sur cette machine.** 5 tentatives identiques (y compris avec la dernière
+version de wrangler, 4.149.0) — toutes échouent au même point : l'upload PUT du fichier vers R2
+réussit, puis le POST suivant (`action: "ingest"`, qui dit à D1 de commencer le traitement)
+échoue avec `fetch failed`, sans aucun détail réseau exploitable. Lu le code source de wrangler
+(`node_modules/wrangler/wrangler-dist/cli.js`, fonction `uploadAndBeginIngestion`) : ce POST
+passe par le même client HTTP (undici) dont la liste de méthodes auto-retryables est `GET, HEAD,
+OPTIONS, PUT, DELETE, TRACE` — **POST n'y figure pas**. Le PUT (retryable) réussit toujours ; le
+POST (non retryable) échoue toujours, ce qui est cohérent avec un aléa réseau Windows ponctuel
+sur cette machine plutôt qu'avec le contenu des migrations, l'authentification ou R2 lui-même
+(confirmé : `wrangler whoami` répond, `wrangler d1 execute --remote --command "SELECT 1"`
+réussit à chaque fois).
+**Contournement utilisé, pas un correctif du bug lui-même** : les deux migrations ont été
+appliquées via `--command` (qui emprunte le chemin simple à une seule requête POST, déjà vérifié
+fonctionnel) au lieu de `--file`. **Aucune instruction SQL n'a été modifiée** — seules les lignes
+de commentaire entières (`-- ...`) ont été retirées du texte envoyé, uniquement pour tenir sous
+la limite de longueur de ligne de commande Windows ; les `CREATE TABLE/INDEX IF NOT EXISTS` sont
+passés tels quels. Invocation faite via `node wrangler-dist/cli.js` directement (pas `npx`), pour
+éviter toute réinterprétation des caractères spéciaux du SQL par un shell.
+Si une vraie migration de fichier volumineux (trop gros pour `--command`) est nécessaire un jour :
+soit diagnostiquer plus avant l'environnement réseau de cette machine, soit découper le fichier
+en instructions individuelles et les rejouer une par une par `--command` (comme ici), soit
+appliquer la migration depuis une autre machine/CI où `--file --remote` fonctionne.
 
 **🔴 BUG CRITIQUE à corriger AVANT l'Étape 5 (trouvé par l'architecte le 09/10/2026, audit de
 la session Étape 3+4) — `SESSION_SECRET` échoue en mode ouvert, silencieusement.**
