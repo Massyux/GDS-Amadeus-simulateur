@@ -116,9 +116,17 @@ secrets `SESSION_SECRET`/`ADMIN_SECRET_HASH` posés, connexion `/admin` confirm�
 **En cours** : **Mission 23** — plateforme e-learning, le simulateur devient un cours parmi
 d'autres. Étapes 0 à 4 closes, Étape 5 (bascule production) **en grande partie close** le
 11/10/2026 — reste à vérifier en production, faute de données de test existantes aujourd'hui :
-création d'une vraie formation depuis `/admin`, parcours étudiant complet (inscription →
-progression → attestation), et l'accès par clé de licence (aucune clé pilote n'a jamais été
-distribuée). Détail et reprise exacte dans `TASKS.md` §En cours.
+création d'une vraie formation depuis `/admin`, persistance de la progression et attestation
+d'un étudiant inscrit à une vraie formation, et l'accès par clé de licence (aucune clé pilote
+n'a jamais été distribuée). L'inscription et la connexion étudiant, elles, sont désormais
+vérifiées en production (corrigées le 11/10/2026 — voir ci-dessous). Détail et reprise exacte
+dans `TASKS.md` §En cours.
+**Règle de plateforme découverte le 11/10/2026, à connaître avant toute future utilisation de
+`crypto.subtle` dans `functions/`** : les Workers Cloudflare plafonnent PBKDF2 à 100 000
+itérations (`NotSupportedError` au-delà) — une limite invisible en local (`wrangler pages dev`,
+tests Node) qui a empêché toute inscription de réussir en production pendant toute la
+Mission 23 sans qu'aucun test ne le détecte. Tout code touchant à `crypto.subtle` doit être
+vérifié sur un vrai déploiement avant d'être considéré fiable.
 **Chantier correctif « accueil » en file, à ne démarrer qu'une fois Mission 23 entièrement
 close** (prompt de l'architecte du 11/10/2026) : démonstration du terminal depuis l'accueil
 (route `/demo`, limitée à un PNR ou 15 commandes), route `/app/inscription` directe (« Commencer »

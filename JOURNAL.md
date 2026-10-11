@@ -21,6 +21,64 @@
 
 ## Fait (par session, datée)
 
+### 11/10/2026 — Bug critique : l'inscription ne créait jamais de compte en production (deux bugs empilés)
+
+Prompt dédié de l'architecte, en priorité absolue sur tout le reste, à partir d'un symptôme
+remonté par Massy en production : une personne crée un compte, « il ne se passe rien », puis
+l'écran annonce « Adresse e-mail ou mot de passe incorrect ».
+
+**Bug n°1, diagnostiqué par lecture de code (le symptôme rapporté)** : `functions/api/auth/
+register.js` renvoyait `{ok:true}` dans trois situations incompatibles — inscription réussie,
+e-mail déjà pris (anti-énumération voulue), **et** quota de débit dépassé (5/15min/IP). Le
+front (`AuthScreen.jsx`) traitait les deux derniers cas de façon identique : `me()` ne renvoie
+personne → bascule silencieuse vers l'écran de connexion, sans message. La personne retapait
+alors son mot de passe sur un compte qui n'avait jamais existé. Corrigé : le quota dépassé
+renvoie désormais la même réponse d'échec générique que n'importe quelle autre erreur (jamais
+`{ok:true}`) ; la collision sur un e-mail existant affiche un message conditionnel (« si un
+compte existe déjà... ») au lieu de basculer en silence ; quota d'inscription relevé à
+15/15min/IP (audience partageant souvent une IP — NAT opérateur en Algérie). Vérifié : mêmes
+motifs cherchés et absents sur `login.js`, `forgot-password.js`, `license/activate.js`.
+
+**Bug n°2, trouvé en vérifiant le correctif n°1 EN PRODUCTION (le vrai verrou, plus grave)** :
+le symptôme persistait malgré le fix. Navigateur réel piloté contre
+`https://orionisacademy.com` → toujours un échec, dès la première tentative, bien avant tout
+quota. Requête directe sur `rate_limit_attempts` en production : seulement 2 lignes, loin du
+seuil — ce n'était donc PAS le quota. Log temporaire ajouté au `catch` (muet jusque-là, donc
+aveugle) + `wrangler pages deployment tail` sur le déploiement réel ont révélé la vraie cause :
+`NotSupportedError: Pbkdf2 failed: iteration counts above 100000 are not supported (requested
+600000)`. L'implémentation WebCrypto des **Workers Cloudflare** — jamais celle de Node.js,
+utilisée par tous les tests locaux et par `wrangler pages dev` — refuse catégoriquement tout
+PBKDF2 au-delà de 100 000 itérations. `functions/_lib/passwordHash.js` en demandait 600 000
+depuis l'Étape 1 de Mission 23 : **aucune inscription ni réinitialisation de mot de passe n'a
+jamais pu réussir en production**, depuis le tout premier déploiement. `verifyPassword` (login)
+ne plantait pas (son propre `try/catch` interne avale l'erreur et renvoie `false`) — une
+connexion échouait donc « normalement », comme un mauvais mot de passe, bien plus difficile à
+soupçonner que le crash franc de l'inscription.
+Corrigé : `ITERATIONS` à 100 000 (plafond dur de la plateforme cible, pas un compromis
+sécurité/performance) ; `docs/SECURITE.md` §1 corrigé en conséquence (l'exigence « ≥ 600 000 »
+était factuellement impossible sur Workers). **Même famille de bug corrigée partout**
+(`CONSTITUTION.md` §5) : les `catch` muets de `register.js`/`login.js`/`reset-password.js`/
+`forgot-password.js`/`license/activate.js` loggent désormais l'erreur réelle côté serveur
+(jamais renvoyée au client) — c'est précisément ce silence qui a cette fois caché le vrai bug
+pendant toute une mission. Nouveau test (`functions/__tests__/passwordHash.test.js`) :
+verrouille que les itérations stockées ne dépassent plus jamais 100 000 — aucun test local ne
+peut reproduire le plantage Workers lui-même (Node n'a pas ce plafond), donc c'est la seule
+garde possible contre une régression future (ex. copier-coller d'une recommandation OWASP
+générique qui ne connaît pas cette limite de plateforme).
+
+**Vérifié réellement après coup, pas supposé** : inscription avec une adresse jamais utilisée
+depuis un navigateur neuf → `{ok:true}`, atterrit sur le catalogue (« Formations ») ; requête
+D1 réelle confirmant la ligne `users` créée (`id:1`, premier compte étudiant de toute l'histoire
+de la plateforme, haché `pbkdf2$100000$...`) ; connexion avec ce même compte → même succès. Deux
+comptes de test (`verif-bugfix-*@example.com`) restent dans la base de production — inoffensifs,
+à purger un jour si Massy le souhaite.
+
+Rituel de clôture complet à chaque commit (lint, typecheck, 90/90 web, 82/82 functions, 35/35
+e2e, 6/6 e2e admin). Processus `wrangler pages deployment tail` restés ouverts par erreur
+(tentative initiale de backgrounding via `(cmd &)`, qui ne tue pas le processus à la fin de
+l'appel d'outil — `run_in_background: true` est la bonne méthode) : repérés via
+`Get-CimInstance Win32_Process`, arrêtés avant la fin de session.
+
 ### 11/10/2026 — Mission 23 Étape 5 (bascule production) — correctif sécurité, attestation PDF, infrastructure, déploiement
 
 Session hors mode autonome (contrairement aux Étapes 0-4) : touche à la production réelle et à

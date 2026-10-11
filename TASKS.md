@@ -6,6 +6,25 @@
 
 ## En cours
 
+**🟢 Bug critique résolu le 11/10/2026 : aucune inscription n'a jamais réussi en production,
+depuis le premier déploiement de Mission 23.** Deux bugs empilés — voir `JOURNAL.md` pour le
+détail complet. (1) `register.js` renvoyait `{ok:true}` au-delà du quota d'inscription, lu par
+le front comme un succès puis bascule muette vers la connexion — corrigé, quota relevé à
+15/15min/IP, message conditionnel sur collision d'e-mail. (2) **Le vrai verrou, trouvé en
+vérifiant (1) en production** : `functions/_lib/passwordHash.js` demandait 600 000 itérations
+PBKDF2 — l'implémentation WebCrypto des **Workers Cloudflare** (jamais reproduite par les tests
+locaux ni par `wrangler pages dev`) refuse tout au-delà de 100 000. Corrigé à 100 000 ;
+`docs/SECURITE.md` §1 mis à jour en conséquence (l'exigence « ≥ 600 000 » était impossible sur
+la cible réelle). Catch muets corrigés en famille (register/login/reset-password/
+forgot-password/license-activate) pour ne plus jamais masquer une vraie exception derrière un
+message neutre, sans aucune trace. **Vérifié réellement** : inscription + connexion avec un
+compte jamais utilisé, en production, aboutissent désormais au catalogue — confirmé par une
+requête D1 réelle (premier compte étudiant de l'histoire de la plateforme, `id:1`).
+**Leçon à retenir pour toute future dépendance à Web Crypto dans `functions/`** : la plateforme
+Workers a des limites qui ne se voient JAMAIS en local (ni `wrangler pages dev`, ni les tests
+Node) — un comportement neuf touchant `crypto.subtle` doit être vérifié sur un vrai déploiement
+avant d'être considéré fiable.
+
 **Mission 23 (plateforme e-learning) — EN COURS, mode autonome (décision Massy 06/10/2026).**
 Premier des trois chantiers restants (ordre choisi par Massy : 23 Plateforme → 22 Auto-licence
 → 21 Fidélité), 5-8 sessions estimées. Référence complète : `missions/MISSION-23.md` +
@@ -33,6 +52,10 @@ parcours étudiant complet (inscription → leçons → progression → attestat
 licence. Ce qui est réellement vérifié aujourd'hui, par constat direct et pas par supposition :
 - ✅ **Connexion `/admin` en production** : confirmée par Massy lui-même (11/10/2026) — le point
   le plus important de la checklist, jamais testé avant ce jour (voir le constat ci-dessous).
+- ✅ **Inscription et connexion étudiant** (ajouté le 11/10/2026, après le correctif du bug
+  critique ci-dessus) : un compte jamais utilisé s'inscrit et se connecte réellement en
+  production, atterrit sur le catalogue. Jamais vérifié avant ce jour — et pour cause, ça n'a
+  jamais fonctionné jusqu'à ce correctif (voir plus haut).
 - ✅ Téléchargement de fichier sans jeton signé valide → `404` neutre (`functions/api/files/
   download.js`), conforme à `docs/SECURITE.md` §5 — vérifié par requête réelle.
 - ✅ Activation avec une clé de licence inconnue → `{"valid":false,"reason":"NOT_FOUND"}` —
@@ -40,10 +63,10 @@ licence. Ce qui est réellement vérifié aujourd'hui, par constat direct et pas
   (aucune clé pilote n'a jamais été distribuée, `Mission 07 Partie B` jamais lancée — il n'existe
   simplement aucune clé réelle à tester).
 - ❌ **Non vérifié** (faute de données de test en production, pas faute de code) : création
-  d'une formation complète depuis `/admin` (vidéo/PDF/fichier/live), inscription étudiant et
-  persistance de la progression, génération de l'attestation à 100 %, protection d'un document
-  payant *avec un vrai document*, terminal/exercices en mode libre et en mode cours (aucune clé
-  de licence de test n'existe pour entrer en mode libre).
+  d'une formation complète depuis `/admin` (vidéo/PDF/fichier/live), persistance de la
+  progression d'un étudiant inscrit à une vraie formation, génération de l'attestation à 100 %,
+  protection d'un document payant *avec un vrai document*, terminal/exercices en mode libre et en
+  mode cours (aucune clé de licence de test n'existe pour entrer en mode libre).
 **Reprise exacte pour la suite** : créer une formation de test (ou utiliser la première
 formation réelle de Massy) et une clé de licence de test en production, puis rejouer la
 checklist complète de Phase 5 de `missions/MISSION-23.md`. Une fois cela fait, Mission 23 peut
