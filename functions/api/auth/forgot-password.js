@@ -68,7 +68,12 @@ export async function onRequestPost({ request, env }) {
     }
 
     return jsonResponse(devResetToken ? { ok: true, devResetToken } : { ok: true }, start);
-  } catch {
+  } catch (err) {
+    // Journalisé côté serveur seulement -- même motif que register.js
+    // (11/10/2026) : {ok:true} reste la bonne réponse ici (anti-énumération,
+    // voir l'en-tête), mais un `catch` muet masquerait une vraie panne
+    // (ex. sendMail) aussi efficacement qu'il masquait le plafond PBKDF2.
+    console.error("forgot-password.js", err?.stack || err?.message || String(err));
     return jsonResponse({ ok: true }, start);
   }
 }

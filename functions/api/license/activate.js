@@ -97,7 +97,10 @@ export async function onRequestPost({ request, env }) {
         }
       }
     }
-  } catch {
+  } catch (err) {
+    // Journalisé côté serveur seulement -- même motif que register.js
+    // (11/10/2026).
+    console.error("license/activate.js", err?.stack || err?.message || String(err));
     result = { valid: false, reason: "NOT_FOUND" };
   }
 

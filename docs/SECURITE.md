@@ -13,9 +13,14 @@ où tout le monde se connaît.
 
 ## 1. Mots de passe et comptes
 
-- **Hachage PBKDF2-HMAC-SHA256**, ≥ 600 000 itérations, sel aléatoire de 16 octets par
-  utilisateur, via Web Crypto (seul algorithme fort disponible nativement dans les Workers).
-  Stocker `algo$iterations$sel$hash` pour pouvoir durcir plus tard sans casser l'existant.
+- **Hachage PBKDF2-HMAC-SHA256**, **100 000 itérations** (plafond dur de l'implémentation
+  WebCrypto des Workers Cloudflare -- `NotSupportedError` au-delà, constaté en production le
+  11/10/2026 ; ce n'est pas un choix de compromis, c'est la limite de la plateforme cible), sel
+  aléatoire de 16 octets par utilisateur, via Web Crypto (seul algorithme fort disponible
+  nativement dans les Workers). Stocker `algo$iterations$sel$hash` pour pouvoir durcir plus tard
+  sans casser l'existant -- mais jamais au-delà de ce plafond tant que Cloudflare ne le change
+  pas, et jamais sans vérifier sur un vrai déploiement Workers (`wrangler pages dev` en local ne
+  reproduit pas cette limite -- c'est précisément ce qui l'a caché 5 jours).
 - **Jamais** de hachage côté navigateur, jamais de mot de passe en clair dans un journal,
   une URL ou un message d'erreur.
 - Minimum 8 caractères, refus des mots de passe les plus courants (petite liste locale).

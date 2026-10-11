@@ -88,7 +88,14 @@ export async function onRequestPost({ request, env }) {
 
     return jsonResponse({ ok: true }, start, 200, cookie);
   } catch (err) {
-    console.error("DIAGNOSTIC register.js", err?.stack || err?.message || String(err));
+    // Journalisé côté serveur seulement (jamais renvoyé à l'appelant -- la
+    // réponse reste le message générique ci-dessous). Ce `catch` avalait
+    // l'erreur en silence avant le 11/10/2026 : c'est exactement ce qui a
+    // caché pendant 5 jours le plafond PBKDF2 des Workers (voir
+    // functions/_lib/passwordHash.js) -- une exception réelle et un
+    // dépassement de quota neutre rendaient tous les deux {ok:false,
+    // error:"..."}, impossibles à distinguer sans ce log.
+    console.error("register.js", err?.stack || err?.message || String(err));
     return jsonResponse({ ok: false, error: GENERIC_ERROR }, start, 500);
   }
 }

@@ -11,7 +11,24 @@
 import { constantTimeEqual } from "./hash.js";
 
 const ALGO = "pbkdf2";
-const ITERATIONS = 600_000;
+// 🔴 Bug critique trouvé en production le 11/10/2026 : cette constante valait
+// 600 000 (docs/SECURITE.md §1 d'alors) -- un nombre jamais atteignable en
+// réalité. L'implémentation WebCrypto des Workers Cloudflare (PAS celle de
+// Node.js, utilisée par tous les tests locaux et par `wrangler pages dev`)
+// refuse purement et simplement toute itération PBKDF2 au-delà de 100 000 :
+// `NotSupportedError: Pbkdf2 failed: iteration counts above 100000 are not
+// supported`. Résultat réel en production, jamais vu en local : CHAQUE
+// inscription (hashPassword) et chaque réinitialisation de mot de passe
+// plantait, sans exception -- aucun compte n'a jamais pu être créé depuis le
+// déploiement de Mission 23. `verifyPassword` ne plantait pas (son propre
+// try/catch avale l'erreur et renvoie `false`), donc une connexion échouait
+// "normalement", comme un mauvais mot de passe -- plus difficile à repérer.
+// 100 000 est donc un plafond de la plateforme cible, pas un choix de
+// compromis sécurité/performance -- docs/SECURITE.md §1 corrigé en
+// conséquence. Ne JAMAIS remonter cette valeur sans vérifier d'abord un vrai
+// déploiement Workers (jamais seulement `wrangler pages dev` en local, qui ne
+// reproduit pas cette limite).
+const ITERATIONS = 100_000;
 const SALT_BYTES = 16;
 const HASH_BITS = 256;
 

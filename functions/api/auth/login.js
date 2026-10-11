@@ -55,7 +55,11 @@ export async function onRequestPost({ request, env }) {
       200,
       session.cookie
     );
-  } catch {
+  } catch (err) {
+    // Journalisé côté serveur seulement -- même motif que register.js
+    // (11/10/2026) : un `catch` muet rend une vraie exception indiscernable
+    // d'un échec attendu, sans aucune trace pour la retrouver.
+    console.error("login.js", err?.stack || err?.message || String(err));
     return jsonResponse({ ok: false, error: "Une erreur est survenue, réessaie." }, start, 500);
   }
 }

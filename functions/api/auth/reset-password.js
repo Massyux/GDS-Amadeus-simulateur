@@ -58,7 +58,12 @@ export async function onRequestPost({ request, env }) {
     await destroyAllSessions(env, reset.user_id);
 
     return jsonResponse({ ok: true }, start);
-  } catch {
+  } catch (err) {
+    // Journalisé côté serveur seulement -- même motif que register.js
+    // (11/10/2026). Cette route appelle aussi hashPassword : exposée au même
+    // plafond PBKDF2 des Workers tant que ITERATIONS reste dans les limites
+    // documentées dans functions/_lib/passwordHash.js.
+    console.error("reset-password.js", err?.stack || err?.message || String(err));
     return jsonResponse({ ok: false, error: "Une erreur est survenue, réessaie." }, start, 500);
   }
 }
