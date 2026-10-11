@@ -191,6 +191,11 @@ export const dictionary = {
       errors: {
         genericRetry: "Une erreur est survenue, réessaie.",
       },
+      notFound: {
+        title: "Page introuvable",
+        body: "Cette adresse ne correspond à aucune page du site.",
+        cta: "Retour à l'accueil",
+      },
       levels: {
         debutant: "Débutant",
         complet: "Métier · Complet",
@@ -507,6 +512,11 @@ export const dictionary = {
       },
       errors: {
         genericRetry: "Something went wrong, try again.",
+      },
+      notFound: {
+        title: "Page not found",
+        body: "This address doesn't match any page on this site.",
+        cta: "Back to home",
       },
       levels: {
         debutant: "Beginner",

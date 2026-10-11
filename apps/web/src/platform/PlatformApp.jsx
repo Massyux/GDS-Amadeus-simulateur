@@ -9,9 +9,11 @@ import CataloguePage from "./CataloguePage.jsx";
 import CoursePage from "./CoursePage.jsx";
 import LessonPlayerPage from "./LessonPlayerPage.jsx";
 import AccountPage from "./AccountPage.jsx";
+import NotFoundPage from "./NotFoundPage.jsx";
 
 const LESSON_ROUTE = /^\/app\/cours\/([^/]+)\/lecon\/(\d+)$/;
 const COURSE_ROUTE = /^\/app\/cours\/([^/]+)$/;
+const KNOWN_ROUTES = new Set(["/app", "/app/catalogue", "/app/compte"]);
 
 /**
  * Point d'entrée de l'espace étudiant (Mission 23 Étape 2), chargé à la
@@ -101,5 +103,12 @@ export default function PlatformApp() {
     return <AccountPage t={t} lang={lang} onChangeLang={setLang} user={user} onLogout={handleLogout} />;
   }
 
-  return <CataloguePage t={t} lang={lang} onChangeLang={setLang} user={user} onLogout={handleLogout} />;
+  // 🔴 Bug critique du 11/10/2026 : ce `return` était inconditionnel -- une
+  // sous-route inconnue sous /app/* (ex. /app/nimportequoi) retombait en
+  // silence sur le catalogue au lieu de dire clairement "introuvable".
+  if (KNOWN_ROUTES.has(route.pathname)) {
+    return <CataloguePage t={t} lang={lang} onChangeLang={setLang} user={user} onLogout={handleLogout} />;
+  }
+
+  return <NotFoundPage t={t} />;
 }
