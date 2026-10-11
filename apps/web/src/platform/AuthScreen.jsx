@@ -54,10 +54,17 @@ export default function AuthScreen({ t, onAuthenticated }) {
     if (me.data.user) {
       onAuthenticated(me.data.user, me.data.csrfToken);
     } else {
-      // Anti-énumération: a collision on an existing email returns the same
-      // {ok:true} shape but grants no session (functions/api/auth/register.js).
+      // Anti-énumération : une collision sur un e-mail déjà pris renvoie la
+      // même forme {ok:true} mais ne crée aucune session
+      // (functions/api/auth/register.js) -- la réponse HTTP reste donc
+      // identique dans les deux cas, rien n'est révélé à un script qui ne
+      // regarderait que /register. Mais une bascule muette vers "connexion",
+      // sans un mot, laissait une vraie personne devant un écran changé sans
+      // explication (bug trouvé en production le 11/10/2026) : message
+      // conditionnel, qui ne révèle toujours rien ("si un compte existe
+      // déjà..."), au lieu du silence.
       setMode("login");
-      setError(null);
+      setError(tp.possibleExistingAccount);
     }
   }
 

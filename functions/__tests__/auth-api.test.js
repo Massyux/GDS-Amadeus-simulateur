@@ -123,6 +123,37 @@ describe(
           assert.equal(loginAttacker.body.ok, false, "the account must not have been overwritten");
         }
       );
+
+      it(
+        "🔴 bug fixed 11/10/2026: exceeding the rate limit (15/15min/IP) returns the same " +
+          "generic failure as any other error, never {ok:true} -- a fake success used to " +
+          "leave the caller believing an account was created when none was",
+        async () => {
+          let last;
+          for (let i = 0; i < 15; i += 1) {
+            last = await post("/api/auth/register", {
+              email: uniqueEmail(),
+              password: "un-mot-de-passe-solide",
+            });
+            assert.equal(last.body.ok, true, `attempt ${i + 1}/15 should still be within quota`);
+          }
+
+          const blockedEmail = uniqueEmail();
+          const blocked = await post("/api/auth/register", {
+            email: blockedEmail,
+            password: "un-mot-de-passe-solide",
+          });
+          assert.equal(blocked.body.ok, false);
+          assert.equal(blocked.body.error, "Une erreur est survenue, réessaie.");
+          assert.equal(blocked.setCookie, null);
+
+          const loginAttempt = await post("/api/auth/login", {
+            email: blockedEmail,
+            password: "un-mot-de-passe-solide",
+          });
+          assert.equal(loginAttempt.body.ok, false, "no account should exist for the blocked email");
+        }
+      );
     });
 
     describe("login", () => {

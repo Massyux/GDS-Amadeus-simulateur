@@ -22,6 +22,16 @@ import { checkRateLimit, clientIp } from "../../_lib/rateLimit.js";
 import { normalizeEmail, isValidEmail, passwordError } from "../../_lib/validators.js";
 
 const MIN_DELAY_MS = 300;
+const GENERIC_ERROR = "Une erreur est survenue, réessaie.";
+
+// Quota d'inscription délibérément plus permissif que celui de login.js
+// (5/15min/IP+compte) : cette route n'a pas un compte précis à protéger, et
+// son public inclut des points d'accès partagés (NAT opérateur, courant en
+// Algérie) où plusieurs personnes distinctes épuiseraient en quelques
+// inscriptions un quota pensé pour une seule personne qui se trompe. Reste
+// borné par IP (bug du 11/10/2026 : ce n'est PAS une suppression de la
+// limite, juste une valeur adaptée à cette route précise).
+const REGISTER_MAX_ATTEMPTS = 15;
 
 export async function onRequestPost({ request, env }) {
   const start = Date.now();
@@ -44,13 +54,21 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse({ ok: false, error: "Service indisponible." }, start, 500);
     }
 
-    // Réponse neutre obligatoire (docs/SECURITE.md §3) : {ok:true} est déjà la
-    // réponse "normale" qu'une collision d'e-mail renvoie (voir plus haut) --
-    // au-delà du quota, on renvoie la même chose, sans créer de compte, sans
-    // jamais exposer qu'une limite a été atteinte.
-    const withinLimit = await checkRateLimit(env.DB, `register:${clientIp(request)}`);
+    // 🔴 Bug critique en production (11/10/2026) : cette branche renvoyait
+    // {ok:true} au-delà du quota, comme si l'inscription avait réussi. Le
+    // front (AuthScreen.jsx) appelle /me juste après, ne trouve personne, et
+    // bascule en silence vers "connexion" -- la personne retape alors son
+    // mot de passe sur un compte qui n'a jamais existé et reçoit "identifiants
+    // incorrects". docs/SECURITE.md §3 et rateLimit.js l.61-69 exigent une
+    // réponse "neutre", ce qui veut dire indiscernable d'un ÉCHEC générique --
+    // jamais déguisée en succès. La forme ci-dessous est exactement celle du
+    // bloc catch plus bas (même message, même statut, même délai minimal) :
+    // un dépassement de quota doit être invisible, pas inventer un mensonge.
+    const withinLimit = await checkRateLimit(env.DB, `register:${clientIp(request)}`, {
+      max: REGISTER_MAX_ATTEMPTS,
+    });
     if (!withinLimit) {
-      return jsonResponse({ ok: true }, start);
+      return jsonResponse({ ok: false, error: GENERIC_ERROR }, start, 500);
     }
 
     const existing = await env.DB.prepare(`SELECT id FROM users WHERE email = ?`).bind(email).first();
@@ -70,7 +88,7 @@ export async function onRequestPost({ request, env }) {
 
     return jsonResponse({ ok: true }, start, 200, cookie);
   } catch {
-    return jsonResponse({ ok: false, error: "Une erreur est survenue, réessaie." }, start, 500);
+    return jsonResponse({ ok: false, error: GENERIC_ERROR }, start, 500);
   }
 }
 

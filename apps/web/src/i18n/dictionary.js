@@ -107,6 +107,8 @@ export const dictionary = {
         registerSubmit: "Créer mon compte",
         toggleToRegister: "Pas encore de compte ? Créer un compte",
         toggleToLogin: "Déjà un compte ? Se connecter",
+        possibleExistingAccount:
+          "Si un compte existe déjà avec cette adresse, connecte-toi ou utilise « mot de passe oublié ».",
         forgotLink: "Mot de passe oublié ?",
         forgotTitle: "Mot de passe oublié",
         forgotEmailSent:
@@ -424,6 +426,8 @@ export const dictionary = {
         registerSubmit: "Create my account",
         toggleToRegister: "No account yet? Create one",
         toggleToLogin: "Already have an account? Log in",
+        possibleExistingAccount:
+          "If an account already exists with this address, log in or use \"forgot password\".",
         forgotLink: "Forgot your password?",
         forgotTitle: "Forgot password",
         forgotEmailSent: "If that address has an account, a reset link has been sent.",
