@@ -87,7 +87,8 @@ export async function onRequestPost({ request, env }) {
     // existing !== null: collision -- do nothing, same response either way.
 
     return jsonResponse({ ok: true }, start, 200, cookie);
-  } catch {
+  } catch (err) {
+    console.error("DIAGNOSTIC register.js", err?.stack || err?.message || String(err));
     return jsonResponse({ ok: false, error: GENERIC_ERROR }, start, 500);
   }
 }
