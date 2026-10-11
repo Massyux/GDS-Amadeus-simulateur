@@ -127,12 +127,22 @@ itérations (`NotSupportedError` au-delà) — une limite invisible en local (`w
 tests Node) qui a empêché toute inscription de réussir en production pendant toute la
 Mission 23 sans qu'aucun test ne le détecte. Tout code touchant à `crypto.subtle` doit être
 vérifié sur un vrai déploiement avant d'être considéré fiable.
+**🟢 Régression critique résolue le 11/10/2026 : le site était un cul-de-sac depuis l'accueil**
+(`main.jsx` ne réagissait jamais à un changement d'URL après le premier chargement — cliquer
+« Commencer » ne menait nulle part). Corrigée, vérifiée par clic réel en production à 1280 et
+390px, 13 nouveaux tests. **Leçon méthodologique à appliquer durablement sur ce projet** : une
+suite e2e qui entre toujours par `goto()` direct dans la zone testée ne teste jamais la porte
+d'entrée — tout parcours qu'un visiteur réel emprunte doit avoir au moins un test qui part d'où
+il part, et qui clique. Détail dans `JOURNAL.md`/`TASKS.md`.
+
 **Chantier correctif « accueil » en file, à ne démarrer qu'une fois Mission 23 entièrement
-close** (prompt de l'architecte du 11/10/2026) : démonstration du terminal depuis l'accueil
-(route `/demo`, limitée à un PNR ou 15 commandes), route `/app/inscription` directe (« Commencer »
-mène aujourd'hui à l'écran de connexion, pas d'inscription), pages légales du pied de page
-(Contact traitable, Conditions/Remboursement en attente du texte de Massy — **bloquent Mission
-22**, on n'encaisse pas sans elles), habillage visuel de `/admin` sur `docs/DESIGN-SYSTEM.md`.
+close** (prompt de l'architecte du 11/10/2026 — la passe navigation ci-dessus était sa propre
+condition préalable, désormais levée ; celle de Mission 23 reste, voir ci-dessus) :
+démonstration du terminal depuis l'accueil (route `/demo`, limitée à un PNR ou 15 commandes),
+route `/app/inscription` directe (« Commencer » mène aujourd'hui à l'écran de connexion, pas
+d'inscription), pages légales du pied de page (Contact traitable, Conditions/Remboursement en
+attente du texte de Massy — **bloquent Mission 22**, on n'encaisse pas sans elles), habillage
+visuel de `/admin` sur `docs/DESIGN-SYSTEM.md`.
 
 **Après, dans cet ordre** (décision Massy 06/10/2026) : **22** paiement Chargily + envoi
 automatique de la clé par e-mail (bloqué en partie par les pages légales ci-dessus) → **21**

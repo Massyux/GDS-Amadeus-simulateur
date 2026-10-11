@@ -21,6 +21,106 @@
 
 ## Fait (par session, datée)
 
+### 11/10/2026 — Régression critique : le site était un cul-de-sac depuis l'accueil
+
+Prompt dédié de l'architecte, priorité absolue sur tout le reste (y compris le chantier
+« accueil » déjà en file). Constaté par Massy puis l'architecte : sur `https://
+orionisacademy.com`, cliquer « Commencer » change l'URL en `/app` mais l'écran reste sur
+l'accueil. Taper `/app` directement dans la barre d'adresse fonctionne.
+
+**Cause, donnée par l'architecte dans le prompt** : `apps/web/src/main.jsx` lisait
+`window.location.pathname` une seule fois, à l'import du module, pour choisir quel composant
+racine monter (HomePage/PlatformApp/AdminApp/App/StyleguidePage). `navigate()`
+(`platform/useRoute.js`) fait un vrai `history.pushState` puis émet un `popstate` — mais rien
+dans `main.jsx` n'écoutait cet événement. L'URL changeait, le composant monté ne changeait
+jamais. `useRoute.js` fonctionnait très bien pour la navigation interne à `/app/*` (son propre
+composant s'abonne à `popstate`) ; il manquait l'équivalent au sommet, pour franchir la
+frontière entre les cinq racines — y compris via les boutons précédent/suivant du navigateur,
+qui déclenchent `popstate` nativement.
+
+**Étape 1 — inventaire complet avant toute correction**, exigé par le prompt : accueil (barre
+de nav desktop/mobile, bouton du héros, CTA final, carte de formation réelle, pied de page —
+ces trois derniers liens restent `href="#"`, hors périmètre, déjà noté dans
+`PROMPT-PASSE-ACCUEIL.md`), plateforme (connexion/inscription/mot de passe oublié,
+réinitialisation, catalogue, page formation, lecteur de leçon avec fil d'Ariane et
+précédent/suivant, Mon compte, déconnexion), admin (3 onglets, déconnexion — purement interne,
+aucun lien sortant, non affecté), simulateur intégré à une leçon (ouverture/fermeture en état
+local, jamais une navigation d'URL — structurellement correct, jamais nesté sous
+`.platform-root`, vérifié), simulateur autonome `/simulateur` (aucun lien vers ailleurs, atteint
+uniquement par URL directe — voulu), styleguide `/styleguide` (outil interne, même motif). Deux
+bugs supplémentaires de la même famille trouvés en lisant le code pendant l'inventaire, pas
+nouveaux : le fil d'Ariane « Accueil » de `CoursePage.jsx`/`LessonPlayerPage.jsx` et le logo par
+défaut de `AuthScreen.jsx`/`ResetPasswordScreen.jsx`/`StyleguidePage.jsx` pointaient déjà
+correctement vers `/` depuis l'Étape 3 — seul `main.jsx` empêchait que ça mène quelque part.
+`PlatformApp.jsx` retombait aussi en silence sur le catalogue pour toute sous-route `/app/*`
+inconnue (ex. `/app/nimportequoi`), au lieu de dire clairement « introuvable ».
+
+**Étape 2 — correctif** : `apps/web/src/Root.jsx` (nouveau) porte la racine réactive, abonnée à
+`popstate`, qui choisit la branche à chaque rendu via des `return` conditionnels directs sur les
+cinq composants lazy (jamais une variable intermédiaire — `react-hooks/static-components`
+l'interdit, même quand la référence est stable, ce qui a demandé d'extraire `Root` dans son
+propre fichier : `react-refresh/only-export-components` exige qu'un composant défini dans un
+fichier y soit exporté, et `main.jsx` ne l'était pas). `main.jsx` devient un point d'entrée
+minimal. `apps/web/src/platform/NotFoundPage.jsx` (nouveau) : page « introuvable » propre avec
+un retour vers l'accueil, utilisée en racine (URL de premier niveau inconnue) et par
+`PlatformApp.jsx` (allowlist explicite des sous-routes `/app/*` connues, cette page pour le
+reste). Chaque branche racine reste montée au premier niveau, jamais imbriquée — vérifié par
+les e2e existants (le terminal réel ne se retrouve jamais sous `.platform-root`). Chargement à
+la demande inchangé, aucun import statique réintroduit.
+
+**Étape 3 — les quatre cas qui ne sont jamais testés** : retour/suivant du navigateur (cassé
+par le même bug, corrigé par le même correctif) ; rafraîchissement sur une URL profonde ; URL
+inconnue ; lien profond collé dans un onglet neuf. Vérification de la redirection SPA de
+Cloudflare Pages (`_redirects`/`_routes.json`), demandée explicitement : **aucun fichier de ce
+type n'existait**. Requête réelle en production (avant tout correctif) : `/`, 200 ; `/app`,
+`/admin`, `/simulateur`, `/styleguide`, 404 — mais le corps de la réponse 404 est déjà le vrai
+`index.html` (confirmé par `curl -i`), pas une page d'erreur Cloudflare générique : c'est le
+repli par défaut de Cloudflare Pages (sert `index.html` pour tout chemin non reconnu), qui
+explique pourquoi taper `/app` « fonctionne » déjà pour un visiteur réel malgré le statut HTTP
+faux. Tenté de corriger le statut avec la règle standard documentée par Cloudflare
+(`apps/web/public/_redirects` : `/* /index.html 200`) : **`wrangler` détecte cette règle exacte
+comme une boucle infinie et l'ignore au build** (« strip `.html` or `/index`... triggering this
+rule again ») — le même type d'incident que celui déjà vécu sur ce projet (« Parsed 0 valid
+redirect rules »), cette fois intercepté avant le déploiement plutôt que découvert après.
+Fichier retiré : laisser une règle connue pour être neutralisée serait plus trompeur que ne pas
+l'avoir. Le comportement fonctionnel reste correct (confirmé par le nouveau test de
+rafraîchissement et par une requête réelle en production après déploiement) ; le code de statut
+erroné est noté comme amélioration recommandée dans `TASKS.md`, pas comme bug — la corriger
+proprement demanderait soit un réglage `assets.not_found_handling` dans `wrangler.jsonc` (risque
+explicitement écarté cette session, vu l'historique de ce fichier) soit un réglage dashboard à
+étudier séparément.
+
+**Étape 4 — tests** : `apps/web/e2e/navigation.spec.js` (nouveau, 13 tests). Règle appliquée
+strictement : chaque test entre par l'endroit où un vrai visiteur commence et **clique** —
+`goto()` réservé aux cas où c'est le comportement réel d'un visiteur (rafraîchir, URL inconnue,
+lien profond dans un onglet neuf), jamais comme raccourci vers la zone testée. Couvre
+l'inventaire de l'Étape 1 : chacun des quatre boutons/liens de l'accueil vers `/app` (nav
+desktop, héros, CTA final, nav mobile à 390px), la carte de formation réelle, le parcours
+complet par clic jusqu'à la déconnexion et au retour à l'accueil, le logo depuis l'écran de
+connexion, retour/suivant du navigateur, rafraîchissement d'une URL profonde, sous-route et URL
+totalement inconnues. Une erreur dans le premier jet du test de menu mobile (locator cherchant
+un `<nav>` par un nom accessible qu'aucun des deux `<nav>` de `HomePage.jsx` ne porte) corrigée
+en ciblant l'id réel du menu mobile.
+
+**Étape 5 — vérification en production, en cliquant réellement, 1280px et 390px** (jamais en
+tapant une URL — « c'est précisément ce qui a masqué le problème ») : parcours complet accueil
+→ Commencer → inscription → catalogue → Mon compte → déconnexion → retour à l'accueil, plus URL
+inconnue → « Page introuvable » → retour qui fonctionne, aux deux largeurs. Le parcours
+formation → leçon → fil d'Ariane n'a pas pu être vérifié EN PRODUCTION (toujours aucune vraie
+formation là-bas, gap déjà connu et consigné depuis la clôture de Mission 23 Étape 5) — mais
+vérifié en local par `navigation.spec.js`, qui exerce exactement ce chemin.
+
+Rituel de clôture complet (lint, typecheck, 90/90 web, 48/48 e2e dont les 13 nouveaux, 6/6 e2e
+admin). Deux corrections en cours de route, consignées pour ne pas les reproduire : ESLint
+(`react-hooks/static-components`, `react-refresh/only-export-components`) a forcé le passage
+d'une variable de composant choisie dans `main.jsx` à des `return` conditionnels directs dans
+un fichier dédié, `Root.jsx` — plus robuste de toute façon, pas juste une concession au linter.
+
+**Leçon à retenir, qui vaut pour la suite du projet** (demandée explicitement par l'architecte) :
+une suite de tests qui entre toujours par URL directe (`goto()`) ne teste jamais la porte
+d'entrée. Tout parcours que vit un visiteur réel doit avoir au moins un test qui commence là où
+il commence, et qui clique.
+
 ### 11/10/2026 — Bug critique : l'inscription ne créait jamais de compte en production (deux bugs empilés)
 
 Prompt dédié de l'architecte, en priorité absolue sur tout le reste, à partir d'un symptôme

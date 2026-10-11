@@ -6,6 +6,35 @@
 
 ## En cours
 
+**🟢 Régression critique résolue le 11/10/2026 : le site était un cul-de-sac depuis l'accueil
+en production.** `apps/web/src/main.jsx` ne lisait `window.location.pathname` qu'une fois, à
+l'import — `navigate()` changeait bien l'URL mais rien n'écoutait l'événement `popstate` au
+sommet de l'app pour re-choisir quelle racine monter. Cliquer « Commencer » changeait l'URL vers
+`/app` sans jamais afficher la plateforme. Détail complet (inventaire, cause, correctif,
+vérification aux deux largeurs 1280/390px) dans `JOURNAL.md`.
+Corrigé : `apps/web/src/Root.jsx` (nouveau, extrait de `main.jsx` pour satisfaire ESLint
+`react-hooks/static-components`/`react-refresh/only-export-components`) s'abonne à `popstate`
+et re-choisit la bonne branche à chaque rendu, via des `return` conditionnels directs (jamais une
+variable de composant intermédiaire). `apps/web/src/platform/NotFoundPage.jsx` (nouveau) :
+page « introuvable » propre, utilisée en racine ET par `PlatformApp.jsx` pour toute sous-route
+`/app/*` inconnue (qui retombait avant en silence sur le catalogue). 13 nouveaux tests
+(`apps/web/e2e/navigation.spec.js`) qui entrent par un clic depuis l'endroit réel où un visiteur
+commence, jamais par `goto()` dans la zone testée — **leçon explicitement consignée pour la
+suite du projet** : toute la suite e2e historique entrait par URL directe, donc ne testait
+jamais la porte d'entrée du site, ce qui a laissé ce bug passer en production malgré des suites
+100% vertes.
+**Amélioration recommandée, pas un bug** (vérification demandée par l'architecte pendant cette
+même passe) : aucun fichier `_redirects`/`_routes.json` n'existe. Cloudflare Pages sert déjà
+`index.html` par défaut pour toute route profonde (confirmé réel : `/app`, `/admin`, etc.
+répondent 404 mais avec le bon contenu SPA, pas une page d'erreur) — fonctionnellement correct,
+mais le code HTTP est faux (mauvais pour le SEO/monitoring). Tenté avec la règle standard
+Cloudflare (`/* /index.html 200`) : `wrangler` la détecte comme boucle infinie et l'ignore au
+build (même famille d'incident que « Parsed 0 valid redirect rules », cette fois intercepté
+avant déploiement) — fichier retiré plutôt que laissé avec une règle neutralisée. Corriger
+proprement le code de statut demanderait un réglage `assets.not_found_handling` dans
+`wrangler.jsonc`, explicitement écarté cette session (risque jugé disproportionné pour un
+problème cosmétique, vu l'historique de ce fichier) — à reprendre si Massy le juge utile.
+
 **🟢 Bug critique résolu le 11/10/2026 : aucune inscription n'a jamais réussi en production,
 depuis le premier déploiement de Mission 23.** Deux bugs empilés — voir `JOURNAL.md` pour le
 détail complet. (1) `register.js` renvoyait `{ok:true}` au-delà du quota d'inscription, lu par
