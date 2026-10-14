@@ -166,7 +166,8 @@ test.describe("Navigation et simulateur intégré (Mission 23 Étape 3)", () => 
     await expect(page.getByRole("heading", { name: "Amadeus — Niveau 1" })).toBeVisible();
 
     // Le nom du produit ramène au catalogue pour un visiteur connecté.
-    await page.getByText("Orionis Academy").click();
+    // Logo officiel (12/10/2026) : une image, plus du texte -- voir Brand.jsx.
+    await page.getByAltText("Orionis Academy").click();
     await expect(page.getByRole("heading", { name: "Formations" })).toBeVisible();
   });
 

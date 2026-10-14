@@ -124,7 +124,8 @@ test.describe("Navigation -- cul-de-sac depuis l'accueil (régression du 11/10/2
   }) => {
     await page.goto("/app");
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
-    await page.getByText("Orionis Academy").click();
+    // Logo officiel (12/10/2026) : une image, plus du texte -- voir Brand.jsx.
+    await page.getByAltText("Orionis Academy").click();
     await expect(page.getByRole("button", { name: "Essayer gratuitement" }).first()).toBeVisible();
     expect(new URL(page.url()).pathname).toBe("/");
   });

@@ -36,6 +36,9 @@ export default function AdminApp() {
 
   return (
     <>
+      <div className="admin-header-logo">
+        <img src="/brand/svg/logo-pour-fond-clair-transparent.svg" alt="Orionis Academy" width={320} height={120} />
+      </div>
       {/* Chaque onglet garde son propre en-tête/titre/déconnexion (Mission
           14, AdminDashboard.jsx) -- cette barre ne fait que choisir lequel
           est affiché, elle ne duplique aucune action. */}

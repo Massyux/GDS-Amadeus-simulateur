@@ -9,7 +9,7 @@ import { useTheme } from "./useTheme.js";
 import { GradientTail } from "./GradientText.jsx";
 import { demoCourses } from "./data/demoCourses.js";
 
-const DEFAULT_ACCENT = "#22D3EE";
+const DEFAULT_ACCENT = "#43C9D9";
 
 function accentFor(slug) {
   return demoCourses.find((d) => d.slug === slug)?.accentColor || DEFAULT_ACCENT;

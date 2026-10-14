@@ -152,7 +152,8 @@ describe("PlatformLayout", () => {
         <p>Contenu</p>
       </PlatformLayout>
     );
-    expect(screen.getByText("Orionis Academy")).toBeTruthy();
+    // Logo officiel (12/10/2026) : une image, plus du texte -- voir Brand.jsx.
+    expect(screen.getByAltText("Orionis Academy")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /menu/i })).toBeNull();
   });
 

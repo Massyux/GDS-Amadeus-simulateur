@@ -9,7 +9,7 @@ import { demoCourses } from "./data/demoCourses.js";
 import { LESSON_TYPE_ICONS } from "./lessonTypeIcons.js";
 import { useTheme } from "./useTheme.js";
 
-const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A", accentColor: "#22D3EE" };
+const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A", accentColor: "#43C9D9" };
 
 /**
  * Page de formation (docs/MAQUETTES.md §4) : en-tête riche à deux colonnes

@@ -78,6 +78,33 @@ identifié dans `DESIGN-PSYCHOLOGIE.md`.
 
 ---
 
+## Le logo officiel — intégré le 12/10/2026
+
+Massy a fait réaliser le logo officiel d'Orionis Academy (kit complet : SVG, PNG, favicons,
+image de partage, notice `LISEZ-MOI.md`). Il remplace le nom composé en HTML (police + dégradé
++ curseur clignotant) qui tenait lieu de marque depuis le début de Mission 23 —
+**`Brand.jsx` ne recompose plus jamais le logo, et ne doit plus jamais le faire : toujours le
+fichier vectoriel fourni**, deux variantes selon le thème (`logo-pour-fond-sombre-transparent.svg`
+/ `logo-pour-fond-clair-transparent.svg`).
+
+Stocké dans `apps/web/public/brand/` — **pas R2**, même raisonnement que pour les photos
+Unsplash ci-dessus : c'est un actif public du site, pas du contenu sous licence étudiant.
+
+**Conflit de palette résolu** (`docs/DESIGN-SYSTEM.md` §2/§2 bis) : le kit et le système de
+design fixé le 06/10/2026 ne donnaient pas exactement les mêmes teintes pour `--cyan`/`--coral`.
+**Le logo fait référence** — c'est un objet vectorisé figé, on ne le repeint pas. C'est le
+système de design qui s'est aligné sur lui, jamais l'inverse. Valeurs à jour dans
+`DESIGN-SYSTEM.md`, qui reste la seule source de vérité pour ces jetons (le kit fournit ses
+propres variables `--oa-*` dans son `LISEZ-MOI.md`, volontairement jamais ajoutées au projet
+en parallèle — un seul jeu de variables, pas deux).
+
+**Typographie du kit (Cormorant Garamond + Inter) non appliquée dans cette passe** : c'est un
+changement de typographie de toute l'interface, pas une pose de logo — décision en attente de
+Massy, consignée dans `TASKS.md`. Le logo n'en a de toute façon pas besoin pour s'afficher : le
+texte est déjà vectorisé dans les SVG fournis.
+
+---
+
 ## Interdits permanents
 
 Photos de banque d'images posées · illustrations vectorielles « start-up » · dégradés

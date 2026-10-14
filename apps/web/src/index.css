@@ -689,6 +689,28 @@ body {
   font-size: 1.2em;
 }
 
+/* Logo officiel Orionis Academy (12/10/2026) -- /admin n'a pas de bascule de
+   thème (fond clair fixe, #dde5f4 ci-dessus) : variante "fond clair" fixée
+   en dur, pas de logique de thème à importer ici. Simple pose du fichier,
+   pas un habillage complet de /admin (prévu séparément, voir TASKS.md). */
+.admin-logo {
+  display: block;
+  height: 40px;
+  width: auto;
+  margin: 0 auto 12px;
+}
+
+.admin-header-logo {
+  display: flex;
+  padding: 16px 32px 0;
+}
+
+.admin-header-logo img {
+  display: block;
+  height: 32px;
+  width: auto;
+}
+
 .admin-login-label {
   font-size: 0.85em;
   opacity: 0.8;

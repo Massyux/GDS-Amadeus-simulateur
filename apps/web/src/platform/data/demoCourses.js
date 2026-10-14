@@ -22,7 +22,7 @@ export const demoCourses = [
     visual: "radar",
     color: "#0E7490",
     colorDark: "#1E3A8A",
-    accentColor: "#22D3EE",
+    accentColor: "#43C9D9",
     lessonCount: 24,
     durationHours: 12,
     priceDA: 9900,

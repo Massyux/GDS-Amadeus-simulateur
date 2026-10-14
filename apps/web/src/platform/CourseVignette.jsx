@@ -86,7 +86,7 @@ function Ticket({ stroke, line }) {
 const VISUALS = {
   radar: (c) => <Radar stroke={c.accentColor} />,
   routes: (c) => <Routes stroke={c.accentColor} dot={c.accentColor} />,
-  sunrise: () => <Sunrise fill1="#FF8A5B" fill2="#FFB088" line="#FFD2BA" />,
+  sunrise: () => <Sunrise fill1="#FC8C5E" fill2="#FFB08F" line="#FFD2BA" />,
   chart: (c) => <Chart bar={c.accentColor} line={c.accentColor} />,
   orbit: (c) => <Orbit stroke={c.accentColor} dot={c.accentColor} />,
   ticket: (c) => <Ticket stroke={c.accentColor} line={c.accentColor} />,

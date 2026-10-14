@@ -32,6 +32,14 @@ Un thème clair peut venir plus tard ; **ne pas le construire maintenant**.
 > Nouvelle direction : **le vol de nuit vu du cockpit** — bleu nuit profond, cyan des
 > instruments, corail du lever de soleil. Le vert ne subsiste **que dans le terminal**.
 > Maquette de référence : `docs/maquettes/accueil.html`.
+>
+> **RÉVISION DU 12/10/2026 — alignement sur le logo officiel.** Massy a fait réaliser le
+> logo d'Orionis Academy (kit fourni, voir `docs/IDENTITE-VISUELLE.md`) ; sa palette diffère
+> légèrement de celle fixée ici (`--cyan` : `#22D3EE`→`#43C9D9`, `--coral` : `#FF8A5B`→`#FC8C5E`,
+> écarts visibles côte à côte). **Décision de l'architecte : le logo fait référence** — c'est
+> un objet vectorisé figé, on ne le repeint pas ; c'est cette palette qui s'aligne sur lui,
+> jamais l'inverse. Valeurs mises à jour ci-dessous en conséquence. Le logo lui-même ne se
+> recompose JAMAIS en texte/CSS — toujours le fichier fourni (`apps/web/src/platform/Brand.jsx`).
 
 ```
 /* Fonds — nuit */
@@ -50,9 +58,12 @@ Un thème clair peut venir plus tard ; **ne pas le construire maintenant**.
 --ink-3          #6B7A9C
 --ink-inverse    #04121A
 
-/* Accents — trois rôles distincts, jamais interchangeables */
---cyan           #22D3EE   /* technologie, instruments : actions principales, liens */
---coral          #FF8A5B   /* humain, chaleur : titres de section, relation client */
+/* Accents — trois rôles distincts, jamais interchangeables.
+   --cyan/--coral alignés le 12/10/2026 sur le kit logo officiel (Massy) --
+   voir RÉVISION ci-dessous. --mint correspond déjà exactement au vert du
+   kit, aucun changement. */
+--cyan           #43C9D9   /* technologie, instruments : actions principales, liens */
+--coral          #FC8C5E   /* humain, chaleur : titres de section, relation client */
 --violet         #8B7CF6   /* profondeur : illustrations, accents secondaires */
 --mint           #34D399   /* UNIQUEMENT à l'intérieur du terminal */
 
@@ -111,9 +122,11 @@ dans l'esprit des interfaces en verre d'Apple.
 --ink-2          #3D5075
 --ink-3          #64789F
 
-/* Accents — mêmes teintes, assombries pour rester lisibles sur fond clair */
---cyan           #0E9FBF
---coral          #F2663C
+/* Accents — mêmes teintes, assombries pour rester lisibles sur fond clair.
+   --cyan/--coral : valeurs "sur fond clair" fournies par le kit logo
+   officiel (12/10/2026), pas une dérivation maison des teintes sombres. */
+--cyan           #1593A8
+--coral          #E8703F
 --violet         #6D5BE0
 ```
 
@@ -121,6 +134,19 @@ dans l'esprit des interfaces en verre d'Apple.
 `background: var(--glass); backdrop-filter: blur(22px) saturate(1.7);
 border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow), var(--glass-inner);
 border-radius: 20px;`
+
+**Contrastes vérifiés après la bascule du 12/10/2026** (calcul WCAG réel, pas une estimation) :
+en thème sombre, `--cyan`/`--coral` restent très au-dessus du seuil AA sur `--night`
+(≈ 9,9:1 et ≈ 8,5:1 — pratiquement inchangé par rapport aux anciennes valeurs). En thème
+clair, le dégradé de texte `.pf-grad` (gros titres, chiffres clés) sur `--sky` était **déjà**
+sous 4,5:1 avant cette bascule (≈ 2,9:1 pour les deux teintes) — **pas une régression
+introduite ici** : le cyan s'améliore légèrement (≈ 3,4:1, passe le seuil 3:1 des gros
+caractères) et le corail recule de façon négligeable (≈ 2,9:1→2,86:1). Teinte du logo non
+touchée dans tous les cas (règle de l'architecte). Le bord de focus (`outline`/`border-color:
+var(--cyan)`) passe désormais le seuil 3:1 des composants d'interface en thème clair, ce qui
+n'était pas le cas avant. **Amélioration recommandée, pas corrigée dans cette passe** : le
+contraste du dégradé `.pf-grad` en thème clair reste insuffisant pour du texte normal,
+indépendamment du logo — à traiter séparément si Massy le juge prioritaire (voir `TASKS.md`).
 
 **Règles impératives**
 - **Le terminal reste sombre dans les deux thèmes.** C'est un terminal — il ne devient

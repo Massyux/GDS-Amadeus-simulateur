@@ -31,6 +31,7 @@ export default function AdminLogin({ onLoggedIn }) {
   return (
     <div className="admin-login">
       <form className="admin-login-card" onSubmit={handleSubmit}>
+        <img src="/brand/svg/logo-pour-fond-clair-transparent.svg" alt="Orionis Academy" width={320} height={120} className="admin-logo" />
         <h1 className="admin-login-title">Administration</h1>
         <label className="admin-login-label" htmlFor="admin-secret">
           Phrase secrète

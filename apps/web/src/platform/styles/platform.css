@@ -32,17 +32,24 @@
   --ink-3: #6B7A9C;
   --ink-inverse: #04121A;
 
-  /* Accents — trois rôles distincts, jamais interchangeables */
-  --cyan: #22D3EE;
+  /* Accents — trois rôles distincts, jamais interchangeables.
+     --cyan/--coral alignés le 12/10/2026 sur le kit logo officiel (le logo
+     est un fichier vectoriel figé, c'est la palette d'usage qui s'aligne
+     sur lui, jamais l'inverse -- voir docs/IDENTITE-VISUELLE.md). --cyan-2
+     (bleu, dégradé des boutons primaires) n'a pas d'équivalent dans le kit
+     et reste inchangé : ce n'est pas une teinte de la marque, une décision
+     d'interface distincte. */
+  --cyan: #43C9D9;
   --cyan-2: #3B82F6;
-  --cyan-subtle: rgba(34, 211, 238, 0.09);
-  --coral: #FF8A5B;
+  --cyan-subtle: rgba(67, 201, 217, 0.09);
+  --coral: #FC8C5E;
   --violet: #8B7CF6;
   /* --mint n'est JAMAIS une couleur de thème -- une seule et même valeur,
-     quel que soit data-theme, réservée au curseur du logo et au terminal
+     quel que soit data-theme, réservée au curseur du terminal
      (docs/MAQUETTES.md §0, DESIGN-SYSTEM §2 bis : "le terminal reste sombre
      dans les deux thèmes"). Ne JAMAIS la redéfinir dans le bloc [data-theme=light]
-     ci-dessous. */
+     ci-dessous. Correspond exactement au vert optionnel du kit logo
+     officiel (12/10/2026) -- déjà la même valeur, aucun changement ici. */
   --mint: #34D399;
 
   /* États (badges de statut uniquement -- jamais un bouton) */
@@ -225,10 +232,13 @@ html[data-theme="light"] .platform-root {
   --ink-3: #64789F;
   --ink-inverse: #FFFFFF;
 
-  --cyan: #0E9FBF;
+  /* Valeurs "sur fond clair" du kit logo officiel (12/10/2026) -- le kit
+     fournit des teintes dédiées pour un fond clair, distinctes de celles
+     du fond sombre (pas juste la même teinte réutilisée telle quelle). */
+  --cyan: #1593A8;
   --cyan-2: #1D7FB8;
-  --cyan-subtle: rgba(14, 159, 191, 0.12);
-  --coral: #F2663C;
+  --cyan-subtle: rgba(21, 147, 168, 0.12);
+  --coral: #E8703F;
   --violet: #6D5BE0;
 
   --warning-subtle: rgba(251, 191, 36, 0.18);
@@ -346,32 +356,28 @@ html[data-theme="light"] .pf-topbar {
   gap: var(--space-4);
 }
 
-.pf-brand {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: -0.02em;
+/* Logo officiel Orionis Academy (12/10/2026) -- fichier vectoriel fourni,
+   jamais recomposé en texte HTML (interdiction explicite du kit). Hauteur
+   fixe, largeur automatique (ratio intrinsèque 640:240 préservé) : se loge
+   proprement dans la barre de 64 px (DESIGN-SYSTEM §5 bis) avec de la marge
+   des deux côtés. 48px bureau / 36px mobile -- bas de la fourchette conseillée
+   par le kit (40-56 / 32-40), choisi pour cette contrainte de hauteur de
+   barre plus serrée que ce que le kit anticipait. */
+.pf-brand-logo {
+  display: block;
+  height: 48px;
+  width: auto;
+}
+
+@media (max-width: 767px) {
+  .pf-brand-logo {
+    height: 36px;
+  }
+}
+
+.pf-brand-link {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  white-space: nowrap;
-  color: var(--ink);
-}
-
-.pf-brand-grad {
-  font-style: normal;
-  background: linear-gradient(92deg, var(--cyan), var(--coral));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.pf-brand-cursor {
-  width: 8px;
-  height: 16px;
-  background: var(--mint);
-  margin-left: 4px;
-  animation: pf-blink 1.1s steps(1) infinite;
 }
 
 .pf-topbar-nav--desktop {

@@ -6,6 +6,27 @@
 
 ## En cours
 
+**🟢 Logo officiel Orionis Academy intégré le 12/10/2026.** Kit fourni par Massy (SVG, PNG,
+favicons, image de partage) posé dans `apps/web/public/brand/` (pas R2, actif public du site).
+`Brand.jsx` ne recompose plus le nom en HTML (interdit par le kit) — image théma­tique
+(sombre/clair) via `useTheme()`, partout : nav plateforme, connexion/inscription, pied de page,
+`/admin` (qui n'avait aucune marque jusqu'ici), et l'attestation PDF (logo embarqué en base64
+dans `functions/_lib/certificateLogo.js`, variante transparente posée sur le fond NIGHT — un
+Worker ne peut pas lire un fichier statique sur disque à l'exécution). Favicon et Open Graph
+posés dans `index.html` (URL absolue réelle pour `og:image`).
+**Conflit de palette résolu** : le kit (`--cyan` `#43C9D9`, `--coral` `#FC8C5E`) fait référence
+— `docs/DESIGN-SYSTEM.md` s'aligne dessus (deux thèmes), pas l'inverse. Détail et contrastes
+réellement mesurés (WCAG, pas une estimation) dans `DESIGN-SYSTEM.md` §2/§2 bis.
+**Décision en attente de Massy** : le `LISEZ-MOI.md` du kit recommande Cormorant Garamond
+(titres) + Inter (texte courant) pour toute l'interface — **non appliqué dans cette passe**,
+c'est un changement de typographie générale du site, pas une pose de logo. Pour : cohérence
+avec le logo (dont le texte est déjà vectorisé, donc pas bloqué par cette décision). Contre :
+refonte typographique de toutes les pages, à revalider écran par écran avant d'y toucher.
+**Amélioration recommandée, pas corrigée ici** : le contraste du dégradé `.pf-grad` (gros
+titres, chiffres clés) en thème clair était déjà sous le seuil AA avant cette bascule de
+palette (`--cyan`/`--coral` texte sur `--sky`) — pas une régression introduite par le logo,
+mais à traiter si Massy le juge prioritaire.
+
 **🟢 Régression critique résolue le 11/10/2026 : le site était un cul-de-sac depuis l'accueil
 en production.** `apps/web/src/main.jsx` ne lisait `window.location.pathname` qu'une fois, à
 l'import — `navigate()` changeait bien l'URL mais rien n'écoutait l'événement `popstate` au

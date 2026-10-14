@@ -17,13 +17,16 @@
 // n'est chargeable depuis un Worker, les 14 polices standard du PDF sont
 // le seul choix sans fichier à embarquer).
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { CERTIFICATE_LOGO_PNG_BASE64 } from "./certificateLogo.js";
 
 const NIGHT = rgb(0x07 / 255, 0x0b / 255, 0x16 / 255);
 const INK = rgb(0xf2 / 255, 0xf6 / 255, 0xff / 255);
 const INK_2 = rgb(0xa8 / 255, 0xb6 / 255, 0xd4 / 255);
 const INK_3 = rgb(0x6b / 255, 0x7a / 255, 0x9c / 255);
-const CYAN = rgb(0x22 / 255, 0xd3 / 255, 0xee / 255);
-const CORAL = rgb(0xff / 255, 0x8a / 255, 0x5b / 255);
+// Alignées le 12/10/2026 sur le kit logo officiel (docs/IDENTITE-VISUELLE.md),
+// même valeurs que --cyan/--coral de platform.css (thème sombre).
+const CYAN = rgb(0x43 / 255, 0xc9 / 255, 0xd9 / 255);
+const CORAL = rgb(0xfc / 255, 0x8c / 255, 0x5e / 255);
 
 const PAGE_WIDTH = 842; // A4 paysage, points (1pt = 1/72")
 const PAGE_HEIGHT = 595;
@@ -140,14 +143,19 @@ export async function generateCertificatePdf({ studentName, courseTitle, complet
     color: INK_3,
   });
 
-  const brand = "Orionis Academy";
-  const brandSize = 16;
-  page.drawText(brand, {
-    x: centerX(sansBold, brand, brandSize),
-    y: 110,
-    size: brandSize,
-    font: sansBold,
-    color: INK,
+  // Logo officiel (12/10/2026), jamais recomposé en texte -- remplace la
+  // ligne "Orionis Academy" en Helvetica qui tenait lieu de marque jusqu'ici.
+  // Variante transparente "fond sombre" : seule cohérente avec le fond NIGHT
+  // de l'attestation (pas de bascule de thème possible sur un PDF figé).
+  const logoBytes = Uint8Array.from(atob(CERTIFICATE_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
+  const logoImage = await doc.embedPng(logoBytes);
+  const logoHeight = 40;
+  const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+  page.drawImage(logoImage, {
+    x: (PAGE_WIDTH - logoWidth) / 2,
+    y: 95,
+    width: logoWidth,
+    height: logoHeight,
   });
 
   const disclaimerSize = 9;

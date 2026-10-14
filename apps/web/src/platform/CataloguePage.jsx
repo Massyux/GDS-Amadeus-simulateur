@@ -14,7 +14,7 @@ import { useRevealGroup } from "./useRevealGroup.js";
 // (le cas normal dès que Massy en ajoute une au lancement, via Mission 23
 // Étape 4) -- même esprit que CourseVignette.jsx, qui retombe déjà sur
 // "radar" pour un `visual` inconnu.
-const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A", accentColor: "#22D3EE" };
+const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A", accentColor: "#43C9D9" };
 
 /**
  * Catalogue (docs/MAQUETTES.md §3) : bloc "Reprendre" pleine largeur en
