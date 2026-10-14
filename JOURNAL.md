@@ -21,6 +21,102 @@
 
 ## Fait (par session, datée)
 
+### 14/10/2026 — PROMPT-PASSE-ACCUEIL.md chantiers 1 et 2 (démo du terminal, inscription directe) + variante compacte du logo
+
+Session en mode autonome, démarrée après confirmation en production (14/10) que la régression de
+navigation du 11/10 était bien réparée et le logo en place. Enchaîné sans feu vert entre les
+chantiers, comme demandé. La variante compacte du logo (`PROMPT-LOGO-COMPACT.md`) est arrivée en
+cours de route — intégrée immédiatement entre les chantiers 1 et 2, comme son propre prompt le
+demandait explicitement.
+
+**Chantier 1 — démonstration du terminal depuis l'accueil** (option A tranchée par Massy :
+démonstration limitée, pas d'accès libre complet, pas une simple animation). `apps/web/src/
+DemoTerminalPage.jsx` (nouveau) : route `/demo`, sans compte ni clé. Monte le **vrai**
+`Terminal.jsx` — jamais une imitation — et ne le modifie **jamais** : tout s'observe depuis
+l'extérieur, par les mêmes mécanismes qu'un vrai utilisateur (événements DOM réels sur son
+`<input>`, sa seule référence impérative `getState()`). Deux bugs de compréhension corrigés en
+testant localement avant de considérer le chantier fini, pas supposés corrects : le champ réel
+est `state.activePNR.recordLocator`, pas `state.pnr.recordLocator` (trouvé par un
+`console.log` temporaire, retiré ensuite) ; l'élément du héros a une animation CSS perpétuelle
+(`pf-float`) qui empêche Playwright de le considérer « stable » — pas un bug, juste la raison
+d'utiliser `click({force:true})` dans les tests.
+
+Fin de la démo au premier des deux événements : `recordLocator` rempli (ER/ET réussi) ou 15
+commandes saisies. Trois commandes d'exemple affichées = **fenêtre glissante de 3 sur les 6
+étapes** d'un parcours complet (`AN26DECALGPAR`, `SS1Y1`, `NM1DOE/JOHN MR`, `AP123456`, `RFTEST`,
+`ER` — mêmes commandes exactes que le test e2e historique « full happy path »), pas trois boutons
+figés : avec seulement 3 aides fixes, personne n'irait au bout d'un PNR complet. Cliquer un
+exemple insère son texte dans le **vrai** `<input>` via le contournement standard du
+value-setter natif de `HTMLInputElement.prototype` (patché par React pour les inputs contrôlés) +
+un événement `input` réel — jamais un prop ajouté à Terminal.jsx pour accepter une valeur
+externe. Carte de fin en **superposition** (fond qui s'estompe vers le haut, `pointer-events:
+none` sauf sur la carte elle-même) — jamais un effacement, le transcript reste lisible derrière,
+vérifié par un test dédié. Compteur en `localStorage`, explicitement documenté comme n'étant
+**pas** un dispositif anti-fraude : persiste au rafraîchissement (pas de regain gratuit via F5),
+repart à zéro si le navigateur est vidé (accepté, sans conséquence) — vérifié par un test des
+deux comportements. Terminal du héros rendu actionnable : `TerminalDemo.jsx` accepte désormais un
+`onActivate`/`activateLabel` optionnels (absents sur l'usage décoratif d'`AuthScreen.jsx`,
+inchangé) ; bouton de secours « Essayer le terminal » ajouté à côté du CTA du héros pour qui ne
+devinera pas que l'image est cliquable.
+
+**Non-régression** (le critère le plus important de ce chantier) : `Terminal.jsx` et
+`packages/core` **non modifiés**, vérifié par `git diff --stat` vide sur ces chemins avant
+commit. 48/48 e2e verts dont `terminal.spec.js` (mode libre) et `exercises.spec.js` (mode cours)
+inchangés. 6 nouveaux tests dans `apps/web/e2e/demo.spec.js`.
+
+**Chantier 2 — « Commencer » mène à l'inscription** : `/app/inscription` (nouvelle route dans
+`PlatformApp.jsx`) ouvre `AuthScreen` directement en mode `"register"` via une prop
+`initialMode`, pas un écran dupliqué. Les trois boutons « Commencer »/« Essayer gratuitement » de
+`HomePage.jsx` (nav, héros, CTA final) pointent désormais dessus ; le lien « Connexion » de la
+nav reste inchangé, vers `/app` (mode `"login"`). `navigation.spec.js` (régression du 11/10)
+mis à jour : ces boutons attendaient encore l'écran de connexion, maintenant corrigé pour
+attendre l'inscription — pas une régression, le comportement attendu a changé par construction.
+
+**Variante compacte du logo** (`PROMPT-LOGO-COMPACT.md`, intégrée entre les deux chantiers
+ci-dessus) : corrige le défaut de lisibilité d'ACADEMY constaté en production avec le grand
+format dans la barre de nav. Fichiers du designer (archive `kit-orionis-compact.zip` dans les
+Téléchargements de Massy) extraits dans un dossier neuf du scratchpad — l'extraction partielle
+déjà présente dans `Téléchargements/compact/` (faite par quelqu'un/quelque chose avant cette
+session) **n'a pas été réutilisée**, précisément parce qu'elle s'est révélée incomplète (il
+manquait les SVG/PNG de l'emblème petites tailles) : une bonne illustration de pourquoi la
+consigne « décompresse dans un dossier neuf et vide » existe. Seuls les `.svg` copiés dans
+`apps/web/public/brand/compact/`, comme demandé (pas les PNG ni les captures de validation du
+designer, pas nécessaires au rendu).
+
+`apps/web/src/brandLogo.js` (nouveau) : **seule source de vérité** pour le choix de fichier
+(seuil de hauteur, thème) — demande explicite du designer, pour que la règle ne devienne pas
+fausse à trois endroits sur quatre en deux mois. Partagée par `Brand.jsx` (thème dynamique) ET
+`admin/AdminLogin.jsx`/`admin/AdminApp.jsx` (thème `"light"` fixé en dur, `/admin` n'a pas de
+bascule) — ces deux derniers utilisaient jusqu'ici un chemin de fichier codé en dur,
+indépendamment de `Brand.jsx` ; désormais centralisés. Seuils exprimés en **hauteur de rendu
+voulue** par l'appelant, jamais une mesure DOM après coup (anti-CLS, explicitement demandé) :
+≥150px grand format, 32-150px compacte, <32px emblème seul — ratios mesurés sur les vrais
+`viewBox` des fichiers fournis (640:240, 151.76:40, 150.85:150.85 — carré), pas supposés.
+Barre de navigation : 40px partout, valeur donnée par le designer — plus de palier mobile séparé
+(l'ancien 36px du grand format disparaît, inutile avec la compacte). Repli supplémentaire pour
+« petit mobile » (barre descendant sous 120px de large disponible) : un `<picture>` avec
+`<source media="(max-width: 340px)">` vers l'emblème seul — en CSS pur, jamais une mesure
+JavaScript de la largeur réelle, comme demandé. 340px choisi après calcul réel de la place
+disponible dans `.pf-topbar-inner` (padding + bouton hamburger) : à 390px — la largeur
+habituellement vérifiée sur ce projet — la compacte tient très large, ce repli ne joue donc que
+sur des téléphones nettement plus étroits ; défensif, pas le cas courant.
+
+**Vérifié réellement en production** après déploiement, par capture d'écran réelle (script
+Playwright jetable, pas une maquette) de la barre de navigation à taille réelle, sans zoom, sur
+fond sombre et sur fond clair, à 1280 et 390px : ACADEMY nettement lisible dans les quatre
+captures (c'était précisément le défaut à corriger — « si ACADEMY n'est pas lisible sur ces
+captures-là, ce n'est pas bon, quel que soit le rendu en grand »). Écran de connexion et
+`/admin` vérifiés aussi. Budgets de performance re-mesurés sur le site réel après coup :
+LCP ≈ 1,47s (budget < 2s), CLS ≈ 0,002 (budget < 0,05) — aucune dégradation.
+
+Rituel de clôture complet avant chaque commit : lint, build, 90/90 web, 54/54 e2e (48 + les 6
+nouveaux de `demo.spec.js`), 6/6 e2e admin, 82/82 functions.
+
+**Reprise exacte** : chantiers 3 (liens morts du pied de page — contact réel, pages CGV/
+remboursement en attente du texte de Massy, à noter comme bloquant Mission 22) et 4 (habillage
+de `/admin` aux jetons du design system, sans refonte) de `PROMPT-PASSE-ACCUEIL.md` restent à
+faire, dans cet ordre, toujours en mode autonome.
+
 ### 12/10/2026 — Intégration du logo officiel Orionis Academy
 
 Prompt dédié de l'architecte, après lecture du kit logo fourni par Massy dans son dossier

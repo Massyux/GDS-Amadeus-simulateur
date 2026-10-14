@@ -140,14 +140,17 @@ suite e2e qui entre toujours par `goto()` direct dans la zone testée ne teste j
 d'entrée — tout parcours qu'un visiteur réel emprunte doit avoir au moins un test qui part d'où
 il part, et qui clique. Détail dans `JOURNAL.md`/`TASKS.md`.
 
-**Chantier correctif « accueil » en file, à ne démarrer qu'une fois Mission 23 entièrement
-close** (prompt de l'architecte du 11/10/2026 — la passe navigation ci-dessus était sa propre
-condition préalable, désormais levée ; celle de Mission 23 reste, voir ci-dessus) :
-démonstration du terminal depuis l'accueil (route `/demo`, limitée à un PNR ou 15 commandes),
-route `/app/inscription` directe (« Commencer » mène aujourd'hui à l'écran de connexion, pas
-d'inscription), pages légales du pied de page (Contact traitable, Conditions/Remboursement en
-attente du texte de Massy — **bloquent Mission 22**, on n'encaisse pas sans elles), habillage
-visuel de `/admin` sur `docs/DESIGN-SYSTEM.md`.
+**🟡 Chantier correctif « accueil » démarré le 14/10/2026** (prompt de l'architecte du
+11/10/2026, lancé explicitement par Massy en mode autonome). Chantiers 1 (démo du terminal,
+route `/demo`, limitée à un PNR ou 15 commandes) et 2 (route `/app/inscription` directe —
+« Commencer » menait jusqu'ici à l'écran de connexion) **clos et vérifiés en production**. Reste
+chantier 3 (pages légales du pied de page — Contact traitable, Conditions/Remboursement en
+attente du texte de Massy, **bloquent Mission 22**, on n'encaisse pas sans elles) et chantier 4
+(habillage visuel de `/admin` sur `docs/DESIGN-SYSTEM.md`, sans refonte). Détail dans
+`TASKS.md`/`JOURNAL.md`.
+**Logo : variante compacte intégrée le 14/10/2026** (`PROMPT-LOGO-COMPACT.md`) — corrige la
+lisibilité d'ACADEMY en barre de nav. `apps/web/src/brandLogo.js` est désormais la seule source
+de vérité pour le choix de fichier (taille, thème), partagée par `Brand.jsx` et `/admin`.
 
 **Après, dans cet ordre** (décision Massy 06/10/2026) : **22** paiement Chargily + envoi
 automatique de la clé par e-mail (bloqué en partie par les pages légales ci-dessus) → **21**

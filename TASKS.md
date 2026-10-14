@@ -6,6 +6,29 @@
 
 ## En cours
 
+**🟡 `PROMPT-PASSE-ACCUEIL.md` en cours (14/10/2026, mode autonome), chantiers 1 et 2 clos.**
+**Chantier 1 (démo du terminal)** : route `/demo`
+(`apps/web/src/DemoTerminalPage.jsx`), vrai `Terminal.jsx` monté sans compte ni clé, jamais
+modifié (vérifié par `git diff --stat` vide sur ce fichier et `packages/core` avant commit). Fin
+au premier des deux événements (PNR enregistré ou 15 commandes), trois commandes d'exemple en
+fenêtre glissante sur les 6 étapes d'un parcours complet, carte de fin en superposition.
+**Chantier 2 (inscription directe)** : `/app/inscription` ouvre `AuthScreen` en mode `"register"`
+; les trois boutons « Commencer »/« Essayer gratuitement » de l'accueil y mènent désormais, le
+lien « Connexion » reste vers `/app`. **Reste à faire, dans cet ordre** : chantier 3 (pied de
+page — contact réel traité, CGV et remboursement en attente du texte de Massy, **bloquent
+Mission 22**) et chantier 4 (habillage `/admin` aux jetons du design system, sans refonte).
+Détail complet dans `JOURNAL.md`.
+
+**🟢 Variante compacte du logo intégrée le 14/10/2026** (`PROMPT-LOGO-COMPACT.md`, insérée entre
+les chantiers 1 et 2 ci-dessus comme demandé) : corrige le défaut de lisibilité d'ACADEMY en
+barre de navigation constaté en production avec le grand format. `apps/web/src/brandLogo.js` —
+seule source de vérité pour le choix de fichier (seuil de hauteur, thème), partagée par
+`Brand.jsx` et `/admin` (qui utilisait jusqu'ici un chemin codé en dur, maintenant centralisé).
+40px partout en barre de nav, repli CSS pur (`<picture>`, pas de mesure JS) vers l'emblème seul
+sous 340px de large. Vérifié réellement en production par capture d'écran à taille réelle,
+1280/390px, deux thèmes — ACADEMY lisible partout. CLS/LCP re-mesurés, aucune dégradation.
+Détail complet (seuils, ratios, couleurs) dans `docs/IDENTITE-VISUELLE.md` et `JOURNAL.md`.
+
 **🟢 Logo officiel Orionis Academy intégré le 12/10/2026.** Kit fourni par Massy (SVG, PNG,
 favicons, image de partage) posé dans `apps/web/public/brand/` (pas R2, actif public du site).
 `Brand.jsx` ne recompose plus le nom en HTML (interdit par le kit) — image théma­tique

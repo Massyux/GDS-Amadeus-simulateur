@@ -105,6 +105,48 @@ texte est déjà vectorisé dans les SVG fournis.
 
 ---
 
+## La variante compacte — intégrée le 14/10/2026
+
+Défaut constaté en production avec le grand format : dans la barre de navigation (64 px,
+`DESIGN-SYSTEM.md` §5 bis), le mot ACADEMY devenait illisible. Le designer a livré une
+**variante compacte** qui règle ce défaut — texte ACADEMY plus grand, interlettrage réduit,
+emblème aux traits épaissis pour rester net en petite taille. Elle **complète** le kit grand
+format, elle ne le remplace pas.
+
+**Un seul endroit décide** (demande explicite du designer, pour éviter qu'une règle devienne
+fausse à trois endroits sur quatre en deux mois) : `apps/web/src/brandLogo.js` est la seule
+source de vérité pour le choix de fichier. `platform/Brand.jsx` (thème dynamique) et
+`admin/AdminLogin.jsx`/`admin/AdminApp.jsx` (thème toujours « light », `/admin` n'a pas de
+bascule) appellent tous deux la même fonction — jamais un `<img>` avec sa propre condition
+dispersée dans un composant.
+
+**Seuils** (exprimés en hauteur de rendu *voulue*, jamais mesurée au runtime — ça provoquerait
+un changement d'image visible après le premier rendu et dégraderait le CLS) :
+
+| Hauteur de rendu | Fichier | Largeur affichée |
+|---|---|---|
+| ≥ 150 px | Grand format du kit (`logo-pour-fond-…-transparent.svg`) | ≥ 400 px |
+| 32 – 150 px | Compacte (`compact/logo-compact-fond-…-transparent.svg`) | 120 – 570 px |
+| < 32 px | Emblème seul (`compact/embleme-petites-tailles-fond-….svg`) | < 120 px |
+
+**Barre de navigation : 40 px de haut, partout** (valeur donnée par le designer) — la compacte
+y affiche 152 px de large, confortable dans les 64 px de hauteur de barre. Plus de palier mobile
+séparé (l'ancien 36 px du grand format n'est plus nécessaire). Repli supplémentaire, en CSS pur
+via `<picture>` (jamais en JS) : sous 340 px de large de barre — téléphone nettement plus étroit
+que les 390 px habituellement vérifiés sur ce projet —, l'emblème seul remplace la compacte.
+
+**Couleur d'ACADEMY, différente du grand format** (déjà dans les fichiers fournis, rien à faire
+côté code) : orange `#FC8C5E` sur fond sombre (8,5:1) ; sur fond clair, l'orange `#E8703F` ne
+fait que 2,9:1 à cette taille réduite, donc ACADEMY passe en **turquoise profond `#0E7385`**
+(5,1:1 sur `#F2F7FF`) — une teinte déjà présente dans le dégradé d'ORIONIS de la version claire.
+L'orange grand format, lui, ne change pas.
+
+**N'est pas touché par cette passe, et c'est délibéré** : l'attestation PDF (grand format,
+logo déjà embarqué en base64), le favicon, l'image de partage Open Graph, la palette
+`--cyan`/`--coral` de `DESIGN-SYSTEM.md`.
+
+---
+
 ## Interdits permanents
 
 Photos de banque d'images posées · illustrations vectorielles « start-up » · dégradés
