@@ -49,6 +49,11 @@ rédigées et auditées par l'architecte (Claude Cowork).
   et les URL, pas dans le nom de domaine).
   ⚠️ **Tant que l'agrément n'est pas délivré, ne jamais présenter Orionis comme une agence de
   voyage en activité.** L'académie est une activité de formation, distincte.
+  **Logo officiel intégré le 12/10/2026** (kit fourni par Massy) : `apps/web/src/platform/
+  Brand.jsx` affiche désormais le vrai fichier vectoriel (deux variantes, sombre/clair) —
+  **ne plus jamais le recomposer en texte/CSS**, toujours le fichier fourni
+  (`apps/web/public/brand/`). Palette `--cyan`/`--coral` de `docs/DESIGN-SYSTEM.md` alignée sur
+  le kit (le logo fait référence, pas l'inverse) ; détail dans `JOURNAL.md`/`TASKS.md`.
 - **Domaine & e-mail (09/10/2026, acheté par Massy, configuré avec lui) :**
   `orionisacademy.com` acheté chez Cloudflare Registrar. **Domaines personnalisés Pages
   actifs et SSL émis** sur le projet `gds-amadeus-simulateur` : `orionisacademy.com` et

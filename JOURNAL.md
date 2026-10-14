@@ -21,6 +21,79 @@
 
 ## Fait (par session, datée)
 
+### 12/10/2026 — Intégration du logo officiel Orionis Academy
+
+Prompt dédié de l'architecte, après lecture du kit logo fourni par Massy dans son dossier
+Téléchargements (`kit-orionis-academy/`, notice `LISEZ-MOI.md` lue en entier et suivie).
+
+**Fichiers posés** dans `apps/web/public/brand/` (svg/png/favicon) — pas R2, même raisonnement
+que les photos Unsplash (`docs/IDENTITE-VISUELLE.md`) : actifs publics du site, pas du contenu
+sous licence étudiant. `apps/web/public/vite.svg` (favicon par défaut de Vite, plus référencé)
+retiré.
+
+**`Brand.jsx` ne recompose plus le logo en texte HTML** — interdiction explicite du kit. Devient
+une `<img>` qui bascule entre les deux variantes (fond sombre/clair) selon `useTheme()`, résolu
+dès le premier rendu (pas de flash, même garantie que partout ailleurs dans l'app). Hauteur
+48px bureau / 36px mobile — bas de la fourchette conseillée par le kit (40-56/32-40), choisi
+pour se loger proprement dans la barre de navigation de 64px fixée par `DESIGN-SYSTEM.md` §5 bis,
+contrainte plus serrée que ce que le kit anticipait. Dimensions HTML explicites (anti-CLS).
+
+**Posé partout, pas seulement l'accueil** : nav plateforme (via `PlatformLayout`), écran de
+connexion/inscription, réinitialisation, pied de page (déjà couverts par `Brand.jsx`/
+`HomePage.jsx`), **`/admin`** (n'avait aucune marque jusqu'ici — `AdminLogin.jsx` et
+`AdminApp.jsx`, variante fond clair fixée en dur puisque `/admin` n'a pas de bascule de thème,
+simple pose d'image sans toucher à sa structure, l'habillage complet restant un chantier
+séparé), et **l'attestation PDF** (`functions/_lib/certificate.js`) : le logo (variante
+transparente fond sombre) est désormais embarqué en base64 (`functions/_lib/
+certificateLogo.js`) plutôt que composé en Helvetica comme avant — un Worker Cloudflare ne peut
+pas lire un fichier statique sur disque à l'exécution, et le bundler ne sait pas importer un
+PNG binaire directement ; l'inline évite aussi une dépendance réseau supplémentaire à chaque
+génération de certificat. Rendu vérifié en relisant le PDF généré (logo net, bien centré,
+espacement correct avec la mention légale en dessous).
+
+**Favicon et Open Graph** posés dans `index.html` selon la notice, avec l'URL absolue réelle
+pour `og:image` (`https://orionisacademy.com/brand/png/image-partage-1200x630.png`) — vérifié
+servi (200) en production, de même que le favicon.
+
+**Conflit de palette résolu** (`docs/DESIGN-SYSTEM.md` §2/§2 bis) : le kit (`--cyan` `#43C9D9`,
+`--coral` `#FC8C5E`, plus les variantes "sur fond clair" `#1593A8`/`#E8703F`) et le système de
+design fixé le 06/10/2026 ne donnaient pas exactement les mêmes teintes. **Décision de
+l'architecte : le logo fait référence** — objet vectorisé figé, on ne le repeint pas ; c'est la
+palette d'usage qui s'aligne sur lui. Mis à jour en famille partout où ces teintes étaient
+dupliquées en dur (pas seulement les jetons CSS) : `certificate.js`, et les couleurs d'accent
+par défaut de `AccountPage.jsx`/`CataloguePage.jsx`/`CoursePage.jsx`/`CourseVignette.jsx`/
+`demoCourses.js`. `--cyan-2` (bleu du dégradé des boutons primaires) volontairement laissé
+inchangé : pas une teinte de la marque, une décision d'interface distincte, le kit ne lui donne
+aucune valeur de référence. Les variables `--oa-*` du kit n'ont pas été ajoutées en parallèle —
+une seule source de vérité, `DESIGN-SYSTEM.md`.
+
+**Contrastes WCAG réellement calculés** (pas une estimation) avant/après la bascule : en thème
+sombre, aucun changement notable (marge énorme dans les deux cas, ≈ 9-11:1). En thème clair, le
+dégradé de texte `.pf-grad` (gros titres, chiffres clés) était **déjà** sous le seuil AA avant
+cette session (≈ 2,9:1 pour les deux anciennes teintes) — pas une régression introduite ici : le
+cyan s'améliore légèrement (≈ 3,4:1, passe désormais le seuil 3:1 des gros caractères et des
+composants d'interface comme le contour de focus), le corail recule de façon négligeable
+(≈ 2,86:1). Noté dans `DESIGN-SYSTEM.md`/`TASKS.md` comme amélioration recommandée à part,
+jamais corrigé en touchant à la teinte du logo lui-même.
+
+**Non appliqué volontairement** : la typographie Cormorant Garamond + Inter que le kit
+recommande pour toute l'interface — changement de typographie générale du site, pas une pose de
+logo. Décision en attente de Massy, consignée dans `TASKS.md` avec le pour (cohérence avec le
+logo, dont le texte est de toute façon déjà vectorisé) et le contre (refonte à revalider écran
+par écran).
+
+**Vérification visuelle réelle en production**, 1280 et 390px, deux thèmes (captures via un
+script Playwright jetable, pas des maquettes) : logo nécessaire net sur l'accueil (en-tête et
+pied de page), l'écran de connexion, et `/admin` — dans les deux thèmes où applicable. Favicon
+et aperçu de partage confirmés servis avec le bon contenu. Budgets de performance re-mesurés
+après coup sur le site réel : LCP ≈ 1,27 s (budget < 2 s), CLS ≈ 0,002 (budget < 0,05) — aucune
+dégradation malgré l'ajout d'une image dans l'en-tête de chaque page.
+
+Rituel de clôture complet : lint, typecheck, 90/90 web (une assertion corrigée : le nom du
+produit n'est plus un texte, `getByText` → `getByAltText`, même correction dans
+`navigation.spec.js`/`platform.spec.js` pour le clic sur le logo), 48/48 e2e, 6/6 e2e admin,
+82/82 functions, 268/268 core, 9/9 data, 47/47 exercises.
+
 ### 11/10/2026 — Régression critique : le site était un cul-de-sac depuis l'accueil
 
 Prompt dédié de l'architecte, priorité absolue sur tout le reste (y compris le chantier
