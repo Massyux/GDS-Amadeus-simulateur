@@ -6,18 +6,45 @@
 
 ## En cours
 
-**🟡 `PROMPT-PASSE-ACCUEIL.md` en cours (14/10/2026, mode autonome), chantiers 1 et 2 clos.**
-**Chantier 1 (démo du terminal)** : route `/demo`
+**🟢 `PROMPT-PASSE-ACCUEIL.md` CLOS le 15/10/2026 — quatre chantiers faits, enchaînés en mode
+autonome.** **Chantier 1 (démo du terminal)** : route `/demo`
 (`apps/web/src/DemoTerminalPage.jsx`), vrai `Terminal.jsx` monté sans compte ni clé, jamais
 modifié (vérifié par `git diff --stat` vide sur ce fichier et `packages/core` avant commit). Fin
 au premier des deux événements (PNR enregistré ou 15 commandes), trois commandes d'exemple en
 fenêtre glissante sur les 6 étapes d'un parcours complet, carte de fin en superposition.
 **Chantier 2 (inscription directe)** : `/app/inscription` ouvre `AuthScreen` en mode `"register"`
 ; les trois boutons « Commencer »/« Essayer gratuitement » de l'accueil y mènent désormais, le
-lien « Connexion » reste vers `/app`. **Reste à faire, dans cet ordre** : chantier 3 (pied de
-page — contact réel traité, CGV et remboursement en attente du texte de Massy, **bloquent
-Mission 22**) et chantier 4 (habillage `/admin` aux jetons du design system, sans refonte).
-Détail complet dans `JOURNAL.md`.
+lien « Connexion » reste vers `/app`.
+**Chantier 3 (pied de page, 15/10/2026)** : les trois liens étaient `href="#"` en production.
+Contact → vraie adresse (`mailto:contact@orionisacademy.com`, active depuis le 09/10/2026).
+Conditions/Remboursement → deux vraies routes (`/conditions`, `/remboursement`,
+`apps/web/src/platform/LegalPendingPage.jsx`, nouveau) avec un état d'attente explicite et
+visible — **aucun texte juridique écrit par Claude Code**, conformément à l'instruction
+explicite de l'architecte (« un faux texte de loi est pire que l'absence »). Le texte réel
+(conditions de vente, politique de remboursement) reste à écrire par Massy. **Ces deux pages
+bloquent Mission 22** : on n'encaisse pas un paiement Chargily sans CGV ni politique de
+remboursement publiées — à ne pas oublier au démarrage de cette mission.
+**Chantier 4 (habillage `/admin`, 15/10/2026)** : `apps/web/src/index.css` (bloc `.admin-*`,
+~370 lignes), couleurs et police seulement — **structure et comportement inchangés**, confirmé
+par les 6 tests `e2e-admin` (login, licences, formations) restés verts sans aucune modification.
+Palette alignée sur `docs/DESIGN-SYSTEM.md` (`#0A1733`/`#1D7FB8`/`#1593A8`/`#F2F7FF`/`#FFFFFF`)
+en valeurs **littérales**, pas `var(--...)` : `platform.css` scope délibérément ses variables à
+`.platform-root`, qui ne couvre jamais `/admin` (confirmé par son propre commentaire d'en-tête) —
+cette isolation volontaire est respectée, pas contournée. Police alignée sur la pile système du
+design system (`--font-sans`), retirant les deux déclarations `"Courier New"` orphelines.
+Couleurs de statut (erreur rouge, bannière succès verte) **laissées inchangées** : ce ne sont pas
+des teintes de marque, hors périmètre d'un « habillage ».
+**Non-régression** : lint clean, 90/90 tests unitaires web, 57/57 e2e (suite complète,
+`legal.spec.js` nouveau inclus), 6/6 e2e-admin. **Non vérifié cette session** : la suite
+`functions/__tests__` (3 fichiers, chacun avec son propre `wrangler pages dev` local) est restée
+bloquée ~15 minutes sans sortie ni progression de process observable — tuée plutôt que laissée
+tourner indéfiniment. Aucun rapport avec ce chantier (chantiers 3+4 ne touchent aucun fichier de
+`functions/`) mais à rejouer isolément en début de prochaine session pour confirmer qu'il s'agit
+d'un aléa et pas d'une régression silencieuse.
+Vérification finale en production (1280/390px) : parcours complet par clic — accueil → terminal
+du héros → 3 commandes d'exemple → PNR complet → carte de fin → « Créer mon compte » → atterrit
+sur `/app/inscription` ; `/admin` (connexion + tableau de bord, nouvelle palette) ; `/conditions`
+et `/remboursement` (état d'attente visible). Détail complet dans `JOURNAL.md`.
 
 **🟢 Variante compacte du logo intégrée le 14/10/2026** (`PROMPT-LOGO-COMPACT.md`, insérée entre
 les chantiers 1 et 2 ci-dessus comme demandé) : corrige le défaut de lisibilité d'ACADEMY en

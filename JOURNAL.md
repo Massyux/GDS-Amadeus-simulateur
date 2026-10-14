@@ -21,6 +21,77 @@
 
 ## Fait (par session, datée)
 
+### 15/10/2026 — PROMPT-PASSE-ACCUEIL.md chantiers 3 et 4 (pied de page, habillage /admin) — clôture complète du prompt
+
+Suite directe de la session du 14/10 (chantiers 1+2 + variante compacte du logo, entrée
+ci-dessous). Enchaîné sans feu vert entre les deux chantiers restants, comme demandé.
+
+**Chantier 3 — les trois liens morts du pied de page.** `Contact`, `Conditions` et
+`Remboursement` pointaient vers `href="#"` en production. `Contact` → vraie adresse e-mail
+(`mailto:contact@orionisacademy.com`, routage actif depuis le 09/10/2026, vérifié par un test
+dédié sur l'attribut `href`). `Conditions`/`Remboursement` → deux vraies routes (`/conditions`,
+`/remboursement`), un composant partagé neuf (`apps/web/src/platform/LegalPendingPage.jsx`,
+prop `page: "terms" | "refund"`) rendu via le même `PlatformLayout` que le reste du site —
+jamais une page isolée hors du système de design. Chaque page affiche un état d'attente
+explicite et visible (« Page en préparation », texte à écrire par Massy) plutôt qu'un faux texte
+juridique inventé — instruction explicite et non négociable de l'architecte : « un faux texte de
+loi est pire que l'absence ». **Ces deux pages bloquent Mission 22** (paiement Chargily) : on
+n'encaisse pas sans CGV ni politique de remboursement publiées, noté dans `TASKS.md`.
+`apps/web/src/Root.jsx` : deux routes ajoutées au même niveau que les autres (`/conditions`,
+`/remboursement`), même motif de `return` conditionnel direct que le reste du fichier. 3 nouveaux
+tests (`apps/web/e2e/legal.spec.js`) : href du lien Contact, clic réel sur Conditions/
+Remboursement jusqu'à l'état d'attente visible — jamais un `goto()` direct dans la page, par clic
+depuis l'accueil (leçon du 11/10 appliquée).
+
+**Chantier 4 — habillage `/admin` aux jetons du design system.** Avant de toucher quoi que ce
+soit, vérification du risque le plus sérieux de ce chantier : `apps/web/src/index.css` est
+partagé entre `/admin` et le terminal/onboarding historique (règle absolue : le terminal ne doit
+jamais changer). Confirmé par grep exhaustif que **tous** les `className` des fichiers
+`admin/*.jsx` sont préfixés `admin-` — le bloc CSS correspondant (lignes ~769-1132, ~370 lignes)
+est donc entièrement isolé et sans risque pour le reste du fichier. Confirmé aussi que
+`platform.css` scope délibérément ses variables CSS à `.platform-root` (commentaire d'en-tête
+explicite dans le fichier lui-même) — jamais disponibles pour `/admin`. Conséquence : la palette
+a été reprise en valeurs **littérales** (mêmes valeurs que `docs/DESIGN-SYSTEM.md` §2 bis,
+thème clair — pas de bascule de thème sur `/admin`), pas en `var(--...)`, pour respecter cette
+isolation volontaire plutôt que la contourner. Mapping : `#2f2a7a` (texte/bordures) →
+`#0A1733` ; boutons et accents → `#1593A8` (survol `#1D7FB8`) ; `#dde5f4` (fond de page,
+nouveau, posé explicitement sur `.admin-login`/`.admin-dashboard` plutôt que sur un sélecteur
+global qui aurait affecté le reste du fichier) → `#F2F7FF` ; `#eef2fa` (cartes/panneaux) →
+`#FFFFFF`. Les deux déclarations orphelines `font-family: "Courier New", Courier, monospace`
+(`.admin-dashboard`, `.admin-tabs`) retirées au profit de la pile système du design system.
+**Décision explicite** : couleurs de statut (`.admin-login-error` rouge,
+`.admin-new-key-banner` vert) **non touchées** — ce sont des couleurs sémantiques, pas des
+teintes de marque, hors périmètre d'un « habillage, pas une refonte ». Même décision pour la
+glassmorphie (`backdrop-filter`) du reste de la plateforme : jugée trop invasive pour ce
+chantier, cartes `/admin` restées en blanc opaque. Zéro changement de structure JSX, zéro
+changement de comportement — confirmé par les 6 tests `e2e-admin` existants (login, licences,
+formations) restés verts sans la moindre modification.
+
+**Non-régression de la session complète** : lint clean, 90/90 tests unitaires web (`vitest`),
+57/57 e2e (suite complète, `legal.spec.js` inclus), 6/6 e2e-admin. La suite
+`npm run test:functions` (3 fichiers `__tests__`, chacun avec son propre `wrangler pages dev`
+local sur un port distinct) est restée bloquée sans aucune sortie ni évolution de process
+observable pendant ~15 minutes malgré plusieurs vérifications espacées — tuée (processus
+`wrangler`/`node --test` orphelins nettoyés explicitement, aucun laissé vivant en fin de
+session) plutôt que laissée tourner indéfiniment. Aucun rapport de cause avec cette session :
+chantiers 3 et 4 ne touchent aucun fichier sous `functions/`. À rejouer isolément (sans e2e en
+parallèle, qui occupaient peut-être les ressources) en tout début de prochaine session pour
+confirmer qu'il s'agissait d'un aléa machine et pas d'une régression silencieuse — consigné dans
+`TASKS.md` plutôt que faussement déclaré vérifié.
+
+**Vérification finale en production, par clic réel (pas par URL tapée), 1280px et 390px** :
+accueil → terminal du héros (ou bouton de secours « Essayer le terminal ») → trois commandes
+d'exemple cliquées → PNR complet → carte de fin en superposition → « Créer mon compte » →
+atterrissage sur `/app/inscription`. `/admin` : connexion (nouvelle palette claire) + tableau de
+bord (nouvelle palette, onglets formations inchangés dans leur fonctionnement). `/conditions` et
+`/remboursement` : état d'attente visible, pas de texte juridique inventé. Aucune anomalie
+visuelle constatée aux deux largeurs.
+
+**Clôture du prompt `PROMPT-PASSE-ACCUEIL.md` dans son ensemble** : les quatre chantiers sont
+faits, vérifiés, documentés. Rien n'a touché Mission 22, le poivre sur les mots de passe, ou la
+typographie Cormorant/Inter — conformément aux interdictions explicites de l'architecte pour
+cette passe.
+
 ### 14/10/2026 — PROMPT-PASSE-ACCUEIL.md chantiers 1 et 2 (démo du terminal, inscription directe) + variante compacte du logo
 
 Session en mode autonome, démarrée après confirmation en production (14/10) que la régression de

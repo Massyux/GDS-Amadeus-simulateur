@@ -140,14 +140,17 @@ suite e2e qui entre toujours par `goto()` direct dans la zone testée ne teste j
 d'entrée — tout parcours qu'un visiteur réel emprunte doit avoir au moins un test qui part d'où
 il part, et qui clique. Détail dans `JOURNAL.md`/`TASKS.md`.
 
-**🟡 Chantier correctif « accueil » démarré le 14/10/2026** (prompt de l'architecte du
-11/10/2026, lancé explicitement par Massy en mode autonome). Chantiers 1 (démo du terminal,
-route `/demo`, limitée à un PNR ou 15 commandes) et 2 (route `/app/inscription` directe —
-« Commencer » menait jusqu'ici à l'écran de connexion) **clos et vérifiés en production**. Reste
-chantier 3 (pages légales du pied de page — Contact traitable, Conditions/Remboursement en
-attente du texte de Massy, **bloquent Mission 22**, on n'encaisse pas sans elles) et chantier 4
-(habillage visuel de `/admin` sur `docs/DESIGN-SYSTEM.md`, sans refonte). Détail dans
-`TASKS.md`/`JOURNAL.md`.
+**🟢 Chantier correctif « accueil » CLOS le 15/10/2026** (prompt de l'architecte du
+11/10/2026, lancé par Massy en mode autonome le 14/10, les 4 chantiers enchaînés sans feu vert).
+Chantier 1 : démo du terminal, route `/demo`, vrai `Terminal.jsx` monté sans compte ni clé,
+limitée à un PNR complet ou 15 commandes. Chantier 2 : route `/app/inscription` directe
+(« Commencer » menait jusqu'ici à l'écran de connexion). Chantier 3 (15/10) : pied de page —
+Contact traité (vraie adresse mail), Conditions/Remboursement mènent à de vraies pages avec un
+état d'attente explicite, **aucun texte juridique écrit par Claude** — le texte réel reste à
+écrire par Massy, et **ces deux pages bloquent toujours Mission 22** (pas de paiement sans CGV
+ni politique de remboursement publiées). Chantier 4 (15/10) : habillage `/admin` aux couleurs et
+à la police de `docs/DESIGN-SYSTEM.md`, structure et comportement inchangés. Tout **vérifié en
+production par clic réel**, 1280/390px. Détail dans `TASKS.md`/`JOURNAL.md`.
 **Logo : variante compacte intégrée le 14/10/2026** (`PROMPT-LOGO-COMPACT.md`) — corrige la
 lisibilité d'ACADEMY en barre de nav. `apps/web/src/brandLogo.js` est désormais la seule source
 de vérité pour le choix de fichier (taille, thème), partagée par `Brand.jsx` et `/admin`.

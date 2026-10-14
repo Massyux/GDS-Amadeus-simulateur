@@ -11,6 +11,7 @@ const App = lazy(() => import('./App.jsx'))
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
 const NotFoundPage = lazy(() => import('./platform/NotFoundPage.jsx'))
 const DemoTerminalPage = lazy(() => import('./DemoTerminalPage.jsx'))
+const LegalPendingPage = lazy(() => import('./platform/LegalPendingPage.jsx'))
 
 // 🔴 Bug critique constaté en production le 11/10/2026 : le choix de racine
 // n'était fait qu'UNE FOIS, à l'import du module, à partir de
@@ -52,5 +53,7 @@ export default function Root() {
   if (pathname.startsWith('/app')) return <PlatformApp />
   if (pathname.startsWith('/simulateur')) return <App />
   if (pathname.startsWith('/demo')) return <DemoTerminalPage />
+  if (pathname.startsWith('/conditions')) return <LegalPendingPage page="terms" />
+  if (pathname.startsWith('/remboursement')) return <LegalPendingPage page="refund" />
   return <NotFoundPage />
 }

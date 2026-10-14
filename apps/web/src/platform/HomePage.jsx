@@ -222,15 +222,21 @@ export default function HomePage() {
             <div style={{ marginBottom: "var(--space-4)" }}>
               <Brand to={null} />
             </div>
-            <a href="#" className="pf-btn pf-btn--discreet" style={{ marginRight: "var(--space-5)" }}>
+            {/* PROMPT-PASSE-ACCUEIL.md chantier 3 (14/10/2026) : les trois
+                liens étaient href="#", en production. Contact traité en
+                entier (adresse réelle, active depuis le 09/10/2026) ;
+                Conditions/Remboursement mènent à des pages dédiées avec un
+                état d'attente explicite -- le contenu juridique est à
+                écrire par Massy, jamais par Claude Code. */}
+            <a href="mailto:contact@orionisacademy.com" className="pf-btn pf-btn--discreet" style={{ marginRight: "var(--space-5)" }}>
               {h.footerContact}
             </a>
-            <a href="#" className="pf-btn pf-btn--discreet" style={{ marginRight: "var(--space-5)" }}>
+            <Link to="/conditions" className="pf-btn pf-btn--discreet" style={{ marginRight: "var(--space-5)" }}>
               {h.footerTerms}
-            </a>
-            <a href="#" className="pf-btn pf-btn--discreet">
+            </Link>
+            <Link to="/remboursement" className="pf-btn pf-btn--discreet">
               {h.footerRefund}
-            </a>
+            </Link>
           </div>
           <p className="pf-disclaimer">{h.disclaimer}</p>
         </div>
