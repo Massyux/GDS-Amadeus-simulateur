@@ -34,7 +34,12 @@ function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function TerminalDemo({ label }) {
+// `onActivate`/`activateLabel` : optionnels, absents sur l'usage décoratif
+// (AuthScreen.jsx, fond atténué `aria-hidden`). Quand fournis (HomePage.jsx,
+// héros), la démo devient un vrai bouton clavier-accessible vers /demo --
+// PROMPT-PASSE-ACCUEIL.md chantier 1 (14/10/2026) : "plus de role='img' sur
+// quelque chose de cliquable."
+export function TerminalDemo({ label, onActivate, activateLabel }) {
   const [revealed, setRevealed] = useState(() => (prefersReducedMotion() ? SEQUENCE.length : 0));
   const [typingLen, setTypingLen] = useState(0);
   const timeoutRef = useRef(null);
@@ -92,47 +97,60 @@ export function TerminalDemo({ label }) {
   const currentText = SEQUENCE[revealed]?.cmd ?? SEQUENCE[revealed]?.line ?? "";
   const isTypingCommand = !reduced && SEQUENCE[revealed]?.cmd !== undefined;
 
+  const body = (
+    <div className="pf-term" role={onActivate ? undefined : "img"} aria-label={onActivate ? undefined : label}>
+      <div className="pf-tbar">
+        <i /><i /><i />
+        <span>{label}</span>
+      </div>
+      <div className="pf-tbody">
+        {SEQUENCE.slice(0, revealed).map((entry, i) =>
+          entry.cmd ? (
+            <div key={i}>
+              <span className="pf-cmd">&gt; {entry.cmd}</span>
+            </div>
+          ) : (
+            <div key={i} className={entry.strong ? "pf-hl" : undefined}>
+              {entry.line}
+            </div>
+          )
+        )}
+        {!reduced && revealed < SEQUENCE.length && (
+          <div>
+            {isTypingCommand ? (
+              <span className="pf-cmd">&gt; {currentText.slice(0, typingLen)}</span>
+            ) : (
+              <span className={SEQUENCE[revealed]?.strong ? "pf-hl" : undefined}>
+                {currentText.slice(0, typingLen)}
+              </span>
+            )}
+            <span className="pf-cur" />
+          </div>
+        )}
+        {(reduced || revealed >= SEQUENCE.length) && (
+          <div>
+            <span className="pf-cmd">
+              &gt; <span className="pf-cur" />
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (onActivate) {
+    return (
+      <button type="button" className="pf-termwrap pf-termwrap-btn" onClick={onActivate} aria-label={activateLabel}>
+        <div className="pf-termglow" aria-hidden="true" />
+        {body}
+      </button>
+    );
+  }
+
   return (
     <div className="pf-termwrap">
       <div className="pf-termglow" aria-hidden="true" />
-      <div className="pf-term" role="img" aria-label={label}>
-        <div className="pf-tbar">
-          <i /><i /><i />
-          <span>{label}</span>
-        </div>
-        <div className="pf-tbody">
-          {SEQUENCE.slice(0, revealed).map((entry, i) =>
-            entry.cmd ? (
-              <div key={i}>
-                <span className="pf-cmd">&gt; {entry.cmd}</span>
-              </div>
-            ) : (
-              <div key={i} className={entry.strong ? "pf-hl" : undefined}>
-                {entry.line}
-              </div>
-            )
-          )}
-          {!reduced && revealed < SEQUENCE.length && (
-            <div>
-              {isTypingCommand ? (
-                <span className="pf-cmd">&gt; {currentText.slice(0, typingLen)}</span>
-              ) : (
-                <span className={SEQUENCE[revealed]?.strong ? "pf-hl" : undefined}>
-                  {currentText.slice(0, typingLen)}
-                </span>
-              )}
-              <span className="pf-cur" />
-            </div>
-          )}
-          {(reduced || revealed >= SEQUENCE.length) && (
-            <div>
-              <span className="pf-cmd">
-                &gt; <span className="pf-cur" />
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+      {body}
     </div>
   );
 }

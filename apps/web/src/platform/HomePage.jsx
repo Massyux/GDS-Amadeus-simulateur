@@ -45,7 +45,10 @@ export default function HomePage() {
       <Link to="/app">{tn.connexion}</Link>
       <LangToggle t={t} lang={lang} onChangeLang={onChangeLang} />
       <ThemeToggle theme={theme} onToggle={toggleTheme} label={tn.toggleTheme} />
-      <Button variant="primary" onClick={() => navigate("/app")}>
+      {/* PROMPT-PASSE-ACCUEIL.md chantier 2 (14/10/2026) : vers l'inscription,
+          pas la connexion -- un visiteur qui clique "Commencer" n'a pas de
+          compte. Le lien "Connexion" juste au-dessus reste inchangé. */}
+      <Button variant="primary" onClick={() => navigate("/app/inscription")}>
         {tn.commencer}
       </Button>
     </>
@@ -89,12 +92,18 @@ export default function HomePage() {
             </h1>
             <p className="pf-lead">{h.lead}</p>
             <div className="pf-cta-row">
-              <Button variant="primary" size="lg" onClick={() => navigate("/app")}>
+              <Button variant="primary" size="lg" onClick={() => navigate("/app/inscription")}>
                 {h.ctaTry}
               </Button>
               <a href="#formations" className="pf-btn pf-btn--secondary pf-btn--lg">
                 {h.ctaView}
               </a>
+              {/* Bouton de secours (PROMPT-PASSE-ACCUEIL.md chantier 1,
+                  14/10/2026) : pour qui ne devinera pas que l'image du
+                  terminal, juste à côté, est elle-même cliquable. */}
+              <Button variant="discreet" size="lg" onClick={() => navigate("/demo")}>
+                {h.ctaTryTerminal}
+              </Button>
             </div>
             <p className="pf-note">{h.note}</p>
             <div className="pf-kpis">
@@ -107,7 +116,11 @@ export default function HomePage() {
             <div className="pf-hero-photo">
               <ResponsiveImage name="hero-cockpit" width={720} height={220} alt={h.heroImageAlt} lazy={false} />
             </div>
-            <TerminalDemo label={h.termLabel} />
+            <TerminalDemo
+              label={h.termLabel}
+              onActivate={() => navigate("/demo")}
+              activateLabel={h.termActivateLabel}
+            />
           </div>
         </section>
       </div>
@@ -197,7 +210,7 @@ export default function HomePage() {
         <div className="pf-final">
           <h2>{h.finalTitle}</h2>
           <p>{h.finalBody}</p>
-          <Button variant="primary" size="lg" onClick={() => navigate("/app")}>
+          <Button variant="primary" size="lg" onClick={() => navigate("/app/inscription")}>
             {h.ctaTry}
           </Button>
         </div>

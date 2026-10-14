@@ -1,4 +1,12 @@
 import { useState } from "react";
+import { pickBrandLogo } from "../brandLogo.js";
+
+// /admin n'a pas de bascule de thème (fond clair fixe, #dde5f4,
+// apps/web/src/index.css) -- thème "light" fixé en dur, jamais lu depuis
+// une préférence partagée avec la plateforme publique (voir brandLogo.js :
+// c'est la même fonction de sélection que Brand.jsx, mais avec un thème
+// toujours identique au fond réel de cette page).
+const ADMIN_LOGO = pickBrandLogo("light", 40);
 
 export default function AdminLogin({ onLoggedIn }) {
   const [secret, setSecret] = useState("");
@@ -31,7 +39,13 @@ export default function AdminLogin({ onLoggedIn }) {
   return (
     <div className="admin-login">
       <form className="admin-login-card" onSubmit={handleSubmit}>
-        <img src="/brand/svg/logo-pour-fond-clair-transparent.svg" alt="Orionis Academy" width={320} height={120} className="admin-logo" />
+        <img
+          src={ADMIN_LOGO.src}
+          alt="Orionis Academy"
+          width={Math.round(40 * ADMIN_LOGO.ratio)}
+          height={40}
+          className="admin-logo"
+        />
         <h1 className="admin-login-title">Administration</h1>
         <label className="admin-login-label" htmlFor="admin-secret">
           Phrase secrète

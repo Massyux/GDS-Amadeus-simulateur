@@ -13,9 +13,9 @@ import { ThemeToggle } from "./ThemeToggle.jsx";
  * anti-énumération du backend affichées telles quelles -- jamais de logique
  * côté client qui tenterait de deviner "compte existant ou pas".
  */
-export default function AuthScreen({ t, onAuthenticated }) {
+export default function AuthScreen({ t, onAuthenticated, initialMode = "login" }) {
   const [theme, toggleTheme] = useTheme();
-  const [mode, setMode] = useState("login"); // "login" | "register" | "forgot"
+  const [mode, setMode] = useState(initialMode); // "login" | "register" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");

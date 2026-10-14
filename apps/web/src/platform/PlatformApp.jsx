@@ -13,7 +13,7 @@ import NotFoundPage from "./NotFoundPage.jsx";
 
 const LESSON_ROUTE = /^\/app\/cours\/([^/]+)\/lecon\/(\d+)$/;
 const COURSE_ROUTE = /^\/app\/cours\/([^/]+)$/;
-const KNOWN_ROUTES = new Set(["/app", "/app/catalogue", "/app/compte"]);
+const KNOWN_ROUTES = new Set(["/app", "/app/catalogue", "/app/compte", "/app/inscription"]);
 
 /**
  * Point d'entrée de l'espace étudiant (Mission 23 Étape 2), chargé à la
@@ -63,7 +63,15 @@ export default function PlatformApp() {
   if (authState === "loading") return null;
 
   if (authState === "anon") {
-    return <AuthScreen t={t} lang={lang} onChangeLang={setLang} onAuthenticated={handleAuthenticated} />;
+    // PROMPT-PASSE-ACCUEIL.md chantier 2 (14/10/2026) : /app/inscription
+    // ouvre AuthScreen directement en mode "register" -- "Commencer" menait
+    // jusqu'ici à la connexion alors que le visiteur n'a pas de compte. Le
+    // lien "Connexion" de la barre de navigation continue de mener à /app
+    // (mode "login" par défaut) : ne pas confondre les deux.
+    const initialMode = route.pathname === "/app/inscription" ? "register" : "login";
+    return (
+      <AuthScreen t={t} lang={lang} onChangeLang={setLang} onAuthenticated={handleAuthenticated} initialMode={initialMode} />
+    );
   }
 
   const lessonMatch = route.pathname.match(LESSON_ROUTE);

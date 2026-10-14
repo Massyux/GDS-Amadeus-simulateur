@@ -3,10 +3,16 @@ import AdminLogin from "./AdminLogin.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
 import CoursesAdmin from "./CoursesAdmin.jsx";
 import AuditLogView from "./AuditLogView.jsx";
+import { pickBrandLogo } from "../brandLogo.js";
 
 // Session-only (not localStorage): closing the tab signs Massy out, no
 // long-lived admin credential sitting in the browser between visits.
 const SESSION_KEY = "simulateur-amadeus:admin-token";
+
+// Même règle qu'AdminLogin.jsx : thème "light" fixé en dur (/admin n'a pas
+// de bascule), via la même fonction partagée que Brand.jsx -- voir
+// brandLogo.js.
+const ADMIN_LOGO = pickBrandLogo("light", 40);
 
 const TABS = [
   { id: "licenses", label: "Licences" },
@@ -37,7 +43,12 @@ export default function AdminApp() {
   return (
     <>
       <div className="admin-header-logo">
-        <img src="/brand/svg/logo-pour-fond-clair-transparent.svg" alt="Orionis Academy" width={320} height={120} />
+        <img
+          src={ADMIN_LOGO.src}
+          alt="Orionis Academy"
+          width={Math.round(40 * ADMIN_LOGO.ratio)}
+          height={40}
+        />
       </div>
       {/* Chaque onglet garde son propre en-tête/titre/déconnexion (Mission
           14, AdminDashboard.jsx) -- cette barre ne fait que choisir lequel

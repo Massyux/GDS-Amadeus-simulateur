@@ -34,38 +34,42 @@ async function registerByClicking(page, email) {
 }
 
 test.describe("Navigation -- cul-de-sac depuis l'accueil (régression du 11/10/2026)", () => {
-  test("accueil -> bouton « Commencer » de la barre de navigation -> écran de connexion", async ({ page }) => {
+  // PROMPT-PASSE-ACCUEIL.md chantier 2 (14/10/2026) : ces boutons mènent
+  // désormais à l'inscription, pas à la connexion -- un visiteur qui
+  // clique "Commencer"/"Essayer gratuitement" n'a pas de compte.
+  test("accueil -> bouton « Commencer » de la barre de navigation -> écran d'inscription", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("button", { name: "Essayer gratuitement" }).first()).toBeVisible();
     await page.getByRole("navigation").getByRole("button", { name: "Commencer" }).click();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/app");
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/app/inscription");
   });
 
-  test("accueil -> bouton « Essayer gratuitement » du héros -> écran de connexion", async ({ page }) => {
+  test("accueil -> bouton « Essayer gratuitement » du héros -> écran d'inscription", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Essayer gratuitement" }).first().click();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
   });
 
-  test("accueil -> CTA final de bas de page -> écran de connexion", async ({ page }) => {
+  test("accueil -> CTA final de bas de page -> écran d'inscription", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Essayer gratuitement" }).last().click();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
   });
 
   test("accueil -> lien « Connexion » de la barre de navigation -> écran de connexion", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("navigation").getByRole("link", { name: "Connexion" }).click();
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/app");
   });
 
-  test("accueil, menu mobile (390px) -> « Commencer » -> écran de connexion", async ({ page }) => {
+  test("accueil, menu mobile (390px) -> « Commencer » -> écran d'inscription", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page.getByRole("button", { name: "Ouvrir le menu" }).click();
     await page.locator("#pf-home-mobile-nav").getByRole("button", { name: "Commencer" }).click();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
   });
 
   test("accueil -> carte d'une vraie formation -> écran de connexion (formation protégée)", async ({ page }) => {
@@ -81,8 +85,10 @@ test.describe("Navigation -- cul-de-sac depuis l'accueil (régression du 11/10/2
       const email = uniqueEmail();
 
       await page.goto("/");
+      // "Commencer" ouvre directement l'inscription depuis le chantier 2
+      // (14/10/2026) -- plus besoin de basculer depuis l'écran de connexion.
       await page.getByRole("navigation").getByRole("button", { name: "Commencer" }).click();
-      await page.getByRole("button", { name: "Pas encore de compte ? Créer un compte" }).click();
+      await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
       await registerByClicking(page, email);
       await expect(page.getByRole("heading", { name: "Formations" })).toBeVisible();
 
@@ -133,13 +139,13 @@ test.describe("Navigation -- cul-de-sac depuis l'accueil (régression du 11/10/2
   test("bouton suivant du navigateur après un retour ramène en avant", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("navigation").getByRole("button", { name: "Commencer" }).click();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
 
     await page.goBack();
     await expect(page.getByRole("button", { name: "Essayer gratuitement" }).first()).toBeVisible();
 
     await page.goForward();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
   });
 
   test("rafraîchir une URL profonde atteinte par clic ne casse rien", async ({ page }) => {

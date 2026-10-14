@@ -356,23 +356,19 @@ html[data-theme="light"] .pf-topbar {
   gap: var(--space-4);
 }
 
-/* Logo officiel Orionis Academy (12/10/2026) -- fichier vectoriel fourni,
-   jamais recomposé en texte HTML (interdiction explicite du kit). Hauteur
-   fixe, largeur automatique (ratio intrinsèque 640:240 préservé) : se loge
-   proprement dans la barre de 64 px (DESIGN-SYSTEM §5 bis) avec de la marge
-   des deux côtés. 48px bureau / 36px mobile -- bas de la fourchette conseillée
-   par le kit (40-56 / 32-40), choisi pour cette contrainte de hauteur de
-   barre plus serrée que ce que le kit anticipait. */
+/* Logo officiel Orionis Academy (12/10/2026, variante compacte 14/10/2026)
+   -- fichier vectoriel fourni, jamais recomposé en texte HTML (interdiction
+   explicite des deux kits). Hauteur fixe à 40px -- même valeur sur toutes
+   les largeurs d'écran, demande explicite de compact/LISEZ-MOI-compact.md :
+   la variante compacte (choisie par brandLogo.js pour cette hauteur) règle
+   le défaut de lisibilité d'ACADEMY constaté en production avec le grand
+   format, donc plus besoin d'un palier mobile séparé. Le repli vers
+   l'emblème seul sous 340px de large est géré par <picture> dans
+   Brand.jsx, pas ici. */
 .pf-brand-logo {
   display: block;
-  height: 48px;
+  height: 40px;
   width: auto;
-}
-
-@media (max-width: 767px) {
-  .pf-brand-logo {
-    height: 36px;
-  }
 }
 
 .pf-brand-link {
@@ -797,6 +793,29 @@ html[data-theme="light"] .pf-btn--secondary {
 .pf-termwrap {
   position: relative;
   animation: pf-float 7s ease-in-out infinite;
+}
+
+/* Terminal du héros rendu actionnable (PROMPT-PASSE-ACCUEIL.md chantier 1,
+   14/10/2026) : un <button> plutôt que le <div role="img"> d'origine, pour
+   mener à /demo -- reset du chrome par défaut d'un bouton, le visuel doit
+   rester identique à la version décorative (AuthScreen.jsx continue de
+   l'utiliser sans onActivate, donc sans ce bouton). */
+.pf-termwrap-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  border-radius: 16px;
+}
+
+.pf-termwrap-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 4px;
 }
 
 .pf-termglow {
