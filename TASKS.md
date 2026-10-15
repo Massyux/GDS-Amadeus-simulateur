@@ -6,6 +6,34 @@
 
 ## En cours
 
+**🟢 Constat architecte du 15/10/2026 : « l'accueil s'affiche en anglais sur un navigateur neuf
+configuré en anglais » — investigué, non reproduit, deux vraies incohérences adjacentes
+corrigées par prudence.** Diagnostic avant correctif (comme demandé) : recherche exhaustive
+(`navigator.language`, `navigator.languages`, `Accept-Language`, `Intl.`) dans tout `apps/web/
+src` et `functions/` — aucune détection de langue navigateur nulle part, `useLang.js` a
+toujours défaulté inconditionnellement sur `"fr"` (seul commit de son histoire, Mission 06).
+Reproduit en conditions réelles contre la production : `curl` avec `Accept-Language:
+en-US,en;q=0.9` → HTML brut en français (`<html lang="fr">`, titre français, `cf-cache-status:
+DYNAMIC`, aucune négociation de contenu côté edge) ; Playwright avec un contexte
+`locale: "en-US"` complet (navigator.language, Intl, Accept-Language tous alignés) → accueil
+rendu en français, `localStorage` vide. **Le bug tel que décrit ne se reproduit pas depuis un
+état réellement neuf.** Explication la plus probable : un `localStorage` non réellement vierge
+sur le navigateur de test (`simulateur-amadeus:lang=en` resté d'un essai précédent) ou la
+traduction automatique du navigateur lui-même (Chrome) confondue avec le site. Pas d'action
+corrective sur `useLang.js` au-delà de ce qui suit, puisqu'il n'y avait rien à retirer.
+**Deux incohérences réelles trouvées en vérifiant la famille (comme demandé)**, corrigées :
+(1) `<html lang>` restait figé à `"fr"` dans `index.html` et ne suivait jamais un choix explicite
+d'anglais (incohérence SEO/accessibilité réelle, indépendante du bug rapporté) — `useLang.js`
+synchronise désormais `document.documentElement.lang` à chaque changement, même motif que
+`useTheme.js`/`data-theme`. (2) `og:locale` était absent de `index.html` — ajouté en `fr_FR`
+(le document initial est toujours français) avec `og:locale:alternate` `en_US`. Attestation PDF
+vérifiée à part : `functions/_lib/certificate.js` défaute déjà sur `lang = "fr"`, alimenté par le
+même `useLang()` via `?lang=` — rien à corriger.
+**Tests ajoutés** (`apps/web/e2e/language-default.spec.js`, garde-fou permanent même sans bug
+actuel) : navigateur `locale: "en-US"` complet → accueil et `<html lang>` en français ; choix
+explicite de l'anglais → respecté et mémorisé après un rechargement complet de la page.
+Vérifié en production avec un vrai navigateur configuré en anglais (pas seulement en local).
+
 **🟢 `PROMPT-PASSE-ACCUEIL.md` CLOS le 15/10/2026 — quatre chantiers faits, enchaînés en mode
 autonome.** **Chantier 1 (démo du terminal)** : route `/demo`
 (`apps/web/src/DemoTerminalPage.jsx`), vrai `Terminal.jsx` monté sans compte ni clé, jamais

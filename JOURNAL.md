@@ -21,6 +21,70 @@
 
 ## Fait (par session, datée)
 
+### 15/10/2026 — Constat architecte « accueil en anglais sur navigateur anglais » : diagnostic, non-reproduction, deux incohérences adjacentes corrigées
+
+Constat de l'architecte, observé en production : sur un navigateur configuré en anglais, l'accueil
+s'affichait entièrement en anglais dès le premier rendu, sans aucun clic. Instruction explicite :
+diagnostiquer d'abord (« si c'est bien de là que ça vient »), corriger ensuite, et ne jamais
+remettre l'anglais par défaut sur ce marché (Algérie, contenu pensé en français).
+
+**Diagnostic, avant tout correctif.** Recherche exhaustive (`navigator.language`,
+`navigator.languages`, `Accept-Language`, `Intl.`, `fallbackLng`, `geoip`, `cf-ipcountry`) dans
+tout `apps/web/src` et `functions/` : un seul résultat, non lié (`navigator.language` utilisé dans
+`deviceFingerprint.js` pour le hachage d'empreinte appareil, pas pour choisir une langue).
+`apps/web/src/i18n/useLang.js` n'a qu'un seul commit dans toute son histoire (Mission 06,
+`9801bf0`) et son défaut a toujours été inconditionnellement `localStorage.getItem(...) || "fr"`
+— aucune lecture de la langue du navigateur n'a jamais existé dans ce fichier ni ailleurs.
+
+Reproduit en conditions réelles, pas seulement en lisant le code : `curl -H "Accept-Language:
+en-US,en;q=0.9" https://orionisacademy.com/` → HTML brut strictement identique, `<html lang="fr">`,
+titre français, `cf-cache-status: DYNAMIC` (aucune mise en cache ni négociation de contenu côté
+edge Cloudflare qui pourrait varier selon l'en-tête). Playwright avec un contexte
+`locale: "en-US"` complet (aligne `navigator.language`, `Intl`, et l'en-tête HTTP
+`Accept-Language` envoyé par le navigateur) sur la production réelle → accueil rendu en français,
+`document.documentElement.lang` à `"fr"`, `localStorage` vide avant le test.
+
+**Conclusion : le bug tel que décrit ne se reproduit pas depuis un état réellement neuf.**
+Deux explications restent plausibles pour ce que l'architecte a observé, sans pouvoir trancher à
+distance : (1) le navigateur de test n'était pas réellement vierge — un `localStorage` portant
+`simulateur-amadeus:lang=en` d'un essai antérieur sur le même profil aurait produit exactement ce
+symptôme sans aucun bug de code ; (2) la traduction automatique du navigateur (Chrome) a pu
+traduire silencieusement la page et être confondue avec le site lui-même servant de l'anglais —
+d'autant plus trompeur que nos propres traductions FR→EN sont très littérales (« Essayer
+gratuitement » → « Try for free », etc.), donc proches de ce qu'une traduction automatique aurait
+produit. Aucune des deux n'est une régression de ce projet.
+
+**Deux incohérences réelles trouvées en vérifiant la famille** (consigne explicite : vérifier
+`<html lang>`, les métadonnées SEO, l'attestation PDF — pas seulement la ligne suspectée),
+corrigées par prudence même si elles ne causaient pas le symptôme rapporté :
+1. **`<html lang>` ne suivait jamais un choix explicite d'anglais** — figé à `"fr"` dans
+   `index.html`, jamais mis à jour après un clic sur le sélecteur EN. Incohérence SEO/
+   accessibilité réelle et indépendante. `useLang.js` applique désormais le même motif que
+   `useTheme.js`/`data-theme` : un `useEffect` qui synchronise
+   `document.documentElement.setAttribute("lang", lang)` à chaque changement de langue.
+2. **`og:locale` était absent** de `index.html`. Ajouté : `og:locale` `fr_FR` (le document initial
+   envoyé par le serveur est toujours en français, quel que soit l'en-tête `Accept-Language` —
+   confirmé ci-dessus) et `og:locale:alternate` `en_US` (le contenu est bien traduisible).
+
+**Attestation PDF vérifiée à part, rien à corriger** : `functions/_lib/certificate.js` défaute
+déjà sur `lang = "fr"` au niveau de la fonction (`generateCertificatePdf({ ..., lang = "fr" })`),
+et la valeur réelle transmise vient de `?lang=${lang}` (`CoursePage.jsx`), lui-même alimenté par
+le même `useLang()` que l'accueil — donc par la même règle « français par défaut, anglais
+seulement sur choix explicite ». Pas de chemin séparé à corriger.
+
+**Tests ajoutés** (`apps/web/e2e/language-default.spec.js`) — un garde-fou permanent contre une
+future régression, même en l'absence de bug actuel à corriger : (1) un contexte Playwright
+`locale: "en-US"` complet visitant l'accueil doit voir le français (`<html lang="fr">`, « Apprends
+un métier, » visible, « Learn a trade, » absent) ; (2) un choix explicite d'anglais via le
+sélecteur doit être respecté immédiatement ET après un rechargement complet de la page (teste la
+mémorisation `localStorage`, pas seulement l'état React en mémoire).
+
+**Non-régression** : lint clean, 90/90 tests unitaires web, suite e2e complète + e2e-admin rejouées
+sans régression. **Vérifié en production avec un vrai navigateur configuré en anglais** (pas
+seulement en local où la configuration de la machine est déjà en français) : `curl` avec en-tête
+anglais explicite, et un contexte Playwright anglais complet contre `https://orionisacademy.com`
+réel — les deux confirment le français par défaut.
+
 ### 15/10/2026 — PROMPT-PASSE-ACCUEIL.md chantiers 3 et 4 (pied de page, habillage /admin) — clôture complète du prompt
 
 Suite directe de la session du 14/10 (chantiers 1+2 + variante compacte du logo, entrée
