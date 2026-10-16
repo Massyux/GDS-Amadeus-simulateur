@@ -95,7 +95,6 @@
     "country": "ALGERIA",
     "region": "BISKRA"
   },
-
   {
     "iata": "PAR",
     "type": "C",
@@ -223,5 +222,1589 @@
     "name": "MOHAMMED V",
     "country": "MOROCCO",
     "region": "CASABLANCA"
+  },
+  {
+    "iata": "CFK",
+    "type": "A",
+    "city": "CHLEF",
+    "name": "ABOUBAKR BELKAID",
+    "country": "ALGERIA",
+    "region": "CHLEF"
+  },
+  {
+    "iata": "GJL",
+    "type": "A",
+    "city": "JIJEL",
+    "name": "FERHAT ABBAS",
+    "country": "ALGERIA",
+    "region": "JIJEL"
+  },
+  {
+    "iata": "OGX",
+    "type": "A",
+    "city": "OUARGLA",
+    "name": "AIN BEIDA",
+    "country": "ALGERIA",
+    "region": "OUARGLA"
+  },
+  {
+    "iata": "DJG",
+    "type": "A",
+    "city": "DJANET",
+    "name": "TISKA INEDBIRENE",
+    "country": "ALGERIA",
+    "region": "DJANET"
+  },
+  {
+    "iata": "AZR",
+    "type": "A",
+    "city": "ADRAR",
+    "name": "TOUAT CHEIKH SIDI MOHAMED BELKEBIR",
+    "country": "ALGERIA",
+    "region": "ADRAR"
+  },
+  {
+    "iata": "TIN",
+    "type": "A",
+    "city": "TINDOUF",
+    "name": "TINDOUF",
+    "country": "ALGERIA",
+    "region": "TINDOUF"
+  },
+  {
+    "iata": "CBH",
+    "type": "A",
+    "city": "BECHAR",
+    "name": "BOUDGHENE BEN ALI LOTFI",
+    "country": "ALGERIA",
+    "region": "BECHAR"
+  },
+  {
+    "iata": "TID",
+    "type": "A",
+    "city": "TIARET",
+    "name": "ABDELHAFID BOUSSOUF BOU CHEKIF",
+    "country": "ALGERIA",
+    "region": "TIARET"
+  },
+  {
+    "iata": "ELU",
+    "type": "A",
+    "city": "EL OUED",
+    "name": "GUEMAR",
+    "country": "ALGERIA",
+    "region": "EL OUED"
+  },
+  {
+    "iata": "TGR",
+    "type": "A",
+    "city": "TOUGGOURT",
+    "name": "SIDI MAHDI",
+    "country": "ALGERIA",
+    "region": "TOUGGOURT"
+  },
+  {
+    "iata": "LOO",
+    "type": "A",
+    "city": "LAGHOUAT",
+    "name": "MOULAY AHMED MEDEGHRI",
+    "country": "ALGERIA",
+    "region": "LAGHOUAT"
+  },
+  {
+    "iata": "IAM",
+    "type": "A",
+    "city": "IN AMENAS",
+    "name": "IN AMENAS",
+    "country": "ALGERIA",
+    "region": "IN AMENAS"
+  },
+  {
+    "iata": "INZ",
+    "type": "A",
+    "city": "IN SALAH",
+    "name": "IN SALAH",
+    "country": "ALGERIA",
+    "region": "IN SALAH"
+  },
+  {
+    "iata": "VVZ",
+    "type": "A",
+    "city": "ILLIZI",
+    "name": "TAKHAMALT",
+    "country": "ALGERIA",
+    "region": "ILLIZI"
+  },
+  {
+    "iata": "ELG",
+    "type": "A",
+    "city": "EL GOLEA",
+    "name": "EL GOLEA",
+    "country": "ALGERIA",
+    "region": "EL GOLEA"
+  },
+  {
+    "iata": "TMX",
+    "type": "A",
+    "city": "TIMIMOUN",
+    "name": "TIMIMOUN",
+    "country": "ALGERIA",
+    "region": "TIMIMOUN"
+  },
+  {
+    "iata": "BMW",
+    "type": "A",
+    "city": "BORDJ BADJI MOKHTAR",
+    "name": "BORDJ BADJI MOKHTAR",
+    "country": "ALGERIA",
+    "region": "BORDJ BADJI MOKHTAR"
+  },
+  {
+    "iata": "MUW",
+    "type": "A",
+    "city": "MASCARA",
+    "name": "GHRISS",
+    "country": "ALGERIA",
+    "region": "MASCARA"
+  },
+  {
+    "iata": "MZW",
+    "type": "A",
+    "city": "MECHERIA",
+    "name": "MECHERIA",
+    "country": "ALGERIA",
+    "region": "MECHERIA"
+  },
+  {
+    "iata": "EBH",
+    "type": "A",
+    "city": "EL BAYADH",
+    "name": "EL BAYADH",
+    "country": "ALGERIA",
+    "region": "EL BAYADH"
+  },
+  {
+    "iata": "TEE",
+    "type": "A",
+    "city": "TEBESSA",
+    "name": "CHEIKH LARBI TEBESSI",
+    "country": "ALGERIA",
+    "region": "TEBESSA"
+  },
+  {
+    "iata": "QMH",
+    "type": "A",
+    "city": "OUM EL BOUAGHI",
+    "name": "AIN BEIDA",
+    "country": "ALGERIA",
+    "region": "OUM EL BOUAGHI"
+  },
+  {
+    "iata": "HRM",
+    "type": "A",
+    "city": "HASSI R'MEL",
+    "name": "TILREMPT",
+    "country": "ALGERIA",
+    "region": "HASSI R'MEL"
+  },
+  {
+    "iata": "DJE",
+    "type": "A",
+    "city": "DJERBA",
+    "name": "DJERBA ZARZIS",
+    "country": "TUNISIA",
+    "region": "DJERBA"
+  },
+  {
+    "iata": "MIR",
+    "type": "A",
+    "city": "MONASTIR",
+    "name": "HABIB BOURGUIBA",
+    "country": "TUNISIA",
+    "region": "MONASTIR"
+  },
+  {
+    "iata": "SFA",
+    "type": "A",
+    "city": "SFAX",
+    "name": "SFAX THYNA",
+    "country": "TUNISIA",
+    "region": "SFAX"
+  },
+  {
+    "iata": "RAK",
+    "type": "A",
+    "city": "MARRAKECH",
+    "name": "MENARA",
+    "country": "MOROCCO",
+    "region": "MARRAKECH"
+  },
+  {
+    "iata": "RBA",
+    "type": "A",
+    "city": "RABAT",
+    "name": "RABAT SALE",
+    "country": "MOROCCO",
+    "region": "RABAT"
+  },
+  {
+    "iata": "TNG",
+    "type": "A",
+    "city": "TANGIER",
+    "name": "IBN BATTOUTA",
+    "country": "MOROCCO",
+    "region": "TANGIER"
+  },
+  {
+    "iata": "FEZ",
+    "type": "A",
+    "city": "FEZ",
+    "name": "FES SAIS",
+    "country": "MOROCCO",
+    "region": "FEZ"
+  },
+  {
+    "iata": "AGA",
+    "type": "A",
+    "city": "AGADIR",
+    "name": "AL MASSIRA",
+    "country": "MOROCCO",
+    "region": "AGADIR"
+  },
+  {
+    "iata": "OUD",
+    "type": "A",
+    "city": "OUJDA",
+    "name": "ANGADS",
+    "country": "MOROCCO",
+    "region": "OUJDA"
+  },
+  {
+    "iata": "NKC",
+    "type": "A",
+    "city": "NOUAKCHOTT",
+    "name": "OUMTOUNSY",
+    "country": "MAURITANIA",
+    "region": "NOUAKCHOTT"
+  },
+  {
+    "iata": "MJI",
+    "type": "A",
+    "city": "TRIPOLI",
+    "name": "MITIGA",
+    "country": "LIBYA",
+    "region": "TRIPOLI"
+  },
+  {
+    "iata": "BEN",
+    "type": "A",
+    "city": "BENGHAZI",
+    "name": "BENINA",
+    "country": "LIBYA",
+    "region": "BENGHAZI"
+  },
+  {
+    "iata": "HBE",
+    "type": "A",
+    "city": "ALEXANDRIA",
+    "name": "BORG EL ARAB",
+    "country": "EGYPT",
+    "region": "ALEXANDRIA"
+  },
+  {
+    "iata": "SSH",
+    "type": "A",
+    "city": "SHARM EL SHEIKH",
+    "name": "SHARM EL SHEIKH",
+    "country": "EGYPT",
+    "region": "SHARM EL SHEIKH"
+  },
+  {
+    "iata": "DSS",
+    "type": "A",
+    "city": "DAKAR",
+    "name": "BLAISE DIAGNE",
+    "country": "SENEGAL",
+    "region": "DAKAR"
+  },
+  {
+    "iata": "ABJ",
+    "type": "A",
+    "city": "ABIDJAN",
+    "name": "FELIX HOUPHOUET BOIGNY",
+    "country": "IVORY COAST",
+    "region": "ABIDJAN"
+  },
+  {
+    "iata": "BKO",
+    "type": "A",
+    "city": "BAMAKO",
+    "name": "MODIBO KEITA",
+    "country": "MALI",
+    "region": "BAMAKO"
+  },
+  {
+    "iata": "NIM",
+    "type": "A",
+    "city": "NIAMEY",
+    "name": "DIORI HAMANI",
+    "country": "NIGER",
+    "region": "NIAMEY"
+  },
+  {
+    "iata": "OUA",
+    "type": "A",
+    "city": "OUAGADOUGOU",
+    "name": "OUAGADOUGOU",
+    "country": "BURKINA FASO",
+    "region": "OUAGADOUGOU"
+  },
+  {
+    "iata": "LOS",
+    "type": "A",
+    "city": "LAGOS",
+    "name": "MURTALA MUHAMMED",
+    "country": "NIGERIA",
+    "region": "LAGOS"
+  },
+  {
+    "iata": "ABV",
+    "type": "A",
+    "city": "ABUJA",
+    "name": "NNAMDI AZIKIWE",
+    "country": "NIGERIA",
+    "region": "ABUJA"
+  },
+  {
+    "iata": "ACC",
+    "type": "A",
+    "city": "ACCRA",
+    "name": "KOTOKA",
+    "country": "GHANA",
+    "region": "ACCRA"
+  },
+  {
+    "iata": "DLA",
+    "type": "A",
+    "city": "DOUALA",
+    "name": "DOUALA",
+    "country": "CAMEROON",
+    "region": "DOUALA"
+  },
+  {
+    "iata": "LBV",
+    "type": "A",
+    "city": "LIBREVILLE",
+    "name": "LEON MBA",
+    "country": "GABON",
+    "region": "LIBREVILLE"
+  },
+  {
+    "iata": "FIH",
+    "type": "A",
+    "city": "KINSHASA",
+    "name": "N'DJILI",
+    "country": "CONGO DR",
+    "region": "KINSHASA"
+  },
+  {
+    "iata": "NBO",
+    "type": "A",
+    "city": "NAIROBI",
+    "name": "JOMO KENYATTA",
+    "country": "KENYA",
+    "region": "NAIROBI"
+  },
+  {
+    "iata": "ADD",
+    "type": "A",
+    "city": "ADDIS ABABA",
+    "name": "BOLE",
+    "country": "ETHIOPIA",
+    "region": "ADDIS ABABA"
+  },
+  {
+    "iata": "KRT",
+    "type": "A",
+    "city": "KHARTOUM",
+    "name": "KHARTOUM",
+    "country": "SUDAN",
+    "region": "KHARTOUM"
+  },
+  {
+    "iata": "DAR",
+    "type": "A",
+    "city": "DAR ES SALAAM",
+    "name": "JULIUS NYERERE",
+    "country": "TANZANIA",
+    "region": "DAR ES SALAAM"
+  },
+  {
+    "iata": "JNB",
+    "type": "A",
+    "city": "JOHANNESBURG",
+    "name": "O. R. TAMBO",
+    "country": "SOUTH AFRICA",
+    "region": "JOHANNESBURG"
+  },
+  {
+    "iata": "CPT",
+    "type": "A",
+    "city": "CAPE TOWN",
+    "name": "CAPE TOWN",
+    "country": "SOUTH AFRICA",
+    "region": "CAPE TOWN"
+  },
+  {
+    "iata": "TNR",
+    "type": "A",
+    "city": "ANTANANARIVO",
+    "name": "IVATO",
+    "country": "MADAGASCAR",
+    "region": "ANTANANARIVO"
+  },
+  {
+    "iata": "MRU",
+    "type": "A",
+    "city": "PORT LOUIS",
+    "name": "SIR S. RAMGOOLAM",
+    "country": "MAURITIUS",
+    "region": "PORT LOUIS"
+  },
+  {
+    "iata": "BVA",
+    "type": "A",
+    "city": "PARIS",
+    "name": "BEAUVAIS TILLE",
+    "country": "FRANCE",
+    "region": "PARIS"
+  },
+  {
+    "iata": "MRS",
+    "type": "A",
+    "city": "MARSEILLE",
+    "name": "PROVENCE",
+    "country": "FRANCE",
+    "region": "MARSEILLE"
+  },
+  {
+    "iata": "LYS",
+    "type": "A",
+    "city": "LYON",
+    "name": "SAINT EXUPERY",
+    "country": "FRANCE",
+    "region": "LYON"
+  },
+  {
+    "iata": "TLS",
+    "type": "A",
+    "city": "TOULOUSE",
+    "name": "BLAGNAC",
+    "country": "FRANCE",
+    "region": "TOULOUSE"
+  },
+  {
+    "iata": "NCE",
+    "type": "A",
+    "city": "NICE",
+    "name": "COTE D'AZUR",
+    "country": "FRANCE",
+    "region": "NICE"
+  },
+  {
+    "iata": "BOD",
+    "type": "A",
+    "city": "BORDEAUX",
+    "name": "MERIGNAC",
+    "country": "FRANCE",
+    "region": "BORDEAUX"
+  },
+  {
+    "iata": "NTE",
+    "type": "A",
+    "city": "NANTES",
+    "name": "ATLANTIQUE",
+    "country": "FRANCE",
+    "region": "NANTES"
+  },
+  {
+    "iata": "LIL",
+    "type": "A",
+    "city": "LILLE",
+    "name": "LESQUIN",
+    "country": "FRANCE",
+    "region": "LILLE"
+  },
+  {
+    "iata": "MPL",
+    "type": "A",
+    "city": "MONTPELLIER",
+    "name": "MEDITERRANEE",
+    "country": "FRANCE",
+    "region": "MONTPELLIER"
+  },
+  {
+    "iata": "SXB",
+    "type": "A",
+    "city": "STRASBOURG",
+    "name": "ENTZHEIM",
+    "country": "FRANCE",
+    "region": "STRASBOURG"
+  },
+  {
+    "iata": "MLH",
+    "type": "A",
+    "city": "MULHOUSE",
+    "name": "EUROAIRPORT",
+    "country": "FRANCE",
+    "region": "MULHOUSE"
+  },
+  {
+    "iata": "PGF",
+    "type": "A",
+    "city": "PERPIGNAN",
+    "name": "RIVESALTES",
+    "country": "FRANCE",
+    "region": "PERPIGNAN"
+  },
+  {
+    "iata": "ETZ",
+    "type": "A",
+    "city": "METZ NANCY",
+    "name": "LORRAINE",
+    "country": "FRANCE",
+    "region": "METZ NANCY"
+  },
+  {
+    "iata": "CFE",
+    "type": "A",
+    "city": "CLERMONT FERRAND",
+    "name": "AUVERGNE",
+    "country": "FRANCE",
+    "region": "CLERMONT FERRAND"
+  },
+  {
+    "iata": "AJA",
+    "type": "A",
+    "city": "AJACCIO",
+    "name": "NAPOLEON BONAPARTE",
+    "country": "FRANCE",
+    "region": "AJACCIO"
+  },
+  {
+    "iata": "LGW",
+    "type": "A",
+    "city": "LONDON",
+    "name": "GATWICK",
+    "country": "UNITED KINGDOM",
+    "region": "LONDON"
+  },
+  {
+    "iata": "STN",
+    "type": "A",
+    "city": "LONDON",
+    "name": "STANSTED",
+    "country": "UNITED KINGDOM",
+    "region": "LONDON"
+  },
+  {
+    "iata": "MAN",
+    "type": "A",
+    "city": "MANCHESTER",
+    "name": "MANCHESTER",
+    "country": "UNITED KINGDOM",
+    "region": "MANCHESTER"
+  },
+  {
+    "iata": "DUB",
+    "type": "A",
+    "city": "DUBLIN",
+    "name": "DUBLIN",
+    "country": "IRELAND",
+    "region": "DUBLIN"
+  },
+  {
+    "iata": "BRU",
+    "type": "A",
+    "city": "BRUSSELS",
+    "name": "ZAVENTEM",
+    "country": "BELGIUM",
+    "region": "BRUSSELS"
+  },
+  {
+    "iata": "CRL",
+    "type": "A",
+    "city": "BRUSSELS",
+    "name": "CHARLEROI",
+    "country": "BELGIUM",
+    "region": "BRUSSELS"
+  },
+  {
+    "iata": "MUC",
+    "type": "A",
+    "city": "MUNICH",
+    "name": "FRANZ JOSEF STRAUSS",
+    "country": "GERMANY",
+    "region": "MUNICH"
+  },
+  {
+    "iata": "BER",
+    "type": "A",
+    "city": "BERLIN",
+    "name": "BRANDENBURG",
+    "country": "GERMANY",
+    "region": "BERLIN"
+  },
+  {
+    "iata": "DUS",
+    "type": "A",
+    "city": "DUSSELDORF",
+    "name": "DUSSELDORF",
+    "country": "GERMANY",
+    "region": "DUSSELDORF"
+  },
+  {
+    "iata": "HAM",
+    "type": "A",
+    "city": "HAMBURG",
+    "name": "HAMBURG",
+    "country": "GERMANY",
+    "region": "HAMBURG"
+  },
+  {
+    "iata": "CGN",
+    "type": "A",
+    "city": "COLOGNE",
+    "name": "COLOGNE BONN",
+    "country": "GERMANY",
+    "region": "COLOGNE"
+  },
+  {
+    "iata": "STR",
+    "type": "A",
+    "city": "STUTTGART",
+    "name": "STUTTGART",
+    "country": "GERMANY",
+    "region": "STUTTGART"
+  },
+  {
+    "iata": "ZRH",
+    "type": "A",
+    "city": "ZURICH",
+    "name": "KLOTEN",
+    "country": "SWITZERLAND",
+    "region": "ZURICH"
+  },
+  {
+    "iata": "GVA",
+    "type": "A",
+    "city": "GENEVA",
+    "name": "COINTRIN",
+    "country": "SWITZERLAND",
+    "region": "GENEVA"
+  },
+  {
+    "iata": "VIE",
+    "type": "A",
+    "city": "VIENNA",
+    "name": "SCHWECHAT",
+    "country": "AUSTRIA",
+    "region": "VIENNA"
+  },
+  {
+    "iata": "AGP",
+    "type": "A",
+    "city": "MALAGA",
+    "name": "COSTA DEL SOL",
+    "country": "SPAIN",
+    "region": "MALAGA"
+  },
+  {
+    "iata": "VLC",
+    "type": "A",
+    "city": "VALENCIA",
+    "name": "VALENCIA",
+    "country": "SPAIN",
+    "region": "VALENCIA"
+  },
+  {
+    "iata": "SVQ",
+    "type": "A",
+    "city": "SEVILLE",
+    "name": "SEVILLE",
+    "country": "SPAIN",
+    "region": "SEVILLE"
+  },
+  {
+    "iata": "PMI",
+    "type": "A",
+    "city": "PALMA",
+    "name": "PALMA DE MAJORQUE",
+    "country": "SPAIN",
+    "region": "PALMA"
+  },
+  {
+    "iata": "ALC",
+    "type": "A",
+    "city": "ALICANTE",
+    "name": "ALICANTE ELCHE",
+    "country": "SPAIN",
+    "region": "ALICANTE"
+  },
+  {
+    "iata": "LIS",
+    "type": "A",
+    "city": "LISBON",
+    "name": "HUMBERTO DELGADO",
+    "country": "PORTUGAL",
+    "region": "LISBON"
+  },
+  {
+    "iata": "OPO",
+    "type": "A",
+    "city": "PORTO",
+    "name": "FRANCISCO SA CARNEIRO",
+    "country": "PORTUGAL",
+    "region": "PORTO"
+  },
+  {
+    "iata": "MXP",
+    "type": "A",
+    "city": "MILAN",
+    "name": "MALPENSA",
+    "country": "ITALY",
+    "region": "MILAN"
+  },
+  {
+    "iata": "LIN",
+    "type": "A",
+    "city": "MILAN",
+    "name": "LINATE",
+    "country": "ITALY",
+    "region": "MILAN"
+  },
+  {
+    "iata": "VCE",
+    "type": "A",
+    "city": "VENICE",
+    "name": "MARCO POLO",
+    "country": "ITALY",
+    "region": "VENICE"
+  },
+  {
+    "iata": "NAP",
+    "type": "A",
+    "city": "NAPLES",
+    "name": "CAPODICHINO",
+    "country": "ITALY",
+    "region": "NAPLES"
+  },
+  {
+    "iata": "BLQ",
+    "type": "A",
+    "city": "BOLOGNA",
+    "name": "GUGLIELMO MARCONI",
+    "country": "ITALY",
+    "region": "BOLOGNA"
+  },
+  {
+    "iata": "ATH",
+    "type": "A",
+    "city": "ATHENS",
+    "name": "ELEFTHERIOS VENIZELOS",
+    "country": "GREECE",
+    "region": "ATHENS"
+  },
+  {
+    "iata": "SAW",
+    "type": "A",
+    "city": "ISTANBUL",
+    "name": "SABIHA GOKCEN",
+    "country": "TURKEY",
+    "region": "ISTANBUL"
+  },
+  {
+    "iata": "ESB",
+    "type": "A",
+    "city": "ANKARA",
+    "name": "ESENBOGA",
+    "country": "TURKEY",
+    "region": "ANKARA"
+  },
+  {
+    "iata": "AYT",
+    "type": "A",
+    "city": "ANTALYA",
+    "name": "ANTALYA",
+    "country": "TURKEY",
+    "region": "ANTALYA"
+  },
+  {
+    "iata": "CPH",
+    "type": "A",
+    "city": "COPENHAGEN",
+    "name": "KASTRUP",
+    "country": "DENMARK",
+    "region": "COPENHAGEN"
+  },
+  {
+    "iata": "ARN",
+    "type": "A",
+    "city": "STOCKHOLM",
+    "name": "ARLANDA",
+    "country": "SWEDEN",
+    "region": "STOCKHOLM"
+  },
+  {
+    "iata": "OSL",
+    "type": "A",
+    "city": "OSLO",
+    "name": "GARDERMOEN",
+    "country": "NORWAY",
+    "region": "OSLO"
+  },
+  {
+    "iata": "HEL",
+    "type": "A",
+    "city": "HELSINKI",
+    "name": "VANTAA",
+    "country": "FINLAND",
+    "region": "HELSINKI"
+  },
+  {
+    "iata": "WAW",
+    "type": "A",
+    "city": "WARSAW",
+    "name": "CHOPIN",
+    "country": "POLAND",
+    "region": "WARSAW"
+  },
+  {
+    "iata": "PRG",
+    "type": "A",
+    "city": "PRAGUE",
+    "name": "VACLAV HAVEL",
+    "country": "CZECH REPUBLIC",
+    "region": "PRAGUE"
+  },
+  {
+    "iata": "BUD",
+    "type": "A",
+    "city": "BUDAPEST",
+    "name": "FERENC LISZT",
+    "country": "HUNGARY",
+    "region": "BUDAPEST"
+  },
+  {
+    "iata": "OTP",
+    "type": "A",
+    "city": "BUCHAREST",
+    "name": "HENRI COANDA",
+    "country": "ROMANIA",
+    "region": "BUCHAREST"
+  },
+  {
+    "iata": "SVO",
+    "type": "A",
+    "city": "MOSCOW",
+    "name": "SHEREMETYEVO",
+    "country": "RUSSIA",
+    "region": "MOSCOW"
+  },
+  {
+    "iata": "DME",
+    "type": "A",
+    "city": "MOSCOW",
+    "name": "DOMODEDOVO",
+    "country": "RUSSIA",
+    "region": "MOSCOW"
+  },
+  {
+    "iata": "KBP",
+    "type": "A",
+    "city": "KIEV",
+    "name": "BORYSPIL",
+    "country": "UKRAINE",
+    "region": "KIEV"
+  },
+  {
+    "iata": "LUX",
+    "type": "A",
+    "city": "LUXEMBOURG",
+    "name": "FINDEL",
+    "country": "LUXEMBOURG",
+    "region": "LUXEMBOURG"
+  },
+  {
+    "iata": "MLA",
+    "type": "A",
+    "city": "MALTA",
+    "name": "LUQA",
+    "country": "MALTA",
+    "region": "MALTA"
+  },
+  {
+    "iata": "DWC",
+    "type": "A",
+    "city": "DUBAI",
+    "name": "AL MAKTOUM",
+    "country": "UAE",
+    "region": "DUBAI"
+  },
+  {
+    "iata": "AUH",
+    "type": "A",
+    "city": "ABU DHABI",
+    "name": "ZAYED INTERNATIONAL",
+    "country": "UAE",
+    "region": "ABU DHABI"
+  },
+  {
+    "iata": "KWI",
+    "type": "A",
+    "city": "KUWAIT",
+    "name": "KUWAIT INTERNATIONAL",
+    "country": "KUWAIT",
+    "region": "KUWAIT"
+  },
+  {
+    "iata": "BAH",
+    "type": "A",
+    "city": "MANAMA",
+    "name": "BAHRAIN INTERNATIONAL",
+    "country": "BAHRAIN",
+    "region": "MANAMA"
+  },
+  {
+    "iata": "MCT",
+    "type": "A",
+    "city": "MUSCAT",
+    "name": "MUSCAT INTERNATIONAL",
+    "country": "OMAN",
+    "region": "MUSCAT"
+  },
+  {
+    "iata": "JED",
+    "type": "A",
+    "city": "JEDDAH",
+    "name": "KING ABDULAZIZ",
+    "country": "SAUDI ARABIA",
+    "region": "JEDDAH"
+  },
+  {
+    "iata": "RUH",
+    "type": "A",
+    "city": "RIYADH",
+    "name": "KING KHALED",
+    "country": "SAUDI ARABIA",
+    "region": "RIYADH"
+  },
+  {
+    "iata": "MED",
+    "type": "A",
+    "city": "MEDINA",
+    "name": "PRINCE MOHAMMAD BIN ABDULAZIZ",
+    "country": "SAUDI ARABIA",
+    "region": "MEDINA"
+  },
+  {
+    "iata": "DMM",
+    "type": "A",
+    "city": "DAMMAM",
+    "name": "KING FAHD",
+    "country": "SAUDI ARABIA",
+    "region": "DAMMAM"
+  },
+  {
+    "iata": "AMM",
+    "type": "A",
+    "city": "AMMAN",
+    "name": "QUEEN ALIA",
+    "country": "JORDAN",
+    "region": "AMMAN"
+  },
+  {
+    "iata": "BEY",
+    "type": "A",
+    "city": "BEIRUT",
+    "name": "RAFIC HARIRI",
+    "country": "LEBANON",
+    "region": "BEIRUT"
+  },
+  {
+    "iata": "DAM",
+    "type": "A",
+    "city": "DAMASCUS",
+    "name": "DAMASCUS INTERNATIONAL",
+    "country": "SYRIA",
+    "region": "DAMASCUS"
+  },
+  {
+    "iata": "BGW",
+    "type": "A",
+    "city": "BAGHDAD",
+    "name": "BAGHDAD INTERNATIONAL",
+    "country": "IRAQ",
+    "region": "BAGHDAD"
+  },
+  {
+    "iata": "IKA",
+    "type": "A",
+    "city": "TEHRAN",
+    "name": "IMAM KHOMEINI",
+    "country": "IRAN",
+    "region": "TEHRAN"
+  },
+  {
+    "iata": "TLV",
+    "type": "A",
+    "city": "TEL AVIV",
+    "name": "BEN GURION",
+    "country": "ISRAEL",
+    "region": "TEL AVIV"
+  },
+  {
+    "iata": "EWR",
+    "type": "A",
+    "city": "NEW YORK",
+    "name": "NEWARK",
+    "country": "USA",
+    "region": "NEW YORK"
+  },
+  {
+    "iata": "LGA",
+    "type": "A",
+    "city": "NEW YORK",
+    "name": "LAGUARDIA",
+    "country": "USA",
+    "region": "NEW YORK"
+  },
+  {
+    "iata": "LAX",
+    "type": "A",
+    "city": "LOS ANGELES",
+    "name": "LOS ANGELES",
+    "country": "USA",
+    "region": "LOS ANGELES"
+  },
+  {
+    "iata": "ORD",
+    "type": "A",
+    "city": "CHICAGO",
+    "name": "O'HARE",
+    "country": "USA",
+    "region": "CHICAGO"
+  },
+  {
+    "iata": "ATL",
+    "type": "A",
+    "city": "ATLANTA",
+    "name": "HARTSFIELD JACKSON",
+    "country": "USA",
+    "region": "ATLANTA"
+  },
+  {
+    "iata": "MIA",
+    "type": "A",
+    "city": "MIAMI",
+    "name": "MIAMI",
+    "country": "USA",
+    "region": "MIAMI"
+  },
+  {
+    "iata": "SFO",
+    "type": "A",
+    "city": "SAN FRANCISCO",
+    "name": "SAN FRANCISCO",
+    "country": "USA",
+    "region": "SAN FRANCISCO"
+  },
+  {
+    "iata": "BOS",
+    "type": "A",
+    "city": "BOSTON",
+    "name": "LOGAN",
+    "country": "USA",
+    "region": "BOSTON"
+  },
+  {
+    "iata": "IAD",
+    "type": "A",
+    "city": "WASHINGTON",
+    "name": "DULLES",
+    "country": "USA",
+    "region": "WASHINGTON"
+  },
+  {
+    "iata": "DFW",
+    "type": "A",
+    "city": "DALLAS",
+    "name": "DALLAS FORT WORTH",
+    "country": "USA",
+    "region": "DALLAS"
+  },
+  {
+    "iata": "IAH",
+    "type": "A",
+    "city": "HOUSTON",
+    "name": "GEORGE BUSH",
+    "country": "USA",
+    "region": "HOUSTON"
+  },
+  {
+    "iata": "SEA",
+    "type": "A",
+    "city": "SEATTLE",
+    "name": "TACOMA",
+    "country": "USA",
+    "region": "SEATTLE"
+  },
+  {
+    "iata": "LAS",
+    "type": "A",
+    "city": "LAS VEGAS",
+    "name": "HARRY REID",
+    "country": "USA",
+    "region": "LAS VEGAS"
+  },
+  {
+    "iata": "MCO",
+    "type": "A",
+    "city": "ORLANDO",
+    "name": "ORLANDO",
+    "country": "USA",
+    "region": "ORLANDO"
+  },
+  {
+    "iata": "YUL",
+    "type": "A",
+    "city": "MONTREAL",
+    "name": "PIERRE ELLIOTT TRUDEAU",
+    "country": "CANADA",
+    "region": "MONTREAL"
+  },
+  {
+    "iata": "YYZ",
+    "type": "A",
+    "city": "TORONTO",
+    "name": "PEARSON",
+    "country": "CANADA",
+    "region": "TORONTO"
+  },
+  {
+    "iata": "YVR",
+    "type": "A",
+    "city": "VANCOUVER",
+    "name": "VANCOUVER",
+    "country": "CANADA",
+    "region": "VANCOUVER"
+  },
+  {
+    "iata": "YOW",
+    "type": "A",
+    "city": "OTTAWA",
+    "name": "MACDONALD CARTIER",
+    "country": "CANADA",
+    "region": "OTTAWA"
+  },
+  {
+    "iata": "MEX",
+    "type": "A",
+    "city": "MEXICO CITY",
+    "name": "BENITO JUAREZ",
+    "country": "MEXICO",
+    "region": "MEXICO CITY"
+  },
+  {
+    "iata": "CUN",
+    "type": "A",
+    "city": "CANCUN",
+    "name": "CANCUN",
+    "country": "MEXICO",
+    "region": "CANCUN"
+  },
+  {
+    "iata": "HAV",
+    "type": "A",
+    "city": "HAVANA",
+    "name": "JOSE MARTI",
+    "country": "CUBA",
+    "region": "HAVANA"
+  },
+  {
+    "iata": "GRU",
+    "type": "A",
+    "city": "SAO PAULO",
+    "name": "GUARULHOS",
+    "country": "BRAZIL",
+    "region": "SAO PAULO"
+  },
+  {
+    "iata": "GIG",
+    "type": "A",
+    "city": "RIO DE JANEIRO",
+    "name": "GALEAO",
+    "country": "BRAZIL",
+    "region": "RIO DE JANEIRO"
+  },
+  {
+    "iata": "EZE",
+    "type": "A",
+    "city": "BUENOS AIRES",
+    "name": "EZEIZA",
+    "country": "ARGENTINA",
+    "region": "BUENOS AIRES"
+  },
+  {
+    "iata": "SCL",
+    "type": "A",
+    "city": "SANTIAGO",
+    "name": "ARTURO MERINO BENITEZ",
+    "country": "CHILE",
+    "region": "SANTIAGO"
+  },
+  {
+    "iata": "LIM",
+    "type": "A",
+    "city": "LIMA",
+    "name": "JORGE CHAVEZ",
+    "country": "PERU",
+    "region": "LIMA"
+  },
+  {
+    "iata": "BOG",
+    "type": "A",
+    "city": "BOGOTA",
+    "name": "EL DORADO",
+    "country": "COLOMBIA",
+    "region": "BOGOTA"
+  },
+  {
+    "iata": "PTY",
+    "type": "A",
+    "city": "PANAMA CITY",
+    "name": "TOCUMEN",
+    "country": "PANAMA",
+    "region": "PANAMA CITY"
+  },
+  {
+    "iata": "PEK",
+    "type": "A",
+    "city": "BEIJING",
+    "name": "CAPITAL",
+    "country": "CHINA",
+    "region": "BEIJING"
+  },
+  {
+    "iata": "PKX",
+    "type": "A",
+    "city": "BEIJING",
+    "name": "DAXING",
+    "country": "CHINA",
+    "region": "BEIJING"
+  },
+  {
+    "iata": "PVG",
+    "type": "A",
+    "city": "SHANGHAI",
+    "name": "PUDONG",
+    "country": "CHINA",
+    "region": "SHANGHAI"
+  },
+  {
+    "iata": "CAN",
+    "type": "A",
+    "city": "GUANGZHOU",
+    "name": "BAIYUN",
+    "country": "CHINA",
+    "region": "GUANGZHOU"
+  },
+  {
+    "iata": "SZX",
+    "type": "A",
+    "city": "SHENZHEN",
+    "name": "BAO'AN",
+    "country": "CHINA",
+    "region": "SHENZHEN"
+  },
+  {
+    "iata": "HKG",
+    "type": "A",
+    "city": "HONG KONG",
+    "name": "HONG KONG",
+    "country": "HONG KONG",
+    "region": "HONG KONG"
+  },
+  {
+    "iata": "NRT",
+    "type": "A",
+    "city": "TOKYO",
+    "name": "NARITA",
+    "country": "JAPAN",
+    "region": "TOKYO"
+  },
+  {
+    "iata": "HND",
+    "type": "A",
+    "city": "TOKYO",
+    "name": "HANEDA",
+    "country": "JAPAN",
+    "region": "TOKYO"
+  },
+  {
+    "iata": "KIX",
+    "type": "A",
+    "city": "OSAKA",
+    "name": "KANSAI",
+    "country": "JAPAN",
+    "region": "OSAKA"
+  },
+  {
+    "iata": "ICN",
+    "type": "A",
+    "city": "SEOUL",
+    "name": "INCHEON",
+    "country": "SOUTH KOREA",
+    "region": "SEOUL"
+  },
+  {
+    "iata": "SIN",
+    "type": "A",
+    "city": "SINGAPORE",
+    "name": "CHANGI",
+    "country": "SINGAPORE",
+    "region": "SINGAPORE"
+  },
+  {
+    "iata": "BKK",
+    "type": "A",
+    "city": "BANGKOK",
+    "name": "SUVARNABHUMI",
+    "country": "THAILAND",
+    "region": "BANGKOK"
+  },
+  {
+    "iata": "DMK",
+    "type": "A",
+    "city": "BANGKOK",
+    "name": "DON MUEANG",
+    "country": "THAILAND",
+    "region": "BANGKOK"
+  },
+  {
+    "iata": "HKT",
+    "type": "A",
+    "city": "PHUKET",
+    "name": "PHUKET",
+    "country": "THAILAND",
+    "region": "PHUKET"
+  },
+  {
+    "iata": "KUL",
+    "type": "A",
+    "city": "KUALA LUMPUR",
+    "name": "KUALA LUMPUR",
+    "country": "MALAYSIA",
+    "region": "KUALA LUMPUR"
+  },
+  {
+    "iata": "CGK",
+    "type": "A",
+    "city": "JAKARTA",
+    "name": "SOEKARNO HATTA",
+    "country": "INDONESIA",
+    "region": "JAKARTA"
+  },
+  {
+    "iata": "DPS",
+    "type": "A",
+    "city": "DENPASAR",
+    "name": "NGURAH RAI",
+    "country": "INDONESIA",
+    "region": "DENPASAR"
+  },
+  {
+    "iata": "MNL",
+    "type": "A",
+    "city": "MANILA",
+    "name": "NINOY AQUINO",
+    "country": "PHILIPPINES",
+    "region": "MANILA"
+  },
+  {
+    "iata": "HAN",
+    "type": "A",
+    "city": "HANOI",
+    "name": "NOI BAI",
+    "country": "VIETNAM",
+    "region": "HANOI"
+  },
+  {
+    "iata": "SGN",
+    "type": "A",
+    "city": "HO CHI MINH CITY",
+    "name": "TAN SON NHAT",
+    "country": "VIETNAM",
+    "region": "HO CHI MINH CITY"
+  },
+  {
+    "iata": "DEL",
+    "type": "A",
+    "city": "NEW DELHI",
+    "name": "INDIRA GANDHI",
+    "country": "INDIA",
+    "region": "NEW DELHI"
+  },
+  {
+    "iata": "BOM",
+    "type": "A",
+    "city": "MUMBAI",
+    "name": "CHHATRAPATI SHIVAJI",
+    "country": "INDIA",
+    "region": "MUMBAI"
+  },
+  {
+    "iata": "BLR",
+    "type": "A",
+    "city": "BANGALORE",
+    "name": "KEMPEGOWDA",
+    "country": "INDIA",
+    "region": "BANGALORE"
+  },
+  {
+    "iata": "MAA",
+    "type": "A",
+    "city": "CHENNAI",
+    "name": "CHENNAI",
+    "country": "INDIA",
+    "region": "CHENNAI"
+  },
+  {
+    "iata": "HYD",
+    "type": "A",
+    "city": "HYDERABAD",
+    "name": "RAJIV GANDHI",
+    "country": "INDIA",
+    "region": "HYDERABAD"
+  },
+  {
+    "iata": "KHI",
+    "type": "A",
+    "city": "KARACHI",
+    "name": "JINNAH",
+    "country": "PAKISTAN",
+    "region": "KARACHI"
+  },
+  {
+    "iata": "ISB",
+    "type": "A",
+    "city": "ISLAMABAD",
+    "name": "ISLAMABAD",
+    "country": "PAKISTAN",
+    "region": "ISLAMABAD"
+  },
+  {
+    "iata": "LHE",
+    "type": "A",
+    "city": "LAHORE",
+    "name": "ALLAMA IQBAL",
+    "country": "PAKISTAN",
+    "region": "LAHORE"
+  },
+  {
+    "iata": "DAC",
+    "type": "A",
+    "city": "DHAKA",
+    "name": "HAZRAT SHAHJALAL",
+    "country": "BANGLADESH",
+    "region": "DHAKA"
+  },
+  {
+    "iata": "CMB",
+    "type": "A",
+    "city": "COLOMBO",
+    "name": "BANDARANAIKE",
+    "country": "SRI LANKA",
+    "region": "COLOMBO"
+  },
+  {
+    "iata": "KTM",
+    "type": "A",
+    "city": "KATHMANDU",
+    "name": "TRIBHUVAN",
+    "country": "NEPAL",
+    "region": "KATHMANDU"
+  },
+  {
+    "iata": "TAS",
+    "type": "A",
+    "city": "TASHKENT",
+    "name": "ISLAM KARIMOV",
+    "country": "UZBEKISTAN",
+    "region": "TASHKENT"
+  },
+  {
+    "iata": "GYD",
+    "type": "A",
+    "city": "BAKU",
+    "name": "HEYDAR ALIYEV",
+    "country": "AZERBAIJAN",
+    "region": "BAKU"
+  },
+  {
+    "iata": "SYD",
+    "type": "A",
+    "city": "SYDNEY",
+    "name": "KINGSFORD SMITH",
+    "country": "AUSTRALIA",
+    "region": "SYDNEY"
+  },
+  {
+    "iata": "MEL",
+    "type": "A",
+    "city": "MELBOURNE",
+    "name": "TULLAMARINE",
+    "country": "AUSTRALIA",
+    "region": "MELBOURNE"
+  },
+  {
+    "iata": "BNE",
+    "type": "A",
+    "city": "BRISBANE",
+    "name": "BRISBANE",
+    "country": "AUSTRALIA",
+    "region": "BRISBANE"
+  },
+  {
+    "iata": "PER",
+    "type": "A",
+    "city": "PERTH",
+    "name": "PERTH",
+    "country": "AUSTRALIA",
+    "region": "PERTH"
+  },
+  {
+    "iata": "AKL",
+    "type": "A",
+    "city": "AUCKLAND",
+    "name": "AUCKLAND",
+    "country": "NEW ZEALAND",
+    "region": "AUCKLAND"
+  },
+  {
+    "iata": "LON",
+    "type": "C",
+    "city": "LONDON",
+    "name": "LONDON (ALL AIRPORTS)",
+    "country": "UNITED KINGDOM",
+    "region": "LONDON"
+  },
+  {
+    "iata": "NYC",
+    "type": "C",
+    "city": "NEW YORK",
+    "name": "NEW YORK (ALL AIRPORTS)",
+    "country": "USA",
+    "region": "NEW YORK"
   }
 ]

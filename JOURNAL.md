@@ -21,6 +21,115 @@
 
 ## Fait (par session, datée)
 
+### 16/10/2026 — Élargissement des données du simulateur (locations.json/airlines.json) à la formation Amadeus niveau 1
+
+Prompt de l'architecte (`missions/PROMPT-DONNEES-SIMULATEUR.md`) : le contenu de la formation
+« Amadeus niveau 1 » venait d'être produit (présentation, six fiches PDF, cours écrit, dans
+`D:\cowork\formation-amadeus-n1\`) et enseignait environ 250 aéroports et 100 compagnies, alors
+que le simulateur n'en connaissait que 25 et 12. Un élève tapant un code appris en cours
+(`DAN DUBAI`, `AN15DECALGDXB`) obtenait une erreur et croyait s'être trompé — défaut pédagogique
+qui ruine la confiance dans l'outil. Décision de Massy, rappelée dans le prompt : les fiches sont
+la référence métier, c'est le simulateur qui s'élargit — pas l'inverse, et sans toucher au moteur.
+
+**Source des données.** Aucun fichier de données Python trouvé dans le dossier de travail de
+l'architecte (`D:\cowork\formation-amadeus-n1\`, vérifié aussi plus largement dans `D:\cowork\`)
+— seuls les PDF existaient. Extraction directe des trois fiches concernées : `03-aeroports-
+algeriens.pdf` (35 aéroports algériens, dont 12 déjà présents), `04-aeroports-du-monde.pdf`
+(~191 aéroports internationaux par région, dont 16 déjà présents), `05-compagnies-
+aeriennes.pdf` (105 compagnies, dont 13 déjà présentes). Les comptages collent à ce que le
+prompt annonçait (« environ 250 aéroports », « 100 compagnies ») : 226 au total pour les
+aéroports (35 Algérie + 191 monde, moins les doublons déjà en place), 105 pour les compagnies.
+
+**Décision prise sans consigne explicite, documentée ici plutôt que devinée en silence** : les
+fiches sont rédigées en français (« LONDRES », « FRANCFORT », « ÉGYPTE »...), mais les 16 entrées
+déjà présentes dans `locations.json` avant cette passe utilisaient systématiquement les noms
+anglais (`LONDON`, `FRANKFURT`, `EGYPT`...) — convention Amadeus authentique, cohérente avec le
+reste du projet (le terminal reste en anglais même quand l'enveloppe pédagogique est en
+français). Toutes les nouvelles entrées ont donc été anglicisées ville par ville et pays par
+pays (ex. « Dubaï » → `DUBAI`, « Köweït » → `KUWAIT`, « Maroc » → `MOROCCO`), pas transcrites
+telles quelles depuis le PDF — vérifié par relecture contre chacune des 16 entrées déjà en place
+pour garantir la cohérence du style.
+
+**Incident évité en construisant les données** : le script générateur temporaire (jeté après
+usage) avait d'abord oublié que `TUN` (Tunis) existait déjà dans `locations.json` — détecté par
+un contrôle automatique de doublons dans le script lui-même avant toute écriture dans le vrai
+fichier, corrigé avant que ça ne devienne un problème. Même contrôle appliqué aux 92 nouvelles
+compagnies : aucun doublon, ni avec l'existant ni en interne à la nouvelle liste.
+
+**Ajout pur, confirmé par `git diff`** : la demande explicite était de ne modifier aucune entrée
+existante. Première tentative avec `JSON.stringify(..., null, 2)` sur tout le tableau fusionné
+a reformaté chaque ligne de `airlines.json` (passage d'un style compact une-ligne-par-objet à un
+style étalé) — un diff de 538 lignes pour 92 vraies additions, bruit qui aurait masqué ce qui
+change réellement. Corrigé en régénérant le fichier à la main dans le style compact d'origine :
+diff final de 94 lignes pour 92 additions, une seule ligne non additive (la virgule de syntaxe
+ajoutée à la fin de l'ancienne dernière entrée). `locations.json` était déjà formaté en
+multi-lignes par objet, donc `JSON.stringify` n'a touché qu'une ligne vide parasite entre deux
+entrées existantes (pas un changement de contenu).
+
+**Codes de ville (PAR/LON/NYC).** La fiche 04 signale explicitement trois regroupements :
+« PAR pour Paris, LON pour Londres, NYC pour New York ». `PAR` existait déjà en `type: "C"`.
+`LON` et `NYC` ajoutés avec le même type, leurs aéroports constitutifs (CDG/ORY/BVA pour Paris,
+LHR/LGW/STN pour Londres, JFK/EWR/LGA pour New York) restant en `type: "A"` — vérifié par un
+test dédié. Bangkok (BKK+DMK), Milan (MXP+LIN), Moscou (SVO+DME), Pékin (PEK+PKX), Tokyo
+(NRT+HND), Bruxelles (BRU+CRL), Dubaï (DXB+DWC) et Istanbul (IST+SAW) ont aussi plusieurs
+aéroports mais **aucun** code de ville dédié dans la fiche — traités comme deux aéroports
+distincts de même ville, pas comme un regroupement, conformément à ce que la fiche enseigne
+réellement (ne pas inventer un regroupement que les élèves n'apprennent pas).
+
+**Garde-fou automatique** (demande explicite du prompt : « écris un test qui le vérifie
+automatiquement »). `apps/web/src/data/ficheCoverage.json` : photographie figée des 226 codes
+aéroport/ville et 105 codes compagnie enseignés, distincte des fichiers de données eux-mêmes
+(sinon le test ne vérifierait jamais rien — il comparerait un fichier à lui-même). `apps/web/src/
+dataCoverage.test.js` (11 tests) : (1) chaque code du manifeste résout dans `locations.json`/
+`airlines.json` ; (2) PAR/LON/NYC sont bien de type C, leurs aéroports constitutifs de type A ;
+(3) aucun code dupliqué ; (4) le **vrai moteur** (`packages/core` + `packages/data`, même
+câblage que `Terminal.jsx` : `createInMemoryStore`/`createLocationProvider`/
+`createAirlineProvider`) répond correctement à `DAC DXB`, `DAN DUBAI`, `AN15DECALGIST`,
+`AN15DECALGDXB`, aux trois codes algériens secondaires (`TMR`/`BSK`/`GHA`), aux trois compagnies
+(`QR`/`EK`/`TK`), et à deux codes nouvellement ajoutés par cette passe (`CBH`/Béchar,
+`6R`/Tassili Airlines, ce dernier avec un préfixe numérique vide comme prévu par le prompt).
+**Limite assumée et documentée dans le test lui-même** : ce garde-fou protège contre une
+régression future des données (quelqu'un supprime une entrée par erreur), pas contre l'ajout
+futur d'un code dans une fiche sans toucher au dépôt — les PDF vivent hors du dépôt
+(`D:\cowork\formation-amadeus-n1\`), jamais parsés automatiquement ; `ficheCoverage.json` devra
+être mis à jour à la main le jour où une fiche change, et cette mise à jour fait alors partie de
+la tâche, pas une étape optionnelle.
+
+**Bug de wiring trouvé en écrivant le test d'intégration, corrigé avant commit** : première
+version du test utilisait `result.lines`, qui n'existe pas sur le retour de `processCommand` —
+la vraie forme est `result.events` (tableau de `{type, text}`), confirmé en lisant les tests
+existants de `packages/core`. Corrigé (`textOf(result) = result.events.map(e => e.text).join
+("\n")`), les 11 tests passent après correction.
+
+**Poids et temps de chargement vérifiés** (demande explicite du prompt), aucun changement de
+chargement nécessaire : `locations.json`/`airlines.json` sont déjà chargés à la demande, par un
+`fetch()` asynchrone dans `packages/data` (`loadFromUrl`/`loadAirlinesFromUrl`), déclenché au
+montage de `Terminal.jsx` — jamais inclus dans le bundle JS (confirmé en lisant le câblage réel,
+pas supposé). Poids brut : `locations.json` 4 Ko → 33 Ko, `airlines.json` 0,8 Ko → 6,5 Ko.
+Gzippé (ce qui transite réellement sur le réseau) : environ 7 Ko au total pour les deux fichiers
+— négligeable pour un fetch unique, non bloquant pour le premier rendu de la page.
+
+**Observation signalée, non corrigée** (hors périmètre explicite « ajoute seulement, ne modifie
+pas les entrées existantes ») : l'entrée `TU` (Tunisair) déjà présente porte le préfixe
+numérique `083`, alors que la fiche 05 — censée faire référence — indique `199`. L'entrée `SV`
+(Saudia) déjà présente porte le nom `SAUDI ARABIAN AIRLINES`, la fiche indique `SAUDIA` (son nom
+commercial actuel). Aucune des deux n'a été touchée ; à trancher par Massy s'il souhaite aligner
+le simulateur sur la fiche — l'écart est mineur (préfixe de billetterie et nom d'affichage, pas
+une faute fonctionnelle) mais réel.
+
+**Non-régression complète** : lint clean, typecheck clean (`packages/core`, `packages/
+exercises`), 268/268 tests `packages/core` (inchangés, aucune fixture ne référence les fichiers
+de données réels), 9/9 `packages/data`, 112/112 tests web (101 existants + 11 nouveaux), 59/59
+e2e **y compris les scénarios golden ALG → PAR de `terminal.spec.js`, restés identiques** (le
+point de vigilance explicite du prompt), 6/6 e2e-admin. Les trois suites (web/e2e/e2e-admin) ont
+été rejouées **séquentiellement**, pas en parallèle — leçon déjà tirée plusieurs fois cette
+semaine sur cette machine (la parallélisation de plusieurs suites Playwright/wrangler lourdes
+produit des échecs de contention de ressources, pas de vraies régressions).
+
+**Reste à vérifier en production après déploiement** (demande explicite du prompt) : `DAC DXB`,
+`DAN DUBAI`, `AN15DECALGIST`, `AN15DECALGDXB`, trois codes algériens secondaires (`TMR`, `BSK`,
+`GHA`), trois compagnies (`QR`, `EK`, `TK`).
+
 ### 16/10/2026 — Intégration des deux textes juridiques de Massy, verrouillés derrière un drapeau unique
 
 Massy a rédigé et déposé `docs/legal/CONDITIONS-GENERALES-DE-VENTE.md` et

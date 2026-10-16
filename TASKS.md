@@ -6,6 +6,48 @@
 
 ## En cours
 
+**🟢 Données du simulateur élargies à la formation le 16/10/2026** (prompt architecte « Élargir
+les données du simulateur pour qu'elles couvrent la formation », `missions/
+PROMPT-DONNEES-SIMULATEUR.md`) : les fiches de référence enseignaient ~250 aéroports et
+~100 compagnies, le simulateur n'en connaissait que 25 et 12 — un élève tapant un code appris en
+cours obtenait une erreur. Décision de Massy : les fiches sont la référence, le simulateur
+s'élargit. `apps/web/public/data/locations.json` passe de 28 à 226 entrées (+198), `airlines.json`
+de 13 à 105 (+92) — **ajout pur, aucune entrée existante modifiée** (confirmé par `git diff` :
+une seule ligne non additive, une virgule de syntaxe). Source : aucun fichier de données Python
+trouvé dans `D:\cowork\formation-amadeus-n1\` (dossier de travail de l'architecte) — extraction
+directe depuis les PDF `03-aeroports-algeriens`, `04-aeroports-du-monde`, `05-compagnies-
+aeriennes`. **Noms de ville/pays anglicisés** (LONDON pas LONDRES, EGYPT pas ÉGYPTE, etc.) pour
+matcher la convention déjà en place dans le fichier existant (Amadeus authentique reste en
+anglais même si les fiches sont en français) — vérifié entrée par entrée contre les 16 entrées
+déjà présentes avant cette passe. `LON` et `NYC` ajoutés en codes de ville (`type: "C"`), comme
+`PAR` déjà existant, conformément à la mention explicite de la fiche 04 ; leurs aéroports
+constitutifs (CDG/ORY/BVA, LHR/LGW/STN, JFK/EWR/LGA) restent `type: "A"`.
+**Garde-fou permanent ajouté** : `apps/web/src/data/ficheCoverage.json` (photographie figée des
+226+105 codes enseignés) + `apps/web/src/dataCoverage.test.js` — vérifie que chaque code des
+fiches résout dans les données (pas de régression future si une entrée est supprimée par erreur),
+que PAR/LON/NYC restent bien de type C et leurs aéroports de type A, qu'aucun code n'est dupliqué,
+**et** rejoue réellement DAC/DAN/AN/DNA avec le vrai moteur (`packages/core` + `packages/data`,
+même câblage que `Terminal.jsx`) sur les codes de vérification demandés (DAC DXB, DAN DUBAI,
+AN15DECALGIST, AN15DECALGDXB, TMR/BSK/GHA, QR/EK/TK) plus deux nouveaux (CBH/Bechar, 6R/Tassili).
+**Limite assumée** : ce test protège contre une régression future des DONNÉES, pas contre un ajout
+futur dans une FICHE que personne n'aurait reporté ici — `ficheCoverage.json` doit être remis à
+jour à la main le jour où une fiche change, sinon le test ne peut rien détecter (la fiche source
+vit hors du dépôt, dans `D:\cowork\formation-amadeus-n1\`, jamais parsée automatiquement).
+**Volume vérifié, pas de chargement différé nécessaire** : ces fichiers sont déjà chargés à la
+demande (fetch asynchrone dans `packages/data`, déclenché au montage de `Terminal.jsx` — jamais
+inclus dans le bundle JS). Poids brut `locations.json` 4 Ko→33 Ko, `airlines.json` 0,8 Ko→6,5 Ko ;
+gzippé, environ 7 Ko au total pour les deux — négligeable pour un fetch unique non bloquant.
+**Observation signalée, non corrigée (hors périmètre « ajoute seulement »)** : l'entrée `TU`
+existante porte le préfixe numérique `083`, alors que la fiche 05 (source faisant référence)
+indique `199` ; `SV` existant porte le nom `SAUDI ARABIAN AIRLINES`, la fiche indique `SAUDIA`
+(nom commercial actuel). Les deux sont des entrées préexistantes, non touchées par cette passe —
+à trancher par Massy s'il souhaite aligner le simulateur sur la fiche.
+Non-régression complète : lint clean, typecheck clean (`packages/core`, `packages/exercises`),
+268/268 tests `packages/core`, 9/9 `packages/data`, 112/112 tests web (dont les 11 nouveaux),
+59/59 e2e (dont les scénarios golden ALG→PAR de `terminal.spec.js`, restés identiques), 6/6
+e2e-admin. **Reste à vérifier en production après déploiement** : `DAC DXB`, `DAN DUBAI`,
+`AN15DECALGIST`, `AN15DECALGDXB`, `TMR`/`BSK`/`GHA`, `QR`/`EK`/`TK`.
+
 **🟢 Constat architecte du 15/10/2026 : « l'accueil s'affiche en anglais sur un navigateur neuf
 configuré en anglais » — investigué, non reproduit, deux vraies incohérences adjacentes
 corrigées par prudence.** Diagnostic avant correctif (comme demandé) : recherche exhaustive
