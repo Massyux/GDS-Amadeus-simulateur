@@ -21,6 +21,68 @@
 
 ## Fait (par session, datée)
 
+### 16/10/2026 — Intégration des deux textes juridiques de Massy, verrouillés derrière un drapeau unique
+
+Massy a rédigé et déposé `docs/legal/CONDITIONS-GENERALES-DE-VENTE.md` et
+`docs/legal/POLITIQUE-DE-REMBOURSEMENT.md`, destinés à alimenter `/conditions` et
+`/remboursement` (routes créées au chantier 3 de `PROMPT-PASSE-ACCUEIL.md`, 15/10/2026, restées
+en état « en préparation » faute de contenu). Règle centrale posée par Massy, respectée à la
+lettre : ces brouillons **ne sont pas publiables en l'état** (mentions obligatoires de
+l'article 11 de la loi 18-05 absentes — registre du commerce, identifiant fiscal, adresse,
+téléphone, prix TTC, prestataire de paiement — et blocs `[À COMPLÉTER]`/`[DÉCISION]` non
+tranchés) ; intégrer le contenu dans les pages ne doit **pas** le rendre visible au public.
+
+**Rendu du contenu.** Aucune bibliothèque markdown ajoutée : un rendu minimal maison
+(`apps/web/src/platform/legalMarkdown.js` pour le parsing, `LegalMarkdown.jsx` pour le rendu),
+couvrant exactement le sous-ensemble utilisé par les deux documents — titres h1/h2, citations
+pouvant contenir plusieurs paragraphes, listes à puces, tableaux, règle horizontale, gras et
+code en ligne. Les deux fichiers source sont lus tels quels par `LegalPendingPage.jsx` via un
+import `?raw` (`../../../../docs/legal/*.md?raw`) : **aucune phrase n'est retranscrite à la
+main**, une seule source de vérité (le fichier que Massy édite), pas de copie dupliquée dans
+`apps/web/`. Un bug réel trouvé en vérifiant le rendu contre les vrais fichiers (pas une fixture
+inventée) : CGV Article 1 contient `` **`.com.dz`** `` (gras ET code imbriqués) — un premier
+parseur à une seule passe laissait les accents graves s'afficher tels quels à l'intérieur du
+gras. Corrigé par un parsing en deux passes (code d'abord, gras ensuite, avec un niveau de
+nesting pour le gras contenant du code) ; 9 tests golden contre les deux documents réels
+détectent ce genre de fuite de syntaxe brute pour de bon.
+
+**Le verrou.** Un seul booléen, `LEGAL_CONTENT_PUBLISHED` (`apps/web/src/platform/
+legalContentFlag.js`), actuellement à `false` : tant qu'il l'est, `LegalPendingPage.jsx` affiche
+toujours l'état « en préparation » habituel, quel que soit l'avancement du contenu réel derrière.
+Vérifié que le bundler (rolldown-vite) élimine bien la branche "publié" (imports des deux
+fichiers markdown inclus) quand le drapeau est à `false` — chunk `LegalPendingPage` à 0,72 ko —
+et la réintègre correctement quand il passe à `true` — 18,26 ko, contenu réel confirmé par
+capture d'écran locale (`wrangler pages dev`) avant de repasser le drapeau à `false`. Le switch
+fonctionne dans les deux sens, pas seulement en théorie.
+
+**Incident évité en cours de route** : création d'un composant `MarkdownLite.jsx` (M majuscule)
+qui, sur le système de fichiers Windows (insensible à la casse), a écrasé le contenu d'un fichier
+pré-existant sans rapport, `markdownLite.jsx` (rendu minimal des leçons de type texte, Mission 23
+Étape 2, `renderMarkdownLite`). Détecté immédiatement par `git status` (fichier marqué modifié
+sans qu'aucune intention ne l'explique), restauré par `git checkout`, et tous les nouveaux
+fichiers renommés (`legalMarkdown.js`, `LegalMarkdown.jsx`, `legalContentFlag.js`) pour ne plus
+jamais partager un nom de base avec le fichier existant, même en différant par la casse.
+
+**Nouvelle question de conformité, trouvée en intégrant le texte** (pas inventée, elle figurait
+déjà dans l'Article 1 des CGV tel que rédigé par Massy) : l'article 8 de la loi 18-05 subordonne
+l'exercice du commerce électronique à un site hébergé en Algérie avec une extension `.com.dz`
+déposée auprès du CNRC — or `orionisacademy.com` est un `.com` hébergé chez Cloudflare, hors
+d'Algérie. Consignée dans `TASKS.md`, à trancher par Massy auprès du CNRC ou d'un avocat avant
+Mission 22, indépendamment du reste de son avancement.
+
+**Non-régression** : lint clean, 19/19 fichiers / 101/101 tests web (dont les deux nouveaux
+fichiers créés cette session), 59/59 e2e (dont `legal.spec.js`, qui confirme que l'état « en
+préparation » reste bien celui vu en pratique tant que le drapeau est à `false`), 6/6 e2e-admin.
+**Observation en cours de route, sans rapport avec cette session** : lancer les trois suites
+(tests unitaires web, e2e, e2e-admin) en parallèle sur cette machine a produit un échec dans
+`ExercisePanel.test.jsx` (timeout à 5000ms) et un échec total de la suite e2e (webServer jamais
+démarré sous 120s) — tous deux de la contention de ressources, pas des régressions : les trois
+suites, rejouées l'une après l'autre, passent toutes au vert. Confirme une leçon déjà tirée plus
+tôt dans le projet : ne jamais lancer plusieurs suites Playwright/wrangler lourdes en parallèle
+sur cette machine.
+
+Ne démarre rien d'autre après cette clôture, comme demandé explicitement par Massy.
+
 ### 15/10/2026 — Constat architecte « accueil en anglais sur navigateur anglais » : diagnostic, non-reproduction, deux incohérences adjacentes corrigées
 
 Constat de l'architecte, observé en production : sur un navigateur configuré en anglais, l'accueil
