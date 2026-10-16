@@ -52,6 +52,27 @@ explicite de l'architecte (« un faux texte de loi est pire que l'absence »). L
 (conditions de vente, politique de remboursement) reste à écrire par Massy. **Ces deux pages
 bloquent Mission 22** : on n'encaisse pas un paiement Chargily sans CGV ni politique de
 remboursement publiées — à ne pas oublier au démarrage de cette mission.
+
+**🟢 Textes juridiques intégrés le 16/10/2026** (`docs/legal/CONDITIONS-GENERALES-DE-VENTE.md`,
+`docs/legal/POLITIQUE-DE-REMBOURSEMENT.md`, rédigés par Massy) : le contenu intégral est rendu
+sur `/conditions` et `/remboursement` (titres, articles, tableau de prix, listes, citations —
+`apps/web/src/platform/LegalMarkdown.jsx` + `legalMarkdown.js`, lus depuis les fichiers sources
+via import `?raw`, jamais retranscrits à la main), **mais ces deux brouillons ne sont PAS
+publiés** : les deux documents eux-mêmes portent `[À COMPLÉTER]` partout où seul le statut
+d'entreprise de Massy fournira les mentions obligatoires de l'article 11 de la loi 18-05
+(registre du commerce, identifiant fiscal, adresse, téléphone, prix TTC, prestataire de
+paiement) — « des CGV affichant [À COMPLÉTER] sont pires qu'une page en préparation » (Massy).
+**Un seul interrupteur contrôle l'affichage public** : `LEGAL_CONTENT_PUBLISHED` dans
+`apps/web/src/platform/legalContentFlag.js`, à `false` aujourd'hui — tant qu'il l'est, le public
+voit toujours l'état « en préparation » habituel, quel que soit l'avancement du contenu réel. Ne
+pas le passer à `true` avant que les deux documents soient entièrement complétés **et** relus par
+un avocat ou conseil juridique algérien.
+**Nouvelle question de conformité à trancher par Massy avant Mission 22, auprès du CNRC ou d'un
+avocat** (trouvée en intégrant le texte de l'Article 1 des CGV) : l'article 8 de la loi 18-05
+subordonne l'exercice du commerce électronique à un site **hébergé en Algérie** avec une
+extension **`.com.dz`** déposée auprès du CNRC — or `orionisacademy.com` est un `.com` hébergé
+chez Cloudflare (hors d'Algérie). À vérifier et trancher avant d'encaisser le moindre paiement,
+indépendamment de l'avancement de Mission 22 par ailleurs.
 **Chantier 4 (habillage `/admin`, 15/10/2026)** : `apps/web/src/index.css` (bloc `.admin-*`,
 ~370 lignes), couleurs et police seulement — **structure et comportement inchangés**, confirmé
 par les 6 tests `e2e-admin` (login, licences, formations) restés verts sans aucune modification.
