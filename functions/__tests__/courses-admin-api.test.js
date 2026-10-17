@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import { startTestServer, TEST_ADMIN_SECRET } from "./testServer.js";
+import { signToken } from "../_lib/token.js";
+
+// Même valeur que platform-api.test.js -- SESSION_SECRET de test de
+// .dev.vars, nécessaire ici pour forger un jeton de téléchargement d'aperçu
+// qui isole "l'objet R2 a bien disparu" de "l'inscription a disparu" (les
+// deux renvoient 404 après la suppression d'une formation -- un jeton
+// `isPreview` saute la vérification d'inscription, donc un 404 sur CE
+// jeton précis ne peut venir que de l'absence réelle de l'objet R2).
+const TEST_SESSION_SECRET = "test-session-secret-never-use-in-prod";
 
 let server;
 let adminToken;
@@ -129,6 +138,60 @@ describe("Mission 23 Étape 4 -- back-office formations API (real wrangler pages
     it("404s on an unknown course id", async () => {
       assert.equal((await get("/api/admin/courses/999999", adminToken)).status, 404);
       assert.equal((await patch("/api/admin/courses/999999", { title: "x" }, adminToken)).status, 404);
+    });
+
+    // Ajouté le 17/10/2026 (demande explicite de Massy, pour pouvoir
+    // retirer une formation jetable créée pendant une vérification de
+    // production) -- voir le commentaire de tête de functions/api/admin/
+    // courses/[id].js pour pourquoi cette exception existe malgré
+    // docs/SECURITE.md §7.
+    it("deletes a course, cascading to its modules/lessons/enrollments and the R2 files they reference", async () => {
+      const slug = uniqueSlug("cours-suppr");
+      const course = (await post("/api/admin/courses", { slug, title: "À supprimer" }, adminToken)).body.course;
+      const module_ = (await post("/api/admin/modules", { courseId: course.id, title: "M" }, adminToken)).body.module;
+
+      const upload = await uploadFile("jetable.pdf", "%PDF-1.4 jetable", adminToken);
+      await post(
+        "/api/admin/lessons",
+        {
+          moduleId: module_.id,
+          type: "pdf",
+          title: "Document jetable",
+          // isPreview: le test vérifie la disparition réelle de l'objet R2
+          // via un jeton qui saute la vérification d'inscription -- sinon
+          // un 404 après suppression ne prouverait que la disparition de
+          // l'inscription, pas celle du fichier lui-même.
+          content: { fileKey: upload.body.fileKey, fileName: upload.body.fileName, isPreview: true },
+        },
+        adminToken
+      );
+      await patch(`/api/admin/courses/${course.id}`, { status: "published" }, adminToken);
+
+      const previewToken = await signToken(
+        { fileKey: upload.body.fileKey, userId: null, courseId: course.id, isPreview: true, exp: Date.now() + 10 * 60 * 1000 },
+        TEST_SESSION_SECRET
+      );
+      const before = await fetch(`${server.baseUrl}/api/files/download?token=${encodeURIComponent(previewToken)}`);
+      assert.equal(before.status, 200, "the file must be downloadable before deletion");
+
+      const deleted = await del(`/api/admin/courses/${course.id}`, adminToken);
+      assert.equal(deleted.status, 200);
+
+      assert.equal((await get(`/api/admin/courses/${course.id}`, adminToken)).status, 404);
+      assert.ok(
+        !(await get("/api/admin/courses", adminToken)).body.courses.some((c) => c.slug === slug),
+        "the deleted course must no longer appear in the admin list"
+      );
+
+      const after = await fetch(`${server.baseUrl}/api/files/download?token=${encodeURIComponent(previewToken)}`);
+      assert.equal(after.status, 404, "the R2 object itself must be gone, not just the DB rows");
+
+      const auditLog = await get("/api/admin/audit-log", adminToken);
+      assert.ok(auditLog.body.entries.some((e) => e.action === "course.delete" && e.target === `course:${course.id}`));
+    });
+
+    it("404s deleting a course that doesn't exist", async () => {
+      assert.equal((await del("/api/admin/courses/999999", adminToken)).status, 404);
     });
 
     // objectives/durationHours vivent dans course_extras (migrations/

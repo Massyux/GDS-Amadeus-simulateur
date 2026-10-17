@@ -221,6 +221,18 @@ function CourseEditor({ courseId, token, onBack, onLogout }) {
     await refresh();
   }
 
+  async function handleDeleteCourse() {
+    if (
+      !window.confirm(
+        `Supprimer définitivement la formation « ${data.course.title} » et tout son contenu (modules, leçons, fichiers) ? Action irréversible.`
+      )
+    ) {
+      return;
+    }
+    await apiFetch(`/api/admin/courses/${courseId}`, token, { method: "DELETE" });
+    onBack();
+  }
+
   async function handleDeleteModule(moduleId, moduleTitle) {
     if (!window.confirm(`Supprimer le module « ${moduleTitle} » et toutes ses leçons ?`)) return;
     await apiFetch(`/api/admin/modules/${moduleId}`, token, { method: "DELETE" });
@@ -252,6 +264,9 @@ function CourseEditor({ courseId, token, onBack, onLogout }) {
         <div className="admin-header-actions">
           <button type="button" onClick={onBack}>
             Retour aux formations
+          </button>
+          <button type="button" onClick={handleDeleteCourse}>
+            Supprimer la formation
           </button>
           <button type="button" onClick={onLogout}>
             Déconnexion

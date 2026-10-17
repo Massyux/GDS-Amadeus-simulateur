@@ -136,4 +136,24 @@ test.describe("Back-office formations (Mission 23 Étape 4)", () => {
     await lessonRows.nth(1).getByRole("button", { name: "Supprimer" }).click();
     await expect(page.locator(".admin-lesson-row")).toHaveCount(1);
   });
+
+  // Ajouté le 17/10/2026 (demande explicite de Massy, pour retirer une
+  // formation jetable créée lors d'une vérification de production).
+  test("deletes a whole course from its editor and it disappears from the list", async ({ page }) => {
+    const courseTitle = uniqueTitle("Formation jetable");
+    const slug = `jetable-${Date.now()}`;
+
+    await loginAsAdmin(page);
+    await page.getByRole("button", { name: "Nouvelle formation" }).click();
+    await page.getByLabel("Identifiant (slug)").fill(slug);
+    await page.getByLabel("Titre").fill(courseTitle);
+    await page.getByRole("button", { name: "Créer" }).click();
+    await expect(page.getByRole("heading", { name: courseTitle })).toBeVisible();
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Supprimer la formation" }).click();
+
+    await expect(page.getByRole("heading", { name: "Formations" })).toBeVisible();
+    await expect(page.getByText(courseTitle)).not.toBeVisible();
+  });
 });

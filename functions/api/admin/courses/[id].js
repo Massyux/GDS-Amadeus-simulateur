@@ -6,8 +6,19 @@
 //   complet de chaque leçon -- l'admin édite, l'étudiant non-inscrit ne
 //   doit rien voir avant d'acheter.
 // PATCH { slug?, title?, description?, level?, status?, sortOrder? } -> {ok:true}
-//   Pas de DELETE ici (docs/SECURITE.md §7 : "dépublier plutôt que
-//   supprimer") -- status: 'draft' EST la dépublication.
+//   docs/SECURITE.md §7 ("dépublier plutôt que supprimer") reste la voie
+//   normale pour retirer une formation du public -- status: 'draft' EST la
+//   dépublication.
+// DELETE -> { ok: true }
+//   Ajouté le 17/10/2026 (demande explicite de Massy, pour pouvoir retirer
+//   une formation jetable créée pendant la vérification de production d'un
+//   chantier) -- une exception délibérée à la règle ci-dessus, pas un
+//   retour en arrière sur elle : §7 protège une formation qui a eu de vrais
+//   inscrits, pas un brouillon de test. Cascade manuelle dans l'ordre
+//   enfants -> parent (même motif que modules/[id].js, pas de ON DELETE
+//   CASCADE déclaré dans les migrations) : progression -> inscriptions ->
+//   leçons (+ leurs fichiers R2) -> objectifs/durée (course_extras) ->
+//   modules -> formation.
 import { requireAdmin, unauthorizedResponse } from "../../../_lib/adminAuth.js";
 import { recordAudit } from "../../../_lib/auditLog.js";
 
@@ -196,6 +207,65 @@ export async function onRequestPatch({ request, env, params }) {
     target: `course:${id}`,
     details: body,
   });
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+export async function onRequestDelete({ request, env, params }) {
+  if (!(await requireAdmin(request, env))) return unauthorizedResponse();
+  if (!env.DB) return dbNotConfigured();
+
+  const id = Number.parseInt(params.id, 10);
+  if (!Number.isFinite(id)) return notFound();
+
+  const course = await env.DB.prepare(`SELECT id FROM courses WHERE id = ?`).bind(id).first();
+  if (!course) return notFound();
+
+  const { results: lessonRows } = await env.DB.prepare(
+    `SELECT l.id, l.content FROM lessons l JOIN modules m ON m.id = l.module_id WHERE m.course_id = ?`
+  )
+    .bind(id)
+    .all();
+
+  // Fichiers R2 référencés par les leçons pdf/fichier -- supprimés APRÈS la
+  // base (si une des deux échoue, mieux vaut un fichier R2 orphelin qu'une
+  // leçon qui pointe vers un fichier déjà effacé).
+  const fileKeys = [];
+  for (const row of lessonRows) {
+    const content = safeParse(row.content);
+    if (content.fileKey) fileKeys.push(content.fileKey);
+    if (Array.isArray(content.files)) {
+      for (const f of content.files) if (f?.fileKey) fileKeys.push(f.fileKey);
+    }
+  }
+
+  if (lessonRows.length > 0) {
+    const lessonIds = lessonRows.map((l) => l.id);
+    const placeholders = lessonIds.map(() => "?").join(",");
+    await env.DB.prepare(`DELETE FROM lesson_progress WHERE lesson_id IN (${placeholders})`)
+      .bind(...lessonIds)
+      .run();
+  }
+  await env.DB.prepare(`DELETE FROM enrollments WHERE course_id = ?`).bind(id).run();
+  await env.DB.prepare(
+    `DELETE FROM lessons WHERE module_id IN (SELECT id FROM modules WHERE course_id = ?)`
+  )
+    .bind(id)
+    .run();
+  await env.DB.prepare(`DELETE FROM course_extras WHERE course_id = ?`).bind(id).run();
+  await env.DB.prepare(`DELETE FROM modules WHERE course_id = ?`).bind(id).run();
+  await env.DB.prepare(`DELETE FROM courses WHERE id = ?`).bind(id).run();
+
+  if (env.CONTENT) {
+    await Promise.all(
+      fileKeys.map((key) => env.CONTENT.delete(key).catch(() => {}))
+    );
+  }
+
+  await recordAudit(env, { action: "course.delete", target: `course:${id}` });
 
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
