@@ -21,6 +21,118 @@
 
 ## Fait (par session, datée)
 
+### 17/10/2026 — Fiche de formation publique, vitrine d'accueil réelle, accès admin sans URL
+
+`missions/PROMPT-FICHE-FORMATION.md` : demande de Massy après la correction du terminal clair
+sur `/demo`, trois chantiers en vue de la vraie formation « Amadeus — Niveau 1 » que Massy va
+créer depuis l'administration. Référence de mise en page (novasavo.com), parcourue par
+l'architecte — jamais copiée (textes/couleurs/visuels propres au projet).
+
+**Chantier 1 — on ne tape plus jamais `/admin` à la main.** Lien « Administration » discret
+ajouté au pied de page de l'accueil (même niveau que Contact, nouveau composant
+`AdminShortcut.jsx` réutilisé aussi dans `PlatformNav.jsx` pour le raccourci de barre de
+navigation — invisible tant qu'aucune session admin n'existe dans `sessionStorage`, visible dès
+qu'elle existe). Depuis `/admin`, un lien « Retour au site » ramène à l'accueil sans recharger
+toute l'app (même mécanique `pushState`/`popstate` que `useRoute.js`, dupliquée volontairement
+plutôt qu'importée — l'admin reste un module autonome, sans dépendance vers `platform/`).
+`useNoIndex.js` (nouveau) pose une balise `<meta name="robots" content="noindex">` sur `/admin`
+et `/demo` — nécessaire parce que `index.html` est unique (SPA) et ne peut pas porter cette
+balise par route de façon statique. Audit de la règle « jamais un chemin technique en texte
+visible » : zéro violation trouvée dans l'existant (vérifié par recherche exhaustive) — seules
+les nouvelles pièces de ce chantier auraient pu y contrevenir, et ne le font pas.
+
+**Chantier 2 — la fiche de formation, cœur de la demande.** `CoursePage.jsx` entièrement
+reconstruite : fil d'Ariane, bandeau d'en-tête sombre (titre, catégorie, description, ligne de
+repères leçons/durée/niveau/langue), carte d'inscription sticky (visuel, toujours « Gratuit » —
+aucun prix n'est inventé puisque l'inscription reste gratuite et immédiate tant que Mission 22
+n'existe pas, CONSTITUTION §5), bouton « Commencer la formation »/« Reprendre la formation »
+selon l'état, lien « Voir tout le contenu » qui déplie un résumé des modules dans la carte,
+« Ce que tu vas apprendre » (objectifs), « Le programme » (type + durée + mention « aperçu
+gratuit » par leçon), **« Les documents de la formation » en vraies cartes** (titre, description
+courte, poids, bouton de téléchargement — demande explicite de Massy, jamais une liste de liens
+bruts), bloc « Le simulateur » autonome et visuellement fort (mène à `/demo`, toujours
+joignable, jamais un cul-de-sac même pour une leçon non accessible), panneau
+« Caractéristiques » à icônes, encart formateur inchangé (toujours en attente de la vraie
+photo). Détail d'implémentation notable : l'icône et le titre d'une leçon forment SEULS le nom
+accessible de son lien — les badges de méta (type, durée, aperçu) sont un sibling du lien, pas
+à l'intérieur, pour ne pas le polluer (trouvé en répercutant le renommage du bouton d'inscription
+sur la suite e2e, voir plus bas).
+
+Rendu public : `/api/courses` et `/api/courses/:slug` n'exigent plus de session (`userId` devient
+`null` pour un visiteur anonyme, les champs personnels `enrolled`/`progressPct`/`next*` restent
+`false`/`0`/`null` dans ce cas) ; `PlatformApp.jsx` teste désormais la route `/app/cours/:slug`
+(et `/app/cours/:slug/lecon/:id`) AVANT le portail de connexion, alors que `/app/catalogue` et
+`/app/compte` restent derrière. Une leçon marquée `isPreview` dans son `content` (nouvelle clé
+universelle, avec `durationMinutes`, lisible par n'importe quel type de leçon) s'ouvre sans
+compte via `/api/lessons/:id`, qui distingue désormais 401 (anonyme, leçon non-aperçu — la page
+propose de créer un compte) de 404 (connecté mais pas inscrit — anti-énumération inchangée). Le
+cas le plus délicat : un visiteur anonyme qui télécharge le PDF d'une leçon aperçu n'a pas de
+`userId` à vérifier contre `enrollments` au moment du téléchargement réel — `isPreview` est donc
+embarqué dans le jeton signé lui-même, constaté une seule fois à la génération (où le `content`
+réel de la leçon, source de vérité, est lu), jamais re-dérivé d'un `userId` inexistant pour lui
+(`functions/_lib/fileAccess.js`, `functions/api/files/download.js`). Nouvelle table
+`migrations/0004_course_extras.sql` (`objectives`, `duration_hours` — `CREATE TABLE IF NOT
+EXISTS`, le seul motif idempotent déjà prouvé sûr sur ce projet, une vraie `ALTER TABLE` aurait
+cassé le rejeu des migrations par la suite e2e principale).
+
+**Chantier 3 — la vitrine d'accueil devient réelle.** `HomePage.jsx` ne lit plus
+`data/demoCourses.js` pour sa section « Formations » — un vrai appel à `/api/courses`, avec un
+état vide honnête (aucune vignette inventée) tant que rien n'est publié : message sobre + le
+terminal de démo reste joignable depuis cet état vide. Vérifié en production avant et après le
+chantier : `/api/courses` renvoie bien `{"courses":[]}` aujourd'hui, donc cet état **est** ce
+que voit tout visiteur actuel. `data/demoCourses.js` n'est pas supprimé — il reste la seule
+source des couleurs/motifs visuels par formation (`CourseVignette.jsx`), déjà réutilisée ainsi
+par `CataloguePage.jsx`.
+
+**Bugs trouvés en route et corrigés avant tout commit (famille des régressions de reciblage,
+CONSTITUTION §3) :**
+- `CoursePage.jsx` perdait `brandTo="/app/catalogue"` pendant la réécriture (remplacé par `"/"`
+  par erreur de recopie) — cassait deux e2e qui cliquaient le logo depuis la fiche en étant
+  connecté et attendaient le catalogue. Corrigé en conditionnel : `/app/catalogue` si `user`,
+  `/` sinon (un visiteur anonyme qui clique le logo depuis la fiche doit atterrir sur l'accueil,
+  pas sur un mur de connexion).
+- Le libellé du bouton d'inscription est passé de « S'inscrire » à « Commencer la formation »
+  (demande du prompt) — deux occurrences oubliées dans `navigation.spec.js`/`platform.spec.js`
+  (la troisième avait été renommée), trouvées par l'exécution réelle de la suite e2e, pas par
+  relecture.
+- Le champ universel « Durée (minutes) » ajouté à `CoursesAdmin.jsx` pour toute leçon entrait en
+  collision avec le champ « Durée (minutes) » déjà existant du type `live` (même clé
+  `content.durationMinutes`, deux champs visuellement identiques sur le même formulaire — la
+  suite e2e admin l'a détecté en violation de mode strict Playwright, mais c'était une vraie
+  collision d'écriture, pas qu'un doublon visuel : pour une session live, "durée de la leçon" ET
+  "durée de la session" SONT la même valeur réelle). Corrigé en masquant le nouveau champ
+  universel pour `type === "live"`.
+- `apps/web/playwright.admin.config.js` n'avait pas été mis à jour avec la migration
+  `0004_course_extras.sql` (seul `playwright.config.js`, la suite principale, l'avait reçue) —
+  la suite e2e admin plantait entièrement sur « no such table: course_extras » dès qu'un
+  formulaire touchait `/api/admin/courses/:id` (GET comme PATCH, les deux font le LEFT JOIN).
+
+**Demande complémentaire de Massy, pendant la vérification de production** : ajouter un vrai
+bouton de suppression de formation dans `/admin` — jusqu'ici aucune route ne supprimait une
+formation entière (`docs/SECURITE.md` §7, « dépublier plutôt que supprimer », délibéré). Ajouté
+comme **exception** à cette règle (pas un retour en arrière sur elle — §7 protège une formation
+qui a eu de vrais inscrits, pas un brouillon jetable créé pour vérifier un déploiement) :
+`DELETE /api/admin/courses/:id` cascade manuellement progression → inscriptions → leçons (+ les
+fichiers R2 qu'elles référencent, supprimés après la base) → objectifs/durée → modules →
+formation, journalisé dans l'audit log. Bouton « Supprimer la formation » dans l'éditeur,
+confirmation `window.confirm` (même convention que les boutons de suppression de module/leçon
+déjà existants). Testé côté serveur — y compris la disparition RÉELLE de l'objet R2, pas
+seulement des lignes D1, via un jeton d'aperçu forgé qui isole les deux — et côté UI (e2e-admin,
+création puis suppression entièrement par clics).
+
+**Vérifié en production, par l'architecte, sans compte admin** (Massy a préféré garder sa phrase
+secrète pour lui et faire la suite — création d'une formation jetable, vérification de la fiche
+remplie, suppression — de son côté) : l'état vide honnête de l'accueil (`/api/courses` répond
+bien `{"courses":[]}`), le terminal de démo toujours joignable depuis cet état vide, et le lien
+« Administration » du pied de page qui mène bien à l'écran de connexion admin, sans jamais taper
+l'URL. Migration `0004_course_extras.sql` appliquée en `--remote` sans l'aléa réseau documenté
+le 11/10/2026 (`--file` a fonctionné du premier coup cette fois).
+
+**Non-régression complète** : lint/build/typecheck clean ; 268/268 `packages/core`, 9/9
+`packages/data`, 47/47 `packages/exercises`, 113/113 web, 90/90 `functions/__tests__` (dont les
+quatre nouveaux describe : aperçu gratuit isPreview, suppression de formation, round-trip
+objectives/durationHours), 60/60 e2e, 7/7 e2e-admin (nouveau test de suppression inclus).
+
 ### 17/10/2026 — Correction TU/SV et garde-fou étendu aux valeurs, pas seulement aux codes
 
 Suite directe de la session du 16/10 (élargissement des données, entrée ci-dessous). Deux écarts

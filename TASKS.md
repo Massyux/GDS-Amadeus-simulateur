@@ -6,6 +6,33 @@
 
 ## En cours
 
+**🟢 `PROMPT-FICHE-FORMATION.md` CLOS le 17/10/2026** (prompt de Massy, trois chantiers).
+Chantier 1 : lien « Administration » discret en pied de page + raccourci de barre de nav (visible
+seulement si une session admin existe déjà) + retour clair vers le site depuis `/admin` +
+`noindex` sur `/admin`/`/demo`. Chantier 2 (cœur de la demande) : `CoursePage.jsx` reconstruite
+(bandeau d'en-tête + stats, carte d'inscription sticky, objectifs, programme avec type/durée/
+aperçu gratuit par leçon, documents en vraies cartes avec poids+téléchargement, bloc simulateur
+autonome, caractéristiques, formateur inchangé) ; `/api/courses` et `/api/courses/:slug` rendus
+publics, une leçon `isPreview` s'ouvre sans compte (jeton de téléchargement signé porte
+désormais ce fait, `functions/_lib/fileAccess.js`). Chantier 3 : vitrine d'accueil alimentée par
+le vrai catalogue (`/api/courses`), état vide honnête tant qu'aucune formation n'est publiée —
+plus de vignettes de démonstration en dur dans `HomePage.jsx` (`data/demoCourses.js` reste
+utilisé ailleurs, pour la couleur/motif visuel par formation).
+**Demande complémentaire pendant la vérification de production** : un vrai bouton de
+suppression de formation entière dans `/admin` (exception délibérée à `docs/SECURITE.md` §7,
+réservée aux formations jetables de test — `DELETE /api/admin/courses/:id`, cascade jusqu'aux
+fichiers R2, journalisée).
+**Vérifié en production** par l'architecte sans compte admin (état vide honnête de l'accueil,
+terminal de démo joignable depuis cet état, lien « Administration » → écran de connexion, sans
+jamais taper une URL) ; migration `migrations/0004_course_extras.sql` appliquée en `--remote`.
+**Reste à vérifier par Massy** (il a choisi de garder sa phrase secrète admin pour lui) : créer
+une vraie formation (ou une jetable puis la supprimer avec le nouveau bouton) et vérifier la
+fiche à l'état rempli — carte PDF téléchargeable, bloc simulateur, à 1280 **et** 390px, dans les
+deux thèmes — ainsi que le raccourci de barre de nav une fois connecté à l'admin. Détail complet
+dans `JOURNAL.md`. Non-régression : 268/268 `packages/core`, 9/9 `packages/data`, 47/47
+`packages/exercises`, 113/113 web, 90/90 `functions/__tests__`, 60/60 e2e, 7/7 e2e-admin,
+lint/build/typecheck clean.
+
 **🟢 Données du simulateur élargies à la formation le 16/10/2026** (prompt architecte « Élargir
 les données du simulateur pour qu'elles couvrent la formation », `missions/
 PROMPT-DONNEES-SIMULATEUR.md`) : les fiches de référence enseignaient ~250 aéroports et
