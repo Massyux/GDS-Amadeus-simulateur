@@ -4,6 +4,7 @@ import AdminDashboard from "./AdminDashboard.jsx";
 import CoursesAdmin from "./CoursesAdmin.jsx";
 import AuditLogView from "./AuditLogView.jsx";
 import { pickBrandLogo } from "../brandLogo.js";
+import { useNoIndex } from "../platform/useNoIndex.js";
 
 // Session-only (not localStorage): closing the tab signs Massy out, no
 // long-lived admin credential sitting in the browser between visits.
@@ -21,6 +22,7 @@ const TABS = [
 ];
 
 export default function AdminApp() {
+  useNoIndex();
   const [token, setToken] = useState(() => sessionStorage.getItem(SESSION_KEY));
   const [tab, setTab] = useState("licenses");
 
@@ -49,6 +51,17 @@ export default function AdminApp() {
           width={Math.round(40 * ADMIN_LOGO.ratio)}
           height={40}
         />
+        <a
+          href="/"
+          className="admin-back-link"
+          onClick={(event) => {
+            event.preventDefault();
+            window.history.pushState({}, "", "/");
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          }}
+        >
+          Retour au site
+        </a>
       </div>
       {/* Chaque onglet garde son propre en-tête/titre/déconnexion (Mission
           14, AdminDashboard.jsx) -- cette barre ne fait que choisir lequel

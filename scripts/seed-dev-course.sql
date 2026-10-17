@@ -26,15 +26,21 @@ INSERT INTO modules (id, course_id, title, sort_order)
 VALUES (1, 1, 'Module 1 — Découverte', 1)
 ON CONFLICT (id) DO NOTHING;
 
+-- `durationMinutes`/`isPreview` vivent dans ce même `content` JSON plutôt
+-- que dans une colonne dédiée (prompt architecte 17/10/2026, chantier 2) :
+-- `content` est déjà un blob libre par leçon (voir l'en-tête de
+-- migrations/0002_platform_users.sql), ajouter ces deux clés universelles
+-- ne casse aucune lecture existante qui ignore des clés qu'elle ne connaît
+-- pas. La première leçon est un aperçu gratuit, ouvrable sans compte.
 INSERT INTO lessons (id, module_id, type, title, sort_order, content)
 VALUES
   (
     1, 1, 'texte', 'Bienvenue', 1,
-    '{"body":"Ceci est une leçon de démonstration (Mission 23, Étape 2).\n\n## Au programme\n\nLire une disponibilité, vendre un vol, construire un dossier complet."}'
+    '{"body":"Ceci est une leçon de démonstration (Mission 23, Étape 2).\n\n## Au programme\n\nLire une disponibilité, vendre un vol, construire un dossier complet.","durationMinutes":5,"isPreview":true}'
   ),
   (
     2, 1, 'video', 'Vidéo de présentation', 2,
-    '{"embedUrl":"https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"}'
+    '{"embedUrl":"https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ","durationMinutes":8}'
   ),
   (
     3, 1, 'live', 'Session live de lancement', 3,
@@ -42,13 +48,21 @@ VALUES
   ),
   (
     4, 1, 'pdf', 'Support de cours', 4,
-    '{"fileKey":"support.pdf","fileName":"support.pdf"}'
+    '{"fileKey":"support.pdf","fileName":"support.pdf","sizeBytes":245000,"durationMinutes":10}'
   ),
   (
     5, 1, 'fichier', 'Fiches mémo', 5,
-    '{"files":[{"fileKey":"fiche1.txt","fileName":"fiche1.txt"},{"fileKey":"fiche2.txt","fileName":"fiche2.txt"}]}'
+    '{"files":[{"fileKey":"fiche1.txt","fileName":"fiche1.txt"},{"fileKey":"fiche2.txt","fileName":"fiche2.txt"}],"durationMinutes":5}'
   )
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO course_extras (course_id, objectives, duration_hours)
+VALUES (
+  1,
+  '["Lire un écran de disponibilité (AN) et comprendre chaque colonne","Vendre un vol et construire un dossier complet (PNR)","Tarifer et émettre un billet dans les règles Amadeus","Corriger une erreur dans un dossier sans tout recommencer"]',
+  12
+)
+ON CONFLICT (course_id) DO NOTHING;
 
 -- Module 2 -- pratique au clavier (Mission 23 Étape 3) : chaque leçon
 -- `exercice` pointe vers un fichier de packages/exercises/content/ par son

@@ -816,7 +816,23 @@ body {
 
 .admin-header-logo {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 16px 32px 0;
+}
+
+/* Retour au site public (PROMPT-PASSE-ACCUEIL.md chantier 1, 17/10/2026) :
+   "depuis l'espace admin, un lien clair vers le site public." Texte visible
+   jamais un chemin technique -- voir AdminApp.jsx. */
+.admin-back-link {
+  font-family: inherit;
+  font-size: 0.85em;
+  color: #1593A8;
+  text-decoration: none;
+}
+
+.admin-back-link:hover {
+  text-decoration: underline;
 }
 
 .admin-header-logo img {

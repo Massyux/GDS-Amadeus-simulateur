@@ -76,9 +76,17 @@ describe(
         assert.equal(course.lessonCount, 16);
       });
 
-      it("requires a session", async () => {
-        const { status } = await get("/api/courses");
-        assert.equal(status, 401);
+      // Rendue publique le 17/10/2026 (PROMPT-PASSE-ACCUEIL.md, "vitrine
+      // d'accueil") : la vitrine de l'accueil et le catalogue complet
+      // doivent pouvoir s'afficher à un visiteur sans session. `enrolled`
+      // reste `false` et aucun champ personnel (`next*`) n'est calculé.
+      it("is public: an anonymous visitor sees the published course without personal fields", async () => {
+        const { status, body } = await get("/api/courses");
+        assert.equal(status, 200);
+        const course = body.courses.find((c) => c.slug === "amadeus-niveau-1");
+        assert.ok(course, "seeded course must appear even without a session");
+        assert.equal(course.enrolled, false);
+        assert.equal(course.nextLessonId, null);
       });
     });
 
@@ -96,12 +104,25 @@ describe(
         const { status } = await get("/api/courses/ne-existe-pas", { cookie });
         assert.equal(status, 404);
       });
+
+      // Rendue publique le 17/10/2026 (PROMPT-PASSE-ACCUEIL.md) : même
+      // sommaire pour un visiteur anonyme, sans aucune session.
+      it("is public: an anonymous visitor sees the outline, marked not enrolled", async () => {
+        const { status, body } = await get("/api/courses/amadeus-niveau-1");
+        assert.equal(status, 200);
+        assert.equal(body.enrolled, false);
+        assert.equal(body.modules[0].lessons[0].isPreview, true);
+      });
     });
 
     describe("enrollment gating (docs/SECURITE.md §9 checklist item)", () => {
-      it("a non-enrolled student cannot read a lesson's content", async () => {
+      // Leçon 1 est l'aperçu gratuit (scripts/seed-dev-course.sql) --
+      // volontairement ouverte à tous depuis le 17/10/2026, voir le
+      // describe "aperçu gratuit" plus bas. La leçon 2 (vidéo, sans
+      // `isPreview`) reste le cas "verrouillé" de référence pour ce test.
+      it("a non-enrolled student cannot read a non-preview lesson's content", async () => {
         const { cookie } = await registerAndLogin();
-        const { status, body } = await get("/api/lessons/1", { cookie });
+        const { status, body } = await get("/api/lessons/2", { cookie });
         assert.equal(status, 404);
         assert.deepEqual(body, { error: "NOT_FOUND" });
       });
@@ -145,8 +166,54 @@ describe(
         const studentA = await registerAndLogin();
         await post("/api/courses/amadeus-niveau-1/enroll", {}, studentA);
         const studentB = await registerAndLogin();
-        const { status } = await get("/api/lessons/1", { cookie: studentB.cookie });
+        const { status } = await get("/api/lessons/2", { cookie: studentB.cookie });
         assert.equal(status, 404);
+      });
+    });
+
+    // Aperçu gratuit sans compte (PROMPT-PASSE-ACCUEIL.md chantier 2,
+    // 17/10/2026) : la leçon 1 porte `isPreview:true` dans son `content`
+    // (scripts/seed-dev-course.sql) -- doit s'ouvrir à N'IMPORTE QUI, avec
+    // ou sans session, contrairement à toute autre leçon du cours.
+    describe("aperçu gratuit (isPreview)", () => {
+      it("a completely anonymous visitor (no session at all) can read the free preview lesson", async () => {
+        const { status, body } = await get("/api/lessons/1");
+        assert.equal(status, 200);
+        assert.equal(body.lesson.isPreview, true);
+        assert.equal(body.enrolled, false);
+        assert.match(body.lesson.content.body, /Au programme/);
+      });
+
+      it("a logged-in but non-enrolled student can also read it", async () => {
+        const { cookie } = await registerAndLogin();
+        const { status, body } = await get("/api/lessons/1", { cookie });
+        assert.equal(status, 200);
+        assert.equal(body.enrolled, false);
+      });
+
+      it(
+        "a forged-but-validly-signed preview download token bypasses the enrollment " +
+          "re-check in download.js -- proves the bypass is scoped to isPreview, not a " +
+          "blanket skip (functions/_lib/fileAccess.js, functions/api/files/download.js)",
+        async () => {
+          const previewToken = await signToken(
+            { fileKey: "support.pdf", userId: null, courseId: 1, isPreview: true, exp: Date.now() + 10 * 60 * 1000 },
+            TEST_SESSION_SECRET
+          );
+          const res = await fetch(`${server.baseUrl}/api/files/download?token=${encodeURIComponent(previewToken)}`);
+          const text = await res.text();
+          assert.equal(res.status, 200);
+          assert.match(text, /fake pdf content/);
+        }
+      );
+
+      it("the same token shape WITHOUT isPreview is rejected for an anonymous (null) userId", async () => {
+        const nonPreviewToken = await signToken(
+          { fileKey: "support.pdf", userId: null, courseId: 1, exp: Date.now() + 10 * 60 * 1000 },
+          TEST_SESSION_SECRET
+        );
+        const res = await fetch(`${server.baseUrl}/api/files/download?token=${encodeURIComponent(nonPreviewToken)}`);
+        assert.equal(res.status, 404);
       });
     });
 

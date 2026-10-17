@@ -92,6 +92,11 @@ export default function LessonPlayerPage({ t, lang, csrfToken, courseSlugHint, l
   const nextModule = currentFlat ? course.modules.find((m) => m.id !== currentFlat.moduleId && m.lessons[0]?.id === data?.nav?.nextId) : null;
 
   async function markCompleted() {
+    // Visiteur anonyme (aperçu gratuit, PROMPT-PASSE-ACCUEIL.md chantier 2,
+    // 17/10/2026) : pas de session à qui attacher une progression -- on
+    // avance quand même dans la leçon (goNext), mais sans appeler une API
+    // qui exigerait un jeton CSRF inexistant pour lui.
+    if (!csrfToken) return;
     await platformApi.setLessonStatus(lessonId, "completed", csrfToken);
     setCompleted(true);
   }
@@ -115,6 +120,24 @@ export default function LessonPlayerPage({ t, lang, csrfToken, courseSlugHint, l
   // pas explicitement choisi de revenir à la leçon.
   async function handleExercisePassed() {
     await markCompleted();
+  }
+
+  // Visiteur anonyme sur une leçon qui n'est pas un aperçu gratuit
+  // (functions/api/lessons/[id]/index.js renvoie 401 plutôt que le 404
+  // neutre réservé à "inscrit mais pas le droit" -- voir son commentaire de
+  // tête) : message clair plutôt qu'un écran bloqué sur "…" indéfiniment.
+  if (data?.error === "UNAUTHORIZED") {
+    return (
+      <PlatformLayout brandTo="/">
+        <div className="pf-final" style={{ margin: "var(--space-6) 0" }}>
+          <h2>{tl.anonBlockedTitle}</h2>
+          <p>{tl.anonBlockedBody}</p>
+          <Button variant="primary" onClick={() => navigate("/app/inscription")}>
+            {tl.anonBlockedCta}
+          </Button>
+        </div>
+      </PlatformLayout>
+    );
   }
 
   if (showSimulator && data?.lesson) {
@@ -190,6 +213,8 @@ export default function LessonPlayerPage({ t, lang, csrfToken, courseSlugHint, l
               isMobile={isMobile}
               onOpenSimulator={() => setShowSimulator(true)}
             />
+
+            {!csrfToken && <p className="pf-meta">{tl.anonNoProgressNote}</p>}
 
             <div className="pf-lesson-actionbar">
               <Button

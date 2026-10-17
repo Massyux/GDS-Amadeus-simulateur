@@ -33,7 +33,11 @@ export async function onRequestGet({ request, env, params }) {
   if (!Number.isFinite(id)) return notFound();
 
   const course = await env.DB.prepare(
-    `SELECT id, slug, title, description, level, status, sort_order FROM courses WHERE id = ?`
+    `SELECT c.id, c.slug, c.title, c.description, c.level, c.status, c.sort_order,
+            ce.objectives, ce.duration_hours
+     FROM courses c
+     LEFT JOIN course_extras ce ON ce.course_id = c.id
+     WHERE c.id = ?`
   )
     .bind(id)
     .first();
@@ -80,6 +84,8 @@ export async function onRequestGet({ request, env, params }) {
         level: course.level,
         status: course.status,
         sortOrder: course.sort_order,
+        objectives: safeParseArray(course.objectives),
+        durationHours: course.duration_hours ?? null,
       },
       modules,
     }),
@@ -123,29 +129,67 @@ export async function onRequestPatch({ request, env, params }) {
     values.push(Number.parseInt(body.sortOrder, 10));
   }
 
-  if (updates.length === 0) {
+  // `objectives`/`durationHours` vivent dans course_extras (migrations/
+  // 0004_course_extras.sql), pas dans `courses` -- traités séparément,
+  // via un UPSERT, pour ne pas forcer une ligne vide dès la création d'une
+  // formation qui n'a encore ni objectifs ni durée.
+  let extrasProvided = false;
+  let objectivesValue;
+  if (Array.isArray(body?.objectives)) {
+    extrasProvided = true;
+    objectivesValue = JSON.stringify(body.objectives.filter((o) => typeof o === "string" && o.trim()));
+  }
+  let durationHoursValue;
+  if (body?.durationHours === null || Number.isFinite(Number.parseInt(body?.durationHours, 10))) {
+    extrasProvided = true;
+    durationHoursValue = body.durationHours === null ? null : Number.parseInt(body.durationHours, 10);
+  }
+
+  if (updates.length === 0 && !extrasProvided) {
     return new Response(JSON.stringify({ error: "NOTHING_TO_UPDATE" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
   }
 
-  updates.push("updated_at = datetime('now')");
-  values.push(id);
+  if (updates.length > 0) {
+    updates.push("updated_at = datetime('now')");
+    values.push(id);
 
-  let result;
-  try {
-    result = await env.DB.prepare(`UPDATE courses SET ${updates.join(", ")} WHERE id = ?`)
-      .bind(...values)
-      .run();
-  } catch {
-    return new Response(JSON.stringify({ error: "SLUG_ALREADY_USED" }), {
-      status: 409,
-      headers: { "content-type": "application/json" },
-    });
+    let result;
+    try {
+      result = await env.DB.prepare(`UPDATE courses SET ${updates.join(", ")} WHERE id = ?`)
+        .bind(...values)
+        .run();
+    } catch {
+      return new Response(JSON.stringify({ error: "SLUG_ALREADY_USED" }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    if (result.meta.changes === 0) return notFound();
+  } else {
+    const exists = await env.DB.prepare(`SELECT 1 FROM courses WHERE id = ?`).bind(id).first();
+    if (!exists) return notFound();
   }
 
-  if (result.meta.changes === 0) return notFound();
+  if (extrasProvided) {
+    const current = await env.DB.prepare(`SELECT objectives, duration_hours FROM course_extras WHERE course_id = ?`)
+      .bind(id)
+      .first();
+    await env.DB.prepare(
+      `INSERT INTO course_extras (course_id, objectives, duration_hours, updated_at)
+       VALUES (?, ?, ?, datetime('now'))
+       ON CONFLICT (course_id) DO UPDATE SET objectives = excluded.objectives, duration_hours = excluded.duration_hours, updated_at = excluded.updated_at`
+    )
+      .bind(
+        id,
+        objectivesValue !== undefined ? objectivesValue : current?.objectives ?? null,
+        durationHoursValue !== undefined ? durationHoursValue : current?.duration_hours ?? null
+      )
+      .run();
+  }
 
   await recordAudit(env, {
     action: body?.status ? `course.${body.status === "published" ? "publish" : "unpublish"}` : "course.update",
@@ -164,6 +208,16 @@ function safeParse(text) {
     return JSON.parse(text || "{}");
   } catch {
     return {};
+  }
+}
+
+function safeParseArray(text) {
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
 }
 

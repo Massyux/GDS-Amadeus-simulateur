@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import Terminal from "./Terminal.jsx";
 import { navigate } from "./platform/useRoute.js";
+import { useNoIndex } from "./platform/useNoIndex.js";
 import { useLang } from "./i18n/useLang.js";
 import { dictionary } from "./i18n/dictionary.js";
 
@@ -54,6 +55,7 @@ function insertCommand(container, cmd) {
 }
 
 export default function DemoTerminalPage() {
+  useNoIndex();
   const [lang] = useLang();
   const t = dictionary[lang];
   const td = t.platform.demo;

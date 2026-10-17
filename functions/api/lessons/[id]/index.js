@@ -15,16 +15,24 @@
 //    ci-dessous) : l'évaluation réelle vit côté client (@simulateur/exercises),
 //    pas ici (Mission 23 Étape 3).
 //
-// 404 neutre si la leçon n'existe pas OU si l'appelant n'est pas inscrit au
-// cours qui la contient -- jamais de distinction entre les deux (un étudiant
-// qui devine un id de leçon d'un cours auquel il n'est pas inscrit ne doit
-// rien apprendre de sa tentative).
+// 404 neutre si la leçon n'existe pas, OU si l'appelant n'est pas inscrit
+// au cours qui la contient ET que la leçon n'est pas un aperçu gratuit --
+// jamais de distinction entre "n'existe pas" et "pas le droit de voir",
+// pour qu'un étudiant qui devine un id n'apprenne rien de sa tentative.
+//
+// Rendu public le 17/10/2026 (prompt architecte "fiche de formation") :
+// "les leçons gratuites portent une mention aperçu gratuit et sont
+// ouvrables sans compte". Trois cas, dans cet ordre : (1) inscrit → accès
+// complet, progression suivie ; (2) pas inscrit (ou pas connecté du tout)
+// mais `content.isPreview` → même contenu, mais AUCUNE progression suivie
+// (pas de session utilisateur à qui l'attacher) ; (3) ni l'un ni l'autre →
+// 404, comme avant.
 import { requireSession, unauthorizedResponse } from "../../../_lib/studentAuth.js";
 import { signDownloadUrl } from "../../../_lib/fileAccess.js";
 
 export async function onRequestGet({ request, env, params }) {
   const session = await requireSession(request, env);
-  if (!session) return unauthorizedResponse();
+  const userId = session?.user?.id ?? null;
   if (!env.DB) return notFound();
 
   const lessonId = Number.parseInt(params.id, 10);
@@ -42,26 +50,31 @@ export async function onRequestGet({ request, env, params }) {
     .first();
   if (!row) return notFound();
 
-  const enrolled = await env.DB.prepare(
-    `SELECT 1 FROM enrollments WHERE user_id = ? AND course_id = ?`
-  )
-    .bind(session.user.id, row.course_id)
-    .first();
-  if (!enrolled) return notFound();
-
   const rawContent = safeParse(row.content);
+
+  const enrolled = userId
+    ? await env.DB.prepare(`SELECT 1 FROM enrollments WHERE user_id = ? AND course_id = ?`)
+        .bind(userId, row.course_id)
+        .first()
+    : null;
+  if (!enrolled && !rawContent.isPreview) {
+    return userId ? notFound() : unauthorizedResponse();
+  }
+
   const content = await buildContent(env, row.type, rawContent, {
-    userId: session.user.id,
+    userId,
     courseId: row.course_id,
+    isPreview: Boolean(rawContent.isPreview),
   });
 
   const nav = await findNeighbours(env.DB, row.course_id, lessonId);
 
   return new Response(
     JSON.stringify({
-      lesson: { id: row.id, type: row.type, title: row.title, content },
+      lesson: { id: row.id, type: row.type, title: row.title, content, isPreview: Boolean(rawContent.isPreview) },
       nav,
       courseSlug: row.course_slug,
+      enrolled: Boolean(enrolled),
     }),
     { status: 200, headers: { "content-type": "application/json" } }
   );
@@ -82,11 +95,11 @@ function safeParse(text) {
   }
 }
 
-async function buildContent(env, type, raw, { userId, courseId }) {
+async function buildContent(env, type, raw, { userId, courseId, isPreview }) {
   if (type === "pdf" && raw.fileKey) {
     return {
       fileName: raw.fileName || "document.pdf",
-      downloadUrl: await signDownloadUrl(env, { fileKey: raw.fileKey, userId, courseId }),
+      downloadUrl: await signDownloadUrl(env, { fileKey: raw.fileKey, userId, courseId, isPreview }),
     };
   }
   if (type === "fichier" && Array.isArray(raw.files)) {
@@ -94,7 +107,7 @@ async function buildContent(env, type, raw, { userId, courseId }) {
       raw.files.map(async (f) => ({
         fileName: f.fileName,
         sizeBytes: f.sizeBytes ?? null,
-        downloadUrl: await signDownloadUrl(env, { fileKey: f.fileKey, userId, courseId }),
+        downloadUrl: await signDownloadUrl(env, { fileKey: f.fileKey, userId, courseId, isPreview }),
       }))
     );
     return { files };

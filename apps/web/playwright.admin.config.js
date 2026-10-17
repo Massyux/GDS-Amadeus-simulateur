@@ -49,7 +49,7 @@ export default defineConfig({
     // le journal d'audit, tous deux absents quand cette config a été écrite
     // pour Mission 14 (licences seules, pas de fichier, pas de journal).
     command:
-      `npm run build:web && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0003_audit_log.sql && npx wrangler pages dev apps/web/dist --port 8799 --persist-to="${persistDir}" --r2 CONTENT`,
+      `npm run build:web && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0001_init.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0002_platform_users.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0003_audit_log.sql && npx wrangler d1 execute gds-licences --local --persist-to="${persistDir}" --file=migrations/0004_course_extras.sql && npx wrangler pages dev apps/web/dist --port 8799 --persist-to="${persistDir}" --r2 CONTENT`,
     cwd: REPO_ROOT,
     url: "http://localhost:8799",
     reuseExistingServer: !process.env.CI,

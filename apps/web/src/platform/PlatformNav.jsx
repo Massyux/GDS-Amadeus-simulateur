@@ -1,5 +1,6 @@
 import { Link } from "./Link.jsx";
 import { ThemeToggle } from "./ThemeToggle.jsx";
+import { AdminShortcut } from "./AdminShortcut.jsx";
 
 export function PlatformNav({ t, lang, onChangeLang, user, onLogout, theme, onToggleTheme }) {
   const tn = t.platform.nav;
@@ -15,6 +16,10 @@ export function PlatformNav({ t, lang, onChangeLang, user, onLogout, theme, onTo
           </Link>
         </>
       )}
+      {/* PROMPT-PASSE-ACCUEIL.md chantier 1 (17/10/2026) : raccourci admin,
+          partagé avec HomePage.jsx -- voir AdminShortcut.jsx pour la règle
+          d'affichage (session déjà ouverte uniquement). */}
+      <AdminShortcut label={tn.administration} />
       {onChangeLang && (
         <span style={{ display: "inline-flex", gap: "4px" }}>
           <button

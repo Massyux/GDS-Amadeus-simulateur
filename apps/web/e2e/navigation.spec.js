@@ -72,10 +72,21 @@ test.describe("Navigation -- cul-de-sac depuis l'accueil (régression du 11/10/2
     await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
   });
 
-  test("accueil -> carte d'une vraie formation -> écran de connexion (formation protégée)", async ({ page }) => {
+  // Rendue publique le 17/10/2026 (PROMPT-PASSE-ACCUEIL.md, chantiers 2+3) :
+  // la vitrine affiche désormais la VRAIE formation (titre venu de l'API,
+  // "Amadeus — Niveau 1" -- plus "Réservation aérienne", qui n'était que le
+  // nom marketing du catalogue de démonstration, jamais connecté à la base).
+  // La fiche s'ouvre directement, sans redirection vers la connexion -- tout
+  // le sens de ce chantier -- et son CTA d'inscription (anonyme) mène à
+  // l'inscription plutôt que d'appeler l'API d'inscription sans session.
+  test("accueil -> carte d'une vraie formation -> fiche de formation accessible sans compte", async ({ page }) => {
     await page.goto("/");
-    await page.getByText("Réservation aérienne").click();
-    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
+    await page.getByText("Amadeus — Niveau 1").click();
+    await expect(page.getByRole("heading", { name: "Amadeus — Niveau 1" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Connexion" })).not.toBeVisible();
+
+    await page.getByRole("button", { name: "Commencer la formation" }).click();
+    await expect(page.getByRole("heading", { name: "Créer un compte" })).toBeVisible();
   });
 
   test(
@@ -95,7 +106,7 @@ test.describe("Navigation -- cul-de-sac depuis l'accueil (régression du 11/10/2
       await page.getByText("Amadeus — Niveau 1").click();
       await expect(page.getByRole("heading", { name: "Amadeus — Niveau 1" })).toBeVisible();
 
-      await page.getByRole("button", { name: "S'inscrire" }).click();
+      await page.getByRole("button", { name: "Commencer la formation" }).click();
       await page.getByRole("link", { name: "Bienvenue" }).click();
       await expect(page.getByText("Ceci est une leçon de démonstration")).toBeVisible();
 

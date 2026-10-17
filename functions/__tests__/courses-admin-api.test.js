@@ -130,6 +130,37 @@ describe("Mission 23 Étape 4 -- back-office formations API (real wrangler pages
       assert.equal((await get("/api/admin/courses/999999", adminToken)).status, 404);
       assert.equal((await patch("/api/admin/courses/999999", { title: "x" }, adminToken)).status, 404);
     });
+
+    // objectives/durationHours vivent dans course_extras (migrations/
+    // 0004_course_extras.sql), traités séparément de la table `courses` --
+    // round-trip PATCH -> GET pour les deux chemins : avec un champ core en
+    // même temps, et seuls (sans aucun champ de `courses`, le cas d'une
+    // formation qui n'a encore que ses objectifs -- l'UPSERT ne doit pas
+    // planter sur une ligne `course_extras` qui n'existe pas encore).
+    it("round-trips objectives/durationHours through course_extras (PATCH then GET)", async () => {
+      const slug = uniqueSlug("cours-extras");
+      const course = (await post("/api/admin/courses", { slug, title: "Avec objectifs" }, adminToken)).body.course;
+
+      const patched = await patch(
+        `/api/admin/courses/${course.id}`,
+        { objectives: ["Objectif un", "Objectif deux", ""], durationHours: 12 },
+        adminToken
+      );
+      assert.equal(patched.status, 200);
+
+      const detail = await get(`/api/admin/courses/${course.id}`, adminToken);
+      assert.deepEqual(detail.body.course.objectives, ["Objectif un", "Objectif deux"]);
+      assert.equal(detail.body.course.durationHours, 12);
+
+      // Deuxième PATCH, extras seuls (aucun champ de `courses`) : ne doit
+      // pas renvoyer NOTHING_TO_UPDATE, et doit bien remplacer la ligne
+      // existante (UPSERT), pas en créer une deuxième.
+      const patchedAgain = await patch(`/api/admin/courses/${course.id}`, { durationHours: 20 }, adminToken);
+      assert.equal(patchedAgain.status, 200);
+      const detailAgain = await get(`/api/admin/courses/${course.id}`, adminToken);
+      assert.equal(detailAgain.body.course.durationHours, 20);
+      assert.deepEqual(detailAgain.body.course.objectives, ["Objectif un", "Objectif deux"]);
+    });
   });
 
   describe("modules + lessons CRUD", () => {

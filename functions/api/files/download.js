@@ -17,12 +17,14 @@ export async function onRequestGet({ request, env }) {
   const payload = await verifyDownloadToken(env, token);
   if (!payload || !env.DB || !env.CONTENT) return notFound();
 
-  const enrolled = await env.DB.prepare(
-    `SELECT 1 FROM enrollments WHERE user_id = ? AND course_id = ?`
-  )
-    .bind(payload.userId, payload.courseId)
-    .first();
-  if (!enrolled) return notFound();
+  if (!payload.isPreview) {
+    const enrolled = await env.DB.prepare(
+      `SELECT 1 FROM enrollments WHERE user_id = ? AND course_id = ?`
+    )
+      .bind(payload.userId, payload.courseId)
+      .first();
+    if (!enrolled) return notFound();
+  }
 
   const object = await env.CONTENT.get(payload.fileKey);
   if (!object) return notFound();

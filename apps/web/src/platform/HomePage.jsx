@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Brand } from "./Brand.jsx";
 import { Link } from "./Link.jsx";
 import { navigate } from "./useRoute.js";
 import { Atmosphere } from "./ui/PlatformLayout.jsx";
-import { Button } from "./ui/index.js";
+import { Button, EmptyState, Skeleton } from "./ui/index.js";
 import { ThemeToggle } from "./ThemeToggle.jsx";
 import { TerminalDemo } from "./TerminalDemo.jsx";
 import { CourseVignette } from "./CourseVignette.jsx";
 import { ResponsiveImage } from "./ResponsiveImage.jsx";
 import { GradientTail } from "./GradientText.jsx";
+import { AdminShortcut } from "./AdminShortcut.jsx";
 import { demoCourses } from "./data/demoCourses.js";
+import { platformApi } from "./api.js";
 import { useLang } from "../i18n/useLang.js";
 import { useTheme } from "./useTheme.js";
 import { useRevealGroup } from "./useRevealGroup.js";
@@ -37,12 +39,27 @@ export default function HomePage() {
   const t = dictionary[lang];
   const h = t.platform.home;
   const tn = t.platform.nav;
+  const [courses, setCourses] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    platformApi.courses().then(({ data }) => {
+      if (active) setCourses(data.courses || []);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const navLinks = (
     <>
       <a href="#formations">{tn.formations}</a>
       <a href="#methode">{tn.methode}</a>
       <Link to="/app">{tn.connexion}</Link>
+      {/* PROMPT-PASSE-ACCUEIL.md chantier 1 (17/10/2026) : invisible pour
+          tout le monde sauf Massy -- ne s'affiche que s'il a déjà une
+          session admin ouverte dans cet onglet (voir AdminShortcut.jsx). */}
+      <AdminShortcut label={tn.administration} />
       <LangToggle t={t} lang={lang} onChangeLang={onChangeLang} />
       <ThemeToggle theme={theme} onToggle={toggleTheme} label={tn.toggleTheme} />
       {/* PROMPT-PASSE-ACCUEIL.md chantier 2 (14/10/2026) : vers l'inscription,
@@ -159,11 +176,38 @@ export default function HomePage() {
             <GradientTail text={h.coursesTitle} />
           </h2>
           <p className="pf-s-lead">{h.coursesLead}</p>
-          <div ref={coursesRef} className={`pf-grid-courses pf-reveal-group${coursesVisible ? " pf-reveal-group--visible" : ""}`}>
-            {demoCourses.map((course) => (
-              <CourseCard key={course.slug} course={course} t={t} lang={lang} />
-            ))}
-          </div>
+
+          {courses === null && (
+            <div className="pf-grid-courses">
+              <Skeleton height="280px" radius="var(--radius-xl)" />
+              <Skeleton height="280px" radius="var(--radius-xl)" />
+              <Skeleton height="280px" radius="var(--radius-xl)" />
+            </div>
+          )}
+
+          {/* État vide honnête (PROMPT-PASSE-ACCUEIL.md chantier 3,
+              17/10/2026) : /api/courses renvoie réellement {"courses":[]}
+              tant que Massy n'a publié aucune formation -- jamais de
+              vignette factice pour combler la page, le terminal de démo
+              reste joignable à la place. */}
+          {courses !== null && courses.length === 0 && (
+            <div style={{ marginTop: "var(--space-6)" }}>
+              <EmptyState
+                icon="○"
+                message={h.coursesEmptyMessage}
+                actionLabel={h.ctaTryTerminal}
+                onAction={() => navigate("/demo")}
+              />
+            </div>
+          )}
+
+          {courses !== null && courses.length > 0 && (
+            <div ref={coursesRef} className={`pf-grid-courses pf-reveal-group${coursesVisible ? " pf-reveal-group--visible" : ""}`}>
+              {courses.map((course) => (
+                <CourseCard key={course.slug} course={course} t={t} lang={lang} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -237,6 +281,15 @@ export default function HomePage() {
             <Link to="/remboursement" className="pf-btn pf-btn--discreet">
               {h.footerRefund}
             </Link>
+            {/* PROMPT-PASSE-ACCUEIL.md chantier 1 (17/10/2026) : lien discret,
+                même niveau que Contact -- jamais un bouton d'appel à
+                l'action. Toujours présent (contrairement au raccourci de
+                barre de nav, qui ne s'affiche que si une session admin est
+                déjà ouverte) : c'est la porte d'entrée pour Massy quand il
+                n'a pas encore de session. */}
+            <Link to="/admin" className="pf-btn pf-btn--discreet" style={{ marginLeft: "var(--space-5)" }}>
+              {tn.administration}
+            </Link>
           </div>
           <p className="pf-disclaimer">{h.disclaimer}</p>
         </div>
@@ -254,41 +307,50 @@ function Kpi({ value, label }) {
   );
 }
 
-function CourseCard({ course, t, lang }) {
-  const demo = t.platform.demoCourses[course.titleKey];
-  const level = t.platform.levels[course.level];
-  const locale = lang === "en" ? "en-US" : "fr-FR";
-  const meta = `${t.platform.course.lessonCount.replace("{n}", course.lessonCount)} · ${course.durationHours} h`;
+// Vitrine d'accueil rendue réelle (PROMPT-PASSE-ACCUEIL.md chantier 3,
+// 17/10/2026) : `course` vient désormais de /api/courses (vraie formation
+// publiée), plus jamais de data/demoCourses.js -- seule sa métadonnée
+// visuelle (couleur, motif SVG) en est tirée, par slug, même motif que
+// CataloguePage.jsx. Pas de prix affiché : l'inscription est gratuite et
+// immédiate tant que Mission 22 (paiement) n'existe pas -- afficher un prix
+// ici mentirait sur ce qui se passe réellement au clic (CONSTITUTION §5).
+function CourseCard({ course, t }) {
+  const visual = demoCourses.find((d) => d.slug === course.slug) || DEFAULT_VISUAL;
+  const level = t.platform.levels[course.level] || course.level;
+  const meta = t.platform.course.lessonCount.replace("{n}", course.lessonCount);
+  const objectives = (course.objectives || []).slice(0, 3);
 
-  const card = (
-    <article className="pf-course-card pf-reveal">
-      <CourseVignette course={course} label={level} alt={demo.title} />
-      <div className="pf-course-body">
-        <h3>{demo.title}</h3>
-        <p style={{ color: "var(--ink-2)", flex: 1 }}>{demo.description}</p>
-        <div className="pf-course-foot">
-          <span className="pf-meta">{meta}</span>
-          {course.priceDA ? (
-            <span className="pf-price">{course.priceDA.toLocaleString(locale)} DA</span>
-          ) : (
-            <span className="pf-soon">{t.platform.home.soon}</span>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-
-  // Les formations de démonstration n'ont pas de page réelle derrière --
-  // pas de lien plutôt qu'un "#" qui ne mènerait nulle part (Massy les
-  // retirera au lancement, voir data/demoCourses.js).
-  return course.real ? (
+  return (
     <Link to={`/app/cours/${course.slug}`} className="pf-course-card-link">
-      {card}
+      <article className="pf-course-card pf-reveal">
+        <CourseVignette course={visual} label={level} alt={course.title} />
+        <div className="pf-course-body">
+          <h3>{course.title}</h3>
+          {objectives.length > 0 ? (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "grid", gap: "var(--space-1)" }}>
+              {objectives.map((item) => (
+                <li key={item} style={{ display: "flex", gap: "var(--space-2)", color: "var(--ink-2)", fontSize: "var(--text-sm)" }}>
+                  <span style={{ color: "var(--cyan)" }} aria-hidden="true">
+                    ✓
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ color: "var(--ink-2)", flex: 1 }}>{course.description}</p>
+          )}
+          <div className="pf-course-foot">
+            <span className="pf-meta">{meta}</span>
+            <span className="pf-soon">{t.platform.course.free}</span>
+          </div>
+        </div>
+      </article>
     </Link>
-  ) : (
-    card
   );
 }
+
+const DEFAULT_VISUAL = { visual: "radar", color: "#0E7490", colorDark: "#1E3A8A", accentColor: "#43C9D9" };
 
 function LangToggle({ t, lang, onChangeLang }) {
   if (!onChangeLang) return null;

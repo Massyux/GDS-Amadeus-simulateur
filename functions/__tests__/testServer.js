@@ -45,6 +45,7 @@ export async function startTestServer(options = {}) {
     "migrations/0001_init.sql",
     "migrations/0002_platform_users.sql",
     "migrations/0003_audit_log.sql",
+    "migrations/0004_course_extras.sql",
     ...(options.extraSqlFiles || []),
   ];
   for (const file of files) {

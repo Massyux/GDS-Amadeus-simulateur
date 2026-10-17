@@ -303,14 +303,27 @@ function CourseMetaForm({ course, token, onSaved }) {
   const [slug, setSlug] = useState(course.slug);
   const [level, setLevel] = useState(course.level || "");
   const [description, setDescription] = useState(course.description || "");
+  const [objectivesText, setObjectivesText] = useState((course.objectives || []).join("\n"));
+  const [durationHours, setDurationHours] = useState(course.durationHours ?? "");
   const [error, setError] = useState(null);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
+    const objectives = objectivesText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
     const data = await apiFetch(`/api/admin/courses/${course.id}`, token, {
       method: "PATCH",
-      body: JSON.stringify({ title, slug, level, description }),
+      body: JSON.stringify({
+        title,
+        slug,
+        level,
+        description,
+        objectives,
+        durationHours: durationHours === "" ? null : Number(durationHours),
+      }),
     });
     if (data.error) {
       setError(data.error === "SLUG_ALREADY_USED" ? "Cet identifiant est déjà utilisé." : "Rien à enregistrer.");
@@ -336,6 +349,25 @@ function CourseMetaForm({ course, token, onSaved }) {
       <label>
         Description
         <input value={description} onChange={(e) => setDescription(e.target.value)} />
+      </label>
+      <label>
+        Durée estimée (heures)
+        <input
+          type="number"
+          min={0}
+          value={durationHours}
+          onChange={(e) => setDurationHours(e.target.value)}
+          placeholder="ex: 12"
+        />
+      </label>
+      <label>
+        Ce que l'élève va apprendre (une ligne par objectif)
+        <textarea
+          value={objectivesText}
+          onChange={(e) => setObjectivesText(e.target.value)}
+          rows={4}
+          placeholder={"Lire un écran de disponibilité\nVendre un vol et construire un dossier"}
+        />
       </label>
       <button type="submit">Enregistrer</button>
       {error && <span className="admin-login-error">{error}</span>}
@@ -468,7 +500,10 @@ function LessonForm({ initial, token, submitLabel, onSubmit }) {
 
   function handleTypeChange(nextType) {
     setType(nextType);
-    setContent({});
+    // `durationMinutes`/`isPreview` sont universels (toute leçon, quel que
+    // soit son type) -- on les garde en changeant de type, seul le reste du
+    // contenu (spécifique au type) repart à zéro.
+    setContent({ durationMinutes: content.durationMinutes, isPreview: content.isPreview });
   }
 
   return (
@@ -493,18 +528,54 @@ function LessonForm({ initial, token, submitLabel, onSubmit }) {
           ))}
         </select>
       </label>
+      {/* Masqué pour "live" : LiveFields plus bas porte déjà son propre champ
+          "Durée (minutes)" sur la MÊME clé `content.durationMinutes` -- la
+          durée d'une session en direct EST sa durée de leçon, pas une
+          deuxième valeur à saisir en double (bug trouvé par l'e2e admin :
+          deux champs "Durée (minutes)" sur le même formulaire, violation du
+          mode strict de Playwright -- et une collision d'écriture réelle,
+          pas qu'un doublon visuel). */}
+      {type !== "live" && (
+        <label>
+          Durée (minutes)
+          <input
+            type="number"
+            min={0}
+            value={content.durationMinutes ?? ""}
+            onChange={(e) =>
+              setContent({ ...content, durationMinutes: e.target.value === "" ? null : Number(e.target.value) })
+            }
+            placeholder="ex: 5"
+          />
+        </label>
+      )}
+      <label>
+        <input
+          type="checkbox"
+          checked={Boolean(content.isPreview)}
+          onChange={(e) => setContent({ ...content, isPreview: e.target.checked })}
+        />
+        {" "}Aperçu gratuit (ouvrable sans compte)
+      </label>
 
       {type === "texte" && (
         <label>
           Contenu (markdown)
-          <textarea value={content.body || ""} onChange={(e) => setContent({ body: e.target.value })} rows={6} />
+          <textarea
+            value={content.body || ""}
+            onChange={(e) => setContent({ ...content, body: e.target.value })}
+            rows={6}
+          />
         </label>
       )}
 
       {type === "video" && (
         <label>
           URL (YouTube/Vimeo non répertorié)
-          <input value={content.embedUrl || ""} onChange={(e) => setContent({ embedUrl: e.target.value })} />
+          <input
+            value={content.embedUrl || ""}
+            onChange={(e) => setContent({ ...content, embedUrl: e.target.value })}
+          />
         </label>
       )}
 
@@ -515,7 +586,10 @@ function LessonForm({ initial, token, submitLabel, onSubmit }) {
       {type === "exercice" && (
         <label>
           Exercice
-          <select value={content.exerciseId || ""} onChange={(e) => setContent({ exerciseId: e.target.value })}>
+          <select
+            value={content.exerciseId || ""}
+            onChange={(e) => setContent({ ...content, exerciseId: e.target.value })}
+          >
             <option value="">— choisir —</option>
             {exercises.map((ex) => (
               <option key={ex.id} value={ex.id}>
@@ -553,7 +627,7 @@ function PdfUploadField({ content, setContent, token }) {
         setError(data.error === "FILE_TOO_LARGE" ? "Fichier trop volumineux (25 Mo max)." : "Envoi impossible.");
         return;
       }
-      setContent({ fileKey: data.fileKey, fileName: data.fileName });
+      setContent({ ...content, fileKey: data.fileKey, fileName: data.fileName, sizeBytes: data.sizeBytes });
     } finally {
       setUploading(false);
     }
@@ -591,7 +665,10 @@ function FichierUploadField({ content, setContent, token }) {
         setError(data.error === "FILE_TOO_LARGE" ? "Fichier trop volumineux (25 Mo max)." : "Envoi impossible.");
         return;
       }
-      setContent({ files: [...files, { fileKey: data.fileKey, fileName: data.fileName, sizeBytes: data.sizeBytes }] });
+      setContent({
+        ...content,
+        files: [...files, { fileKey: data.fileKey, fileName: data.fileName, sizeBytes: data.sizeBytes }],
+      });
       event.target.value = "";
     } finally {
       setUploading(false);
@@ -599,7 +676,7 @@ function FichierUploadField({ content, setContent, token }) {
   }
 
   function removeFile(index) {
-    setContent({ files: files.filter((_, i) => i !== index) });
+    setContent({ ...content, files: files.filter((_, i) => i !== index) });
   }
 
   return (

@@ -14,14 +14,20 @@
 // resterait utilisable pendant ses 10 minutes même si l'inscription venait
 // d'être révoquée entre-temps -- la même philosophie de révocation instantanée
 // que /api/license/check.
+//
+// `isPreview` (17/10/2026, aperçu gratuit sans compte) : un visiteur
+// anonyme n'a pas de `userId` à vérifier contre `enrollments` au
+// téléchargement -- le jeton porte donc ce fait, constaté une seule fois à
+// la génération (où le contenu réel de la leçon, source de vérité, est
+// lu), pas re-dérivé d'un `userId` qui n'existe pas pour un anonyme.
 import { signToken, verifyToken } from "./token.js";
 import { requireSecret } from "./requiredEnv.js";
 
 const DOWNLOAD_TTL_MS = 10 * 60 * 1000;
 
-export async function signDownloadUrl(env, { fileKey, userId, courseId }) {
+export async function signDownloadUrl(env, { fileKey, userId, courseId, isPreview = false }) {
   const token = await signToken(
-    { fileKey, userId, courseId, exp: Date.now() + DOWNLOAD_TTL_MS },
+    { fileKey, userId, courseId, isPreview, exp: Date.now() + DOWNLOAD_TTL_MS },
     requireSecret(env, "SESSION_SECRET")
   );
   return `/api/files/download?token=${encodeURIComponent(token)}`;

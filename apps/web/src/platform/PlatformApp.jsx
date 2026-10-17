@@ -62,18 +62,13 @@ export default function PlatformApp() {
 
   if (authState === "loading") return null;
 
-  if (authState === "anon") {
-    // PROMPT-PASSE-ACCUEIL.md chantier 2 (14/10/2026) : /app/inscription
-    // ouvre AuthScreen directement en mode "register" -- "Commencer" menait
-    // jusqu'ici à la connexion alors que le visiteur n'a pas de compte. Le
-    // lien "Connexion" de la barre de navigation continue de mener à /app
-    // (mode "login" par défaut) : ne pas confondre les deux.
-    const initialMode = route.pathname === "/app/inscription" ? "register" : "login";
-    return (
-      <AuthScreen t={t} lang={lang} onChangeLang={setLang} onAuthenticated={handleAuthenticated} initialMode={initialMode} />
-    );
-  }
-
+  // Rendue publiques le 17/10/2026 (prompt architecte "fiche de formation") :
+  // la fiche d'une formation et ses leçons en aperçu gratuit doivent
+  // convaincre un visiteur AVANT qu'il ait un compte -- `user`/`csrfToken`
+  // valent alors `null`, et CoursePage/LessonPlayerPage s'adaptent (pas de
+  // progression suivie pour un anonyme). Testées AVANT le portail de
+  // connexion, contrairement à /app/catalogue et /app/compte qui restent
+  // derrière ce portail.
   const lessonMatch = route.pathname.match(LESSON_ROUTE);
   if (lessonMatch) {
     return (
@@ -104,6 +99,18 @@ export default function PlatformApp() {
         slug={courseMatch[1]}
         onLogout={handleLogout}
       />
+    );
+  }
+
+  if (authState === "anon") {
+    // PROMPT-PASSE-ACCUEIL.md chantier 2 (14/10/2026) : /app/inscription
+    // ouvre AuthScreen directement en mode "register" -- "Commencer" menait
+    // jusqu'ici à la connexion alors que le visiteur n'a pas de compte. Le
+    // lien "Connexion" de la barre de navigation continue de mener à /app
+    // (mode "login" par défaut) : ne pas confondre les deux.
+    const initialMode = route.pathname === "/app/inscription" ? "register" : "login";
+    return (
+      <AuthScreen t={t} lang={lang} onChangeLang={setLang} onAuthenticated={handleAuthenticated} initialMode={initialMode} />
     );
   }
 

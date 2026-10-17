@@ -67,7 +67,7 @@ test.describe("Espace étudiant (Mission 23 Étape 2)", () => {
 
     await page.getByText("Amadeus — Niveau 1").click();
     await expect(page.getByRole("heading", { name: "Amadeus — Niveau 1" })).toBeVisible();
-    await page.getByRole("button", { name: "S'inscrire" }).click();
+    await page.getByRole("button", { name: "Commencer la formation" }).click();
     await expect(page.getByText("Tu es inscrit à cette formation.")).toBeVisible();
 
     await page.getByRole("link", { name: "Bienvenue" }).click();
@@ -155,7 +155,7 @@ test.describe("Navigation et simulateur intégré (Mission 23 Étape 3)", () => 
     await expect(breadcrumb.getByRole("link", { name: "Formations" })).toBeVisible();
     await expect(breadcrumb.getByText("Amadeus — Niveau 1")).toBeVisible();
 
-    await page.getByRole("button", { name: "S'inscrire" }).click();
+    await page.getByRole("button", { name: "Commencer la formation" }).click();
     await page.getByRole("link", { name: "Bienvenue" }).click();
     await expect(page.getByText("Ceci est une leçon de démonstration")).toBeVisible();
     // Le fil d'Ariane d'une leçon va jusqu'à son propre titre.
@@ -183,7 +183,7 @@ test.describe("Navigation et simulateur intégré (Mission 23 Étape 3)", () => 
     await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
     await page.getByRole("button", { name: "Créer mon compte" }).click();
     await page.getByText("Amadeus — Niveau 1").click();
-    await page.getByRole("button", { name: "S'inscrire" }).click();
+    await page.getByRole("button", { name: "Commencer la formation" }).click();
 
     await page.getByRole("link", { name: "Lire une disponibilité" }).click();
     await expect(page.getByRole("button", { name: "Commencer l'exercice" })).toBeVisible();
@@ -224,7 +224,7 @@ test.describe("Navigation et simulateur intégré (Mission 23 Étape 3)", () => 
     await page.getByLabel("Mot de passe").fill("un-mot-de-passe-bien-trop-simple-a-deviner");
     await page.getByRole("button", { name: "Créer mon compte" }).click();
     await page.getByText("Amadeus — Niveau 1").click();
-    await page.getByRole("button", { name: "S'inscrire" }).click();
+    await page.getByRole("button", { name: "Commencer la formation" }).click();
 
     await page.getByRole("link", { name: "Terminal libre" }).click();
     await expect(page.getByRole("button", { name: "Ouvrir le terminal" })).toBeVisible();

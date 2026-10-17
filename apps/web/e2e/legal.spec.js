@@ -32,3 +32,18 @@ test.describe("Pied de page -- liens légaux (chantier 3)", () => {
     await expect(page.getByText("Page en préparation")).toBeVisible();
   });
 });
+
+// PROMPT-PASSE-ACCUEIL.md chantier 1 (17/10/2026) : "jamais retaper une URL
+// pour revenir à l'administration" -- un lien discret, même niveau que
+// Contact, toujours présent (contrairement au raccourci de barre de
+// navigation, qui n'apparaît que si une session admin est déjà ouverte).
+test.describe("Pied de page -- accès administration (chantier 1)", () => {
+  test("Administration -> écran de connexion admin, jamais un chemin technique affiché", async ({ page }) => {
+    await page.goto("/");
+    const adminLink = page.getByRole("link", { name: "Administration" });
+    await expect(adminLink).toBeVisible();
+    await adminLink.click();
+    await expect(page.getByRole("heading", { name: "Administration" })).toBeVisible();
+    await expect(page.getByLabel("Phrase secrète")).toBeVisible();
+  });
+});
