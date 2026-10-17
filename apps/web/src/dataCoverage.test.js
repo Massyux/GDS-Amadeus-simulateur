@@ -21,22 +21,53 @@ const airlines = JSON.parse(readFileSync(path.join(dataDir, "airlines.json"), "u
 // reference (D:/cowork/formation-amadeus-n1/fiches-pdf/03, 04, 05) doit
 // repondre dans le simulateur -- sinon un eleve qui tape un code appris en
 // cours croit s'etre trompe. `ficheCoverage.json` est une photographie figee
-// de ces codes (transcrite le 16/10/2026, pas re-derivee des fichiers de
-// donnees eux-memes -- sinon ce test ne verifierait jamais rien). Si une
-// future fiche ajoute un aeroport ou une compagnie, mettre a jour
-// `ficheCoverage.json` fait partie de la tache -- ce test echouera tant que
-// `locations.json`/`airlines.json` n'auront pas rattrape.
+// de ces codes ET de leurs valeurs (transcrite le 16/10/2026, pas re-derivee
+// des fichiers de donnees eux-memes -- sinon ce test ne verifierait jamais
+// rien). Si une future fiche ajoute ou corrige un aeroport ou une compagnie,
+// mettre a jour `ficheCoverage.json` fait partie de la tache -- ce test
+// echouera tant que `locations.json`/`airlines.json` n'auront pas rattrape.
+//
+// Correction du 17/10/2026, apres coup : la premiere version de ce test ne
+// verifiait que la PRESENCE d'un code, pas sa valeur -- elle n'aurait jamais
+// detecte `TU` enregistre avec le prefixe numerique 083 (celui de South
+// African Airways) au lieu de 199, une erreur restee invisible six mois en
+// production. Desormais chaque compagnie est comparee sur `numeric` ET
+// `name`, chaque aeroport sur `city` ET `country` -- pas seulement le code.
 describe("Couverture simulateur <-> fiches de formation Amadeus niveau 1", () => {
-  it("tous les codes aeroport/ville enseignes resolvent dans locations.json", () => {
-    const knownIata = new Set(locations.map((l) => l.iata));
-    const missing = ficheCoverage.locationCodes.filter((code) => !knownIata.has(code));
-    expect(missing).toEqual([]);
+  it("tous les codes aeroport/ville enseignes resolvent dans locations.json, avec la bonne ville et le bon pays", () => {
+    const byIata = new Map(locations.map((l) => [l.iata, l]));
+    const mismatches = [];
+    for (const expected of ficheCoverage.locations) {
+      const actual = byIata.get(expected.iata);
+      if (!actual) {
+        mismatches.push(`${expected.iata}: absent de locations.json`);
+        continue;
+      }
+      if (actual.city !== expected.city || actual.country !== expected.country) {
+        mismatches.push(
+          `${expected.iata}: attendu ${expected.city}/${expected.country}, trouve ${actual.city}/${actual.country}`
+        );
+      }
+    }
+    expect(mismatches).toEqual([]);
   });
 
-  it("toutes les compagnies enseignees resolvent dans airlines.json", () => {
-    const knownCodes = new Set(airlines.map((a) => a.code));
-    const missing = ficheCoverage.airlineCodes.filter((code) => !knownCodes.has(code));
-    expect(missing).toEqual([]);
+  it("toutes les compagnies enseignees resolvent dans airlines.json, avec le bon prefixe numerique et le bon nom", () => {
+    const byCode = new Map(airlines.map((a) => [a.code, a]));
+    const mismatches = [];
+    for (const expected of ficheCoverage.airlines) {
+      const actual = byCode.get(expected.code);
+      if (!actual) {
+        mismatches.push(`${expected.code}: absent de airlines.json`);
+        continue;
+      }
+      if (actual.numeric !== expected.numeric || actual.name !== expected.name) {
+        mismatches.push(
+          `${expected.code}: attendu ${expected.numeric}/${expected.name}, trouve ${actual.numeric}/${actual.name}`
+        );
+      }
+    }
+    expect(mismatches).toEqual([]);
   });
 
   it("PAR, LON et NYC sont bien des codes de ville (type C), pas des aeroports", () => {
@@ -142,5 +173,23 @@ describe("Commandes reelles sur les nouveaux codes (DAC/DAN/AN/DNA)", () => {
     const state = createInitialState();
     const result = await processCommand(state, "DNA 6R", { deps });
     expect(textOf(result)).toContain("TASSILI");
+  });
+
+  // Regression dediee : TU avait le prefixe numerique de South African
+  // Airways (083) au lieu du sien (199), corrige le 17/10/2026 apres
+  // verification architecte contre la liste IATA et le fichier de la
+  // Chambre de compensation. SV renomme en SAUDIA (marque commerciale
+  // imprimee sur la fiche distribuee aux eleves), sa denomination legale
+  // (Saudi Arabian Airlines) etant volontairement differente de ce qu'un
+  // eleve lit en cours.
+  it("DNA TU renvoie le prefixe 199 (pas 083, celui de SA) ; DNA SV renvoie SAUDIA", async () => {
+    const deps = await makeDeps();
+    const state = createInitialState();
+    const tu = await processCommand(state, "DNA TU", { deps });
+    expect(textOf(tu)).toContain("199");
+    expect(textOf(tu)).not.toContain("083");
+    const sv = await processCommand(tu.state, "DNA SV", { deps });
+    expect(textOf(sv)).toContain("SAUDIA");
+    expect(textOf(sv)).not.toContain("SAUDI ARABIAN AIRLINES");
   });
 });

@@ -37,16 +37,29 @@ vit hors du dépôt, dans `D:\cowork\formation-amadeus-n1\`, jamais parsée auto
 demande (fetch asynchrone dans `packages/data`, déclenché au montage de `Terminal.jsx` — jamais
 inclus dans le bundle JS). Poids brut `locations.json` 4 Ko→33 Ko, `airlines.json` 0,8 Ko→6,5 Ko ;
 gzippé, environ 7 Ko au total pour les deux — négligeable pour un fetch unique non bloquant.
-**Observation signalée, non corrigée (hors périmètre « ajoute seulement »)** : l'entrée `TU`
-existante porte le préfixe numérique `083`, alors que la fiche 05 (source faisant référence)
-indique `199` ; `SV` existant porte le nom `SAUDI ARABIAN AIRLINES`, la fiche indique `SAUDIA`
-(nom commercial actuel). Les deux sont des entrées préexistantes, non touchées par cette passe —
-à trancher par Massy s'il souhaite aligner le simulateur sur la fiche.
-Non-régression complète : lint clean, typecheck clean (`packages/core`, `packages/exercises`),
-268/268 tests `packages/core`, 9/9 `packages/data`, 112/112 tests web (dont les 11 nouveaux),
-59/59 e2e (dont les scénarios golden ALG→PAR de `terminal.spec.js`, restés identiques), 6/6
-e2e-admin. **Reste à vérifier en production après déploiement** : `DAC DXB`, `DAN DUBAI`,
-`AN15DECALGIST`, `AN15DECALGDXB`, `TMR`/`BSK`/`GHA`, `QR`/`EK`/`TK`.
+**🟢 Les deux écarts `TU`/`SV` corrigés le 17/10/2026**, après arbitrage de l'architecte (vérifié
+à la source, pas une supposition) : `TU` portait le préfixe numérique `083` — **une vraie erreur**,
+083 est le préfixe IATA de South African Airways (`SA`), pas de Tunisair, confirmé par la liste
+des membres IATA et le fichier de la Chambre de compensation IATA (« TU-199 »), corrigé à `199`.
+`SV` renommé de `SAUDI ARABIAN AIRLINES` à `SAUDIA` : la dénomination légale reste Saudi Arabian
+Airlines, mais SAUDIA est la marque commerciale imprimée sur la fiche distribuée aux élèves —
+la base s'aligne sur ce qu'un élève lit en cours, pas sur le nom légal. Les douze autres entrées
+préexistantes (`AH`, `AF`, `TK`, `PC`, `AT`, `DL`, `AA`, `BA`, `LH`, `EK`, `QR`) ont été vérifiées
+indépendamment par l'architecte et confirmées exactes — non revérifiées par Claude Code.
+**Enseignement retenu, qui dépasse ces deux corrections** : `dataCoverage.test.js` ne vérifiait
+jusqu'ici que la *présence* d'un code enseigné dans les données, jamais sa *valeur* — il n'aurait
+jamais détecté `TU=083`, le code existait, avec un mauvais préfixe. **Étendu** : `ficheCoverage.json`
+régénéré pour porter les valeurs complètes (ville+pays par aéroport, préfixe+nom par compagnie,
+226+105 entrées, pas seulement une liste de codes) ; le test compare désormais champ par champ,
+plus un test dédié qui rejoue `DNA TU` (doit afficher 199, jamais 083) et `DNA SV` (doit afficher
+SAUDIA, jamais SAUDI ARABIAN AIRLINES) sur le vrai moteur. Non-régression : lint clean, 268/268
+`packages/core`, 9/9 `packages/data`, 113/113 tests web (dont le nouveau test de régression
+dédié), 59/59 e2e, 6/6 e2e-admin. **Vérifié en production après déploiement** : `DNA TU` et
+`DNA SV`.
+Non-régression complète de la passe initiale (16/10/2026) : lint clean, typecheck clean
+(`packages/core`, `packages/exercises`), 59/59 e2e (dont les scénarios golden ALG→PAR de
+`terminal.spec.js`, restés identiques), 6/6 e2e-admin. Vérifié en production après déploiement :
+`DAC DXB`, `DAN DUBAI`, `AN15DECALGIST`, `AN15DECALGDXB`, `TMR`/`BSK`/`GHA`, `QR`/`EK`/`TK`.
 
 **🟢 Constat architecte du 15/10/2026 : « l'accueil s'affiche en anglais sur un navigateur neuf
 configuré en anglais » — investigué, non reproduit, deux vraies incohérences adjacentes

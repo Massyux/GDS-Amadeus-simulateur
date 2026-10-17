@@ -21,6 +21,55 @@
 
 ## Fait (par session, datée)
 
+### 17/10/2026 — Correction TU/SV et garde-fou étendu aux valeurs, pas seulement aux codes
+
+Suite directe de la session du 16/10 (élargissement des données, entrée ci-dessous). Deux écarts
+avaient été signalés sans être corrigés, faute de mandat pour toucher des entrées préexistantes
+(« ajoute seulement »). L'architecte a vérifié les deux à la source et tranché :
+
+**`TU` (Tunisair) : vraie erreur, corrigée.** La base portait le préfixe numérique `083`. Ce
+n'est pas une variante acceptable ni une question de convention — **083 est le préfixe IATA de
+South African Airways** (`SA`, déjà correctement enregistré avec cette valeur dans la même base),
+confirmé par l'architecte via la liste des membres IATA et le fichier de la Chambre de
+compensation IATA, qui écrit explicitement « TU-199 ». Corrigé à `199`
+(`apps/web/public/data/airlines.json`, une seule ligne changée).
+
+**`SV` (Saudia) : alignement sur la fiche, pas une erreur de fait.** La base portait le nom
+`SAUDI ARABIAN AIRLINES`, dénomination légale toujours exacte. L'architecte a choisi d'aligner
+sur `SAUDIA`, la marque commerciale actuelle, parce que c'est elle qui est imprimée sur la fiche
+distribuée aux élèves — un élève qui tape `DNA SV` doit retrouver exactement ce qu'il a lu en
+cours, pas une dénomination légale qu'il n'a jamais vue.
+
+Les douze autres compagnies préexistantes (`AH`, `AF`, `TK`, `PC`, `AT`, `DL`, `AA`, `BA`, `LH`,
+`EK`, `QR`) ont été revérifiées par l'architecte lui-même contre les fiches et confirmées exactes
+— consigne explicite de ne pas refaire ce contrôle, suivie telle quelle.
+
+**Le vrai sujet de cette session, au-delà des deux corrections** : le garde-fou
+`dataCoverage.test.js` écrit la veille ne vérifiait que la *présence* d'un code enseigné dans les
+données — jamais l'exactitude de sa valeur. Il n'aurait jamais détecté `TU=083` : le code
+existait, il répondait, juste avec un mauvais chiffre. Un chiffre faux a pu rester en production
+sans qu'aucun test ne le signale, précisément le scénario que le garde-fou était censé empêcher.
+
+**Correction structurelle, pas un simple patch de valeurs.** `apps/web/src/data/
+ficheCoverage.json` entièrement régénéré : il portait jusqu'ici deux listes de codes nus
+(`locationCodes`, `airlineCodes`) ; il porte désormais les **valeurs complètes** transcrites des
+fiches — `city`/`country` pour chacun des 226 aéroports, `numeric`/`name` pour chacune des 105
+compagnies (y compris, pour la première fois, les 28 aéroports et 13 compagnies préexistants,
+qui n'avaient jamais été comparés à leur source avant cette session — vérification indépendante
+qui confirme au passage qu'aucun des 28 aéroports préexistants n'avait d'erreur de ville ou de
+pays, contrairement à `TU`). `apps/web/src/dataCoverage.test.js` compare désormais champ par
+champ : un aéroport dont la ville ou le pays diffère de la fiche fait échouer le test, même si
+son code IATA est bien présent — plus un test dédié qui rejoue `DNA TU` (doit contenir `199`,
+ne doit jamais contenir `083`) et `DNA SV` (doit contenir `SAUDIA`, ne doit jamais contenir
+`SAUDI ARABIAN AIRLINES`) sur le vrai moteur, pour que cette régression précise ne puisse plus
+jamais repasser inaperçue.
+
+**Non-régression complète** : lint clean, 268/268 `packages/core`, 9/9 `packages/data`, 113/113
+tests web (112 existants + le nouveau test de régression dédié TU/SV), 59/59 e2e (dont les
+scénarios golden ALG→PAR de `terminal.spec.js`, inchangés), 6/6 e2e-admin.
+
+**Vérifié en production après déploiement** : `DNA TU` affiche `199`, `DNA SV` affiche `SAUDIA`.
+
 ### 16/10/2026 — Élargissement des données du simulateur (locations.json/airlines.json) à la formation Amadeus niveau 1
 
 Prompt de l'architecte (`missions/PROMPT-DONNEES-SIMULATEUR.md`) : le contenu de la formation

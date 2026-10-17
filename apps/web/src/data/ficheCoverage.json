@@ -1,338 +1,1662 @@
 {
-  "_comment": "Codes enseignes par les fiches de reference de la formation Amadeus niveau 1 (D:/cowork/formation-amadeus-n1/fiches-pdf/03,04,05) -- transcription figee le 16/10/2026. A mettre a jour manuellement si une future fiche ajoute un code, AVANT de considerer la mise a jour des donnees terminee -- voir apps/web/src/dataCoverage.test.js.",
-  "locationCodes": [
-    "AAE",
-    "ABJ",
-    "ABV",
-    "ACC",
-    "ADD",
-    "AGA",
-    "AGP",
-    "AJA",
-    "AKL",
-    "ALC",
-    "ALG",
-    "AMM",
-    "AMS",
-    "ARN",
-    "ATH",
-    "ATL",
-    "AUH",
-    "AYT",
-    "AZR",
-    "BAH",
-    "BCN",
-    "BEN",
-    "BER",
-    "BEY",
-    "BGW",
-    "BJA",
-    "BKK",
-    "BKO",
-    "BLJ",
-    "BLQ",
-    "BLR",
-    "BMW",
-    "BNE",
-    "BOD",
-    "BOG",
-    "BOM",
-    "BOS",
-    "BRU",
-    "BSK",
-    "BUD",
-    "BVA",
-    "CAI",
-    "CAN",
-    "CBH",
-    "CDG",
-    "CFE",
-    "CFK",
-    "CGK",
-    "CGN",
-    "CMB",
-    "CMN",
-    "CPH",
-    "CPT",
-    "CRL",
-    "CUN",
-    "CZL",
-    "DAC",
-    "DAM",
-    "DAR",
-    "DEL",
-    "DFW",
-    "DJE",
-    "DJG",
-    "DLA",
-    "DME",
-    "DMK",
-    "DMM",
-    "DOH",
-    "DPS",
-    "DSS",
-    "DUB",
-    "DUS",
-    "DWC",
-    "DXB",
-    "EBH",
-    "ELG",
-    "ELU",
-    "ESB",
-    "ETZ",
-    "EWR",
-    "EZE",
-    "FCO",
-    "FEZ",
-    "FIH",
-    "FRA",
-    "GHA",
-    "GIG",
-    "GJL",
-    "GRU",
-    "GVA",
-    "GYD",
-    "HAM",
-    "HAN",
-    "HAV",
-    "HBE",
-    "HEL",
-    "HKG",
-    "HKT",
-    "HME",
-    "HND",
-    "HRM",
-    "HYD",
-    "IAD",
-    "IAH",
-    "IAM",
-    "ICN",
-    "IKA",
-    "INZ",
-    "ISB",
-    "IST",
-    "JED",
-    "JFK",
-    "JNB",
-    "KBP",
-    "KHI",
-    "KIX",
-    "KRT",
-    "KTM",
-    "KUL",
-    "KWI",
-    "LAS",
-    "LAX",
-    "LBV",
-    "LGA",
-    "LGW",
-    "LHE",
-    "LHR",
-    "LIL",
-    "LIM",
-    "LIN",
-    "LIS",
-    "LON",
-    "LOO",
-    "LOS",
-    "LUX",
-    "LYS",
-    "MAA",
-    "MAD",
-    "MAN",
-    "MCO",
-    "MCT",
-    "MED",
-    "MEL",
-    "MEX",
-    "MIA",
-    "MIR",
-    "MJI",
-    "MLA",
-    "MLH",
-    "MNL",
-    "MPL",
-    "MRS",
-    "MRU",
-    "MUC",
-    "MUW",
-    "MXP",
-    "MZW",
-    "NAP",
-    "NBO",
-    "NCE",
-    "NIM",
-    "NKC",
-    "NRT",
-    "NTE",
-    "NYC",
-    "OGX",
-    "OPO",
-    "ORD",
-    "ORN",
-    "ORY",
-    "OSL",
-    "OTP",
-    "OUA",
-    "OUD",
-    "PAR",
-    "PEK",
-    "PER",
-    "PGF",
-    "PKX",
-    "PMI",
-    "PRG",
-    "PTY",
-    "PVG",
-    "QMH",
-    "QSF",
-    "RAK",
-    "RBA",
-    "RUH",
-    "SAW",
-    "SCL",
-    "SEA",
-    "SFA",
-    "SFO",
-    "SGN",
-    "SIN",
-    "SSH",
-    "STN",
-    "STR",
-    "SVO",
-    "SVQ",
-    "SXB",
-    "SYD",
-    "SZX",
-    "TAS",
-    "TEE",
-    "TGR",
-    "TID",
-    "TIN",
-    "TLM",
-    "TLS",
-    "TLV",
-    "TMR",
-    "TMX",
-    "TNG",
-    "TNR",
-    "TUN",
-    "VCE",
-    "VIE",
-    "VLC",
-    "VVZ",
-    "WAW",
-    "YOW",
-    "YUL",
-    "YVR",
-    "YYZ",
-    "ZRH"
+  "_comment": "Codes ET VALEURS enseignes par les fiches de reference de la formation Amadeus niveau 1 (D:/cowork/formation-amadeus-n1/fiches-pdf/03,04,05) -- transcription figee le 16-17/10/2026, TU et SV corriges le 17/10/2026 apres verification architecte (TU=083 etait une erreur pre-existante : 083 est le prefixe IATA de South African Airways, pas de Tunisair). Compare le CODE, le NUMERIC/NAME (compagnies) ou la VILLE/PAYS (aeroports), pas seulement la presence du code -- voir apps/web/src/dataCoverage.test.js. A completer manuellement si une future fiche change un code ou une valeur, AVANT de considerer la mise a jour terminee.",
+  "locations": [
+    {
+      "iata": "AAE",
+      "city": "ANNABA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ABJ",
+      "city": "ABIDJAN",
+      "country": "IVORY COAST"
+    },
+    {
+      "iata": "ABV",
+      "city": "ABUJA",
+      "country": "NIGERIA"
+    },
+    {
+      "iata": "ACC",
+      "city": "ACCRA",
+      "country": "GHANA"
+    },
+    {
+      "iata": "ADD",
+      "city": "ADDIS ABABA",
+      "country": "ETHIOPIA"
+    },
+    {
+      "iata": "AGA",
+      "city": "AGADIR",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "AGP",
+      "city": "MALAGA",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "AJA",
+      "city": "AJACCIO",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "AKL",
+      "city": "AUCKLAND",
+      "country": "NEW ZEALAND"
+    },
+    {
+      "iata": "ALC",
+      "city": "ALICANTE",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "ALG",
+      "city": "ALGIERS",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "AMM",
+      "city": "AMMAN",
+      "country": "JORDAN"
+    },
+    {
+      "iata": "AMS",
+      "city": "AMSTERDAM",
+      "country": "NETHERLANDS"
+    },
+    {
+      "iata": "ARN",
+      "city": "STOCKHOLM",
+      "country": "SWEDEN"
+    },
+    {
+      "iata": "ATH",
+      "city": "ATHENS",
+      "country": "GREECE"
+    },
+    {
+      "iata": "ATL",
+      "city": "ATLANTA",
+      "country": "USA"
+    },
+    {
+      "iata": "AUH",
+      "city": "ABU DHABI",
+      "country": "UAE"
+    },
+    {
+      "iata": "AYT",
+      "city": "ANTALYA",
+      "country": "TURKEY"
+    },
+    {
+      "iata": "AZR",
+      "city": "ADRAR",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "BAH",
+      "city": "MANAMA",
+      "country": "BAHRAIN"
+    },
+    {
+      "iata": "BCN",
+      "city": "BARCELONA",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "BEN",
+      "city": "BENGHAZI",
+      "country": "LIBYA"
+    },
+    {
+      "iata": "BER",
+      "city": "BERLIN",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "BEY",
+      "city": "BEIRUT",
+      "country": "LEBANON"
+    },
+    {
+      "iata": "BGW",
+      "city": "BAGHDAD",
+      "country": "IRAQ"
+    },
+    {
+      "iata": "BJA",
+      "city": "BEJAIA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "BKK",
+      "city": "BANGKOK",
+      "country": "THAILAND"
+    },
+    {
+      "iata": "BKO",
+      "city": "BAMAKO",
+      "country": "MALI"
+    },
+    {
+      "iata": "BLJ",
+      "city": "BATNA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "BLQ",
+      "city": "BOLOGNA",
+      "country": "ITALY"
+    },
+    {
+      "iata": "BLR",
+      "city": "BANGALORE",
+      "country": "INDIA"
+    },
+    {
+      "iata": "BMW",
+      "city": "BORDJ BADJI MOKHTAR",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "BNE",
+      "city": "BRISBANE",
+      "country": "AUSTRALIA"
+    },
+    {
+      "iata": "BOD",
+      "city": "BORDEAUX",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "BOG",
+      "city": "BOGOTA",
+      "country": "COLOMBIA"
+    },
+    {
+      "iata": "BOM",
+      "city": "MUMBAI",
+      "country": "INDIA"
+    },
+    {
+      "iata": "BOS",
+      "city": "BOSTON",
+      "country": "USA"
+    },
+    {
+      "iata": "BRU",
+      "city": "BRUSSELS",
+      "country": "BELGIUM"
+    },
+    {
+      "iata": "BSK",
+      "city": "BISKRA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "BUD",
+      "city": "BUDAPEST",
+      "country": "HUNGARY"
+    },
+    {
+      "iata": "BVA",
+      "city": "PARIS",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "CAI",
+      "city": "CAIRO",
+      "country": "EGYPT"
+    },
+    {
+      "iata": "CAN",
+      "city": "GUANGZHOU",
+      "country": "CHINA"
+    },
+    {
+      "iata": "CBH",
+      "city": "BECHAR",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "CDG",
+      "city": "PARIS",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "CFE",
+      "city": "CLERMONT FERRAND",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "CFK",
+      "city": "CHLEF",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "CGK",
+      "city": "JAKARTA",
+      "country": "INDONESIA"
+    },
+    {
+      "iata": "CGN",
+      "city": "COLOGNE",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "CMB",
+      "city": "COLOMBO",
+      "country": "SRI LANKA"
+    },
+    {
+      "iata": "CMN",
+      "city": "CASABLANCA",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "CPH",
+      "city": "COPENHAGEN",
+      "country": "DENMARK"
+    },
+    {
+      "iata": "CPT",
+      "city": "CAPE TOWN",
+      "country": "SOUTH AFRICA"
+    },
+    {
+      "iata": "CRL",
+      "city": "BRUSSELS",
+      "country": "BELGIUM"
+    },
+    {
+      "iata": "CUN",
+      "city": "CANCUN",
+      "country": "MEXICO"
+    },
+    {
+      "iata": "CZL",
+      "city": "CONSTANTINE",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "DAC",
+      "city": "DHAKA",
+      "country": "BANGLADESH"
+    },
+    {
+      "iata": "DAM",
+      "city": "DAMASCUS",
+      "country": "SYRIA"
+    },
+    {
+      "iata": "DAR",
+      "city": "DAR ES SALAAM",
+      "country": "TANZANIA"
+    },
+    {
+      "iata": "DEL",
+      "city": "NEW DELHI",
+      "country": "INDIA"
+    },
+    {
+      "iata": "DFW",
+      "city": "DALLAS",
+      "country": "USA"
+    },
+    {
+      "iata": "DJE",
+      "city": "DJERBA",
+      "country": "TUNISIA"
+    },
+    {
+      "iata": "DJG",
+      "city": "DJANET",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "DLA",
+      "city": "DOUALA",
+      "country": "CAMEROON"
+    },
+    {
+      "iata": "DME",
+      "city": "MOSCOW",
+      "country": "RUSSIA"
+    },
+    {
+      "iata": "DMK",
+      "city": "BANGKOK",
+      "country": "THAILAND"
+    },
+    {
+      "iata": "DMM",
+      "city": "DAMMAM",
+      "country": "SAUDI ARABIA"
+    },
+    {
+      "iata": "DOH",
+      "city": "DOHA",
+      "country": "QATAR"
+    },
+    {
+      "iata": "DPS",
+      "city": "DENPASAR",
+      "country": "INDONESIA"
+    },
+    {
+      "iata": "DSS",
+      "city": "DAKAR",
+      "country": "SENEGAL"
+    },
+    {
+      "iata": "DUB",
+      "city": "DUBLIN",
+      "country": "IRELAND"
+    },
+    {
+      "iata": "DUS",
+      "city": "DUSSELDORF",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "DWC",
+      "city": "DUBAI",
+      "country": "UAE"
+    },
+    {
+      "iata": "DXB",
+      "city": "DUBAI",
+      "country": "UAE"
+    },
+    {
+      "iata": "EBH",
+      "city": "EL BAYADH",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ELG",
+      "city": "EL GOLEA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ELU",
+      "city": "EL OUED",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ESB",
+      "city": "ANKARA",
+      "country": "TURKEY"
+    },
+    {
+      "iata": "ETZ",
+      "city": "METZ NANCY",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "EWR",
+      "city": "NEW YORK",
+      "country": "USA"
+    },
+    {
+      "iata": "EZE",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA"
+    },
+    {
+      "iata": "FCO",
+      "city": "ROME",
+      "country": "ITALY"
+    },
+    {
+      "iata": "FEZ",
+      "city": "FEZ",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "FIH",
+      "city": "KINSHASA",
+      "country": "CONGO DR"
+    },
+    {
+      "iata": "FRA",
+      "city": "FRANKFURT",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "GHA",
+      "city": "GHARDAIA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "GIG",
+      "city": "RIO DE JANEIRO",
+      "country": "BRAZIL"
+    },
+    {
+      "iata": "GJL",
+      "city": "JIJEL",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "GRU",
+      "city": "SAO PAULO",
+      "country": "BRAZIL"
+    },
+    {
+      "iata": "GVA",
+      "city": "GENEVA",
+      "country": "SWITZERLAND"
+    },
+    {
+      "iata": "GYD",
+      "city": "BAKU",
+      "country": "AZERBAIJAN"
+    },
+    {
+      "iata": "HAM",
+      "city": "HAMBURG",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "HAN",
+      "city": "HANOI",
+      "country": "VIETNAM"
+    },
+    {
+      "iata": "HAV",
+      "city": "HAVANA",
+      "country": "CUBA"
+    },
+    {
+      "iata": "HBE",
+      "city": "ALEXANDRIA",
+      "country": "EGYPT"
+    },
+    {
+      "iata": "HEL",
+      "city": "HELSINKI",
+      "country": "FINLAND"
+    },
+    {
+      "iata": "HKG",
+      "city": "HONG KONG",
+      "country": "HONG KONG"
+    },
+    {
+      "iata": "HKT",
+      "city": "PHUKET",
+      "country": "THAILAND"
+    },
+    {
+      "iata": "HME",
+      "city": "HASSI MESSAOUD",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "HND",
+      "city": "TOKYO",
+      "country": "JAPAN"
+    },
+    {
+      "iata": "HRM",
+      "city": "HASSI R'MEL",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "HYD",
+      "city": "HYDERABAD",
+      "country": "INDIA"
+    },
+    {
+      "iata": "IAD",
+      "city": "WASHINGTON",
+      "country": "USA"
+    },
+    {
+      "iata": "IAH",
+      "city": "HOUSTON",
+      "country": "USA"
+    },
+    {
+      "iata": "IAM",
+      "city": "IN AMENAS",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ICN",
+      "city": "SEOUL",
+      "country": "SOUTH KOREA"
+    },
+    {
+      "iata": "IKA",
+      "city": "TEHRAN",
+      "country": "IRAN"
+    },
+    {
+      "iata": "INZ",
+      "city": "IN SALAH",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ISB",
+      "city": "ISLAMABAD",
+      "country": "PAKISTAN"
+    },
+    {
+      "iata": "IST",
+      "city": "ISTANBUL",
+      "country": "TURKEY"
+    },
+    {
+      "iata": "JED",
+      "city": "JEDDAH",
+      "country": "SAUDI ARABIA"
+    },
+    {
+      "iata": "JFK",
+      "city": "NEW YORK",
+      "country": "USA"
+    },
+    {
+      "iata": "JNB",
+      "city": "JOHANNESBURG",
+      "country": "SOUTH AFRICA"
+    },
+    {
+      "iata": "KBP",
+      "city": "KIEV",
+      "country": "UKRAINE"
+    },
+    {
+      "iata": "KHI",
+      "city": "KARACHI",
+      "country": "PAKISTAN"
+    },
+    {
+      "iata": "KIX",
+      "city": "OSAKA",
+      "country": "JAPAN"
+    },
+    {
+      "iata": "KRT",
+      "city": "KHARTOUM",
+      "country": "SUDAN"
+    },
+    {
+      "iata": "KTM",
+      "city": "KATHMANDU",
+      "country": "NEPAL"
+    },
+    {
+      "iata": "KUL",
+      "city": "KUALA LUMPUR",
+      "country": "MALAYSIA"
+    },
+    {
+      "iata": "KWI",
+      "city": "KUWAIT",
+      "country": "KUWAIT"
+    },
+    {
+      "iata": "LAS",
+      "city": "LAS VEGAS",
+      "country": "USA"
+    },
+    {
+      "iata": "LAX",
+      "city": "LOS ANGELES",
+      "country": "USA"
+    },
+    {
+      "iata": "LBV",
+      "city": "LIBREVILLE",
+      "country": "GABON"
+    },
+    {
+      "iata": "LGA",
+      "city": "NEW YORK",
+      "country": "USA"
+    },
+    {
+      "iata": "LGW",
+      "city": "LONDON",
+      "country": "UNITED KINGDOM"
+    },
+    {
+      "iata": "LHE",
+      "city": "LAHORE",
+      "country": "PAKISTAN"
+    },
+    {
+      "iata": "LHR",
+      "city": "LONDON",
+      "country": "UNITED KINGDOM"
+    },
+    {
+      "iata": "LIL",
+      "city": "LILLE",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "LIM",
+      "city": "LIMA",
+      "country": "PERU"
+    },
+    {
+      "iata": "LIN",
+      "city": "MILAN",
+      "country": "ITALY"
+    },
+    {
+      "iata": "LIS",
+      "city": "LISBON",
+      "country": "PORTUGAL"
+    },
+    {
+      "iata": "LON",
+      "city": "LONDON",
+      "country": "UNITED KINGDOM"
+    },
+    {
+      "iata": "LOO",
+      "city": "LAGHOUAT",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "LOS",
+      "city": "LAGOS",
+      "country": "NIGERIA"
+    },
+    {
+      "iata": "LUX",
+      "city": "LUXEMBOURG",
+      "country": "LUXEMBOURG"
+    },
+    {
+      "iata": "LYS",
+      "city": "LYON",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "MAA",
+      "city": "CHENNAI",
+      "country": "INDIA"
+    },
+    {
+      "iata": "MAD",
+      "city": "MADRID",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "MAN",
+      "city": "MANCHESTER",
+      "country": "UNITED KINGDOM"
+    },
+    {
+      "iata": "MCO",
+      "city": "ORLANDO",
+      "country": "USA"
+    },
+    {
+      "iata": "MCT",
+      "city": "MUSCAT",
+      "country": "OMAN"
+    },
+    {
+      "iata": "MED",
+      "city": "MEDINA",
+      "country": "SAUDI ARABIA"
+    },
+    {
+      "iata": "MEL",
+      "city": "MELBOURNE",
+      "country": "AUSTRALIA"
+    },
+    {
+      "iata": "MEX",
+      "city": "MEXICO CITY",
+      "country": "MEXICO"
+    },
+    {
+      "iata": "MIA",
+      "city": "MIAMI",
+      "country": "USA"
+    },
+    {
+      "iata": "MIR",
+      "city": "MONASTIR",
+      "country": "TUNISIA"
+    },
+    {
+      "iata": "MJI",
+      "city": "TRIPOLI",
+      "country": "LIBYA"
+    },
+    {
+      "iata": "MLA",
+      "city": "MALTA",
+      "country": "MALTA"
+    },
+    {
+      "iata": "MLH",
+      "city": "MULHOUSE",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "MNL",
+      "city": "MANILA",
+      "country": "PHILIPPINES"
+    },
+    {
+      "iata": "MPL",
+      "city": "MONTPELLIER",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "MRS",
+      "city": "MARSEILLE",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "MRU",
+      "city": "PORT LOUIS",
+      "country": "MAURITIUS"
+    },
+    {
+      "iata": "MUC",
+      "city": "MUNICH",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "MUW",
+      "city": "MASCARA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "MXP",
+      "city": "MILAN",
+      "country": "ITALY"
+    },
+    {
+      "iata": "MZW",
+      "city": "MECHERIA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "NAP",
+      "city": "NAPLES",
+      "country": "ITALY"
+    },
+    {
+      "iata": "NBO",
+      "city": "NAIROBI",
+      "country": "KENYA"
+    },
+    {
+      "iata": "NCE",
+      "city": "NICE",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "NIM",
+      "city": "NIAMEY",
+      "country": "NIGER"
+    },
+    {
+      "iata": "NKC",
+      "city": "NOUAKCHOTT",
+      "country": "MAURITANIA"
+    },
+    {
+      "iata": "NRT",
+      "city": "TOKYO",
+      "country": "JAPAN"
+    },
+    {
+      "iata": "NTE",
+      "city": "NANTES",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "NYC",
+      "city": "NEW YORK",
+      "country": "USA"
+    },
+    {
+      "iata": "OGX",
+      "city": "OUARGLA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "OPO",
+      "city": "PORTO",
+      "country": "PORTUGAL"
+    },
+    {
+      "iata": "ORD",
+      "city": "CHICAGO",
+      "country": "USA"
+    },
+    {
+      "iata": "ORN",
+      "city": "ORAN",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "ORY",
+      "city": "PARIS",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "OSL",
+      "city": "OSLO",
+      "country": "NORWAY"
+    },
+    {
+      "iata": "OTP",
+      "city": "BUCHAREST",
+      "country": "ROMANIA"
+    },
+    {
+      "iata": "OUA",
+      "city": "OUAGADOUGOU",
+      "country": "BURKINA FASO"
+    },
+    {
+      "iata": "OUD",
+      "city": "OUJDA",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "PAR",
+      "city": "PARIS",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "PEK",
+      "city": "BEIJING",
+      "country": "CHINA"
+    },
+    {
+      "iata": "PER",
+      "city": "PERTH",
+      "country": "AUSTRALIA"
+    },
+    {
+      "iata": "PGF",
+      "city": "PERPIGNAN",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "PKX",
+      "city": "BEIJING",
+      "country": "CHINA"
+    },
+    {
+      "iata": "PMI",
+      "city": "PALMA",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "PRG",
+      "city": "PRAGUE",
+      "country": "CZECH REPUBLIC"
+    },
+    {
+      "iata": "PTY",
+      "city": "PANAMA CITY",
+      "country": "PANAMA"
+    },
+    {
+      "iata": "PVG",
+      "city": "SHANGHAI",
+      "country": "CHINA"
+    },
+    {
+      "iata": "QMH",
+      "city": "OUM EL BOUAGHI",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "QSF",
+      "city": "SETIF",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "RAK",
+      "city": "MARRAKECH",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "RBA",
+      "city": "RABAT",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "RUH",
+      "city": "RIYADH",
+      "country": "SAUDI ARABIA"
+    },
+    {
+      "iata": "SAW",
+      "city": "ISTANBUL",
+      "country": "TURKEY"
+    },
+    {
+      "iata": "SCL",
+      "city": "SANTIAGO",
+      "country": "CHILE"
+    },
+    {
+      "iata": "SEA",
+      "city": "SEATTLE",
+      "country": "USA"
+    },
+    {
+      "iata": "SFA",
+      "city": "SFAX",
+      "country": "TUNISIA"
+    },
+    {
+      "iata": "SFO",
+      "city": "SAN FRANCISCO",
+      "country": "USA"
+    },
+    {
+      "iata": "SGN",
+      "city": "HO CHI MINH CITY",
+      "country": "VIETNAM"
+    },
+    {
+      "iata": "SIN",
+      "city": "SINGAPORE",
+      "country": "SINGAPORE"
+    },
+    {
+      "iata": "SSH",
+      "city": "SHARM EL SHEIKH",
+      "country": "EGYPT"
+    },
+    {
+      "iata": "STN",
+      "city": "LONDON",
+      "country": "UNITED KINGDOM"
+    },
+    {
+      "iata": "STR",
+      "city": "STUTTGART",
+      "country": "GERMANY"
+    },
+    {
+      "iata": "SVO",
+      "city": "MOSCOW",
+      "country": "RUSSIA"
+    },
+    {
+      "iata": "SVQ",
+      "city": "SEVILLE",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "SXB",
+      "city": "STRASBOURG",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "SYD",
+      "city": "SYDNEY",
+      "country": "AUSTRALIA"
+    },
+    {
+      "iata": "SZX",
+      "city": "SHENZHEN",
+      "country": "CHINA"
+    },
+    {
+      "iata": "TAS",
+      "city": "TASHKENT",
+      "country": "UZBEKISTAN"
+    },
+    {
+      "iata": "TEE",
+      "city": "TEBESSA",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TGR",
+      "city": "TOUGGOURT",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TID",
+      "city": "TIARET",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TIN",
+      "city": "TINDOUF",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TLM",
+      "city": "TLEMCEN",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TLS",
+      "city": "TOULOUSE",
+      "country": "FRANCE"
+    },
+    {
+      "iata": "TLV",
+      "city": "TEL AVIV",
+      "country": "ISRAEL"
+    },
+    {
+      "iata": "TMR",
+      "city": "TAMANRASSET",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TMX",
+      "city": "TIMIMOUN",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "TNG",
+      "city": "TANGIER",
+      "country": "MOROCCO"
+    },
+    {
+      "iata": "TNR",
+      "city": "ANTANANARIVO",
+      "country": "MADAGASCAR"
+    },
+    {
+      "iata": "TUN",
+      "city": "TUNIS",
+      "country": "TUNISIA"
+    },
+    {
+      "iata": "VCE",
+      "city": "VENICE",
+      "country": "ITALY"
+    },
+    {
+      "iata": "VIE",
+      "city": "VIENNA",
+      "country": "AUSTRIA"
+    },
+    {
+      "iata": "VLC",
+      "city": "VALENCIA",
+      "country": "SPAIN"
+    },
+    {
+      "iata": "VVZ",
+      "city": "ILLIZI",
+      "country": "ALGERIA"
+    },
+    {
+      "iata": "WAW",
+      "city": "WARSAW",
+      "country": "POLAND"
+    },
+    {
+      "iata": "YOW",
+      "city": "OTTAWA",
+      "country": "CANADA"
+    },
+    {
+      "iata": "YUL",
+      "city": "MONTREAL",
+      "country": "CANADA"
+    },
+    {
+      "iata": "YVR",
+      "city": "VANCOUVER",
+      "country": "CANADA"
+    },
+    {
+      "iata": "YYZ",
+      "city": "TORONTO",
+      "country": "CANADA"
+    },
+    {
+      "iata": "ZRH",
+      "city": "ZURICH",
+      "country": "SWITZERLAND"
+    }
   ],
-  "airlineCodes": [
-    "3U",
-    "6E",
-    "6R",
-    "A3",
-    "AA",
-    "AC",
-    "AD",
-    "AF",
-    "AH",
-    "AI",
-    "AK",
-    "AM",
-    "AR",
-    "AS",
-    "AT",
-    "AV",
-    "AW",
-    "AY",
-    "AZ",
-    "B6",
-    "BA",
-    "BG",
-    "BR",
-    "CA",
-    "CI",
-    "CM",
-    "CU",
-    "CX",
-    "CZ",
-    "DL",
-    "DT",
-    "DY",
-    "EI",
-    "EK",
-    "ET",
-    "EW",
-    "EY",
-    "FR",
-    "FZ",
-    "G3",
-    "G9",
-    "GA",
-    "GF",
-    "HC",
-    "HF",
-    "HY",
-    "IB",
-    "IR",
-    "JL",
-    "JU",
-    "KE",
-    "KL",
-    "KM",
-    "KQ",
-    "KU",
-    "LA",
-    "LH",
-    "LO",
-    "LX",
-    "LY",
-    "MD",
-    "ME",
-    "MH",
-    "MK",
-    "MS",
-    "MU",
-    "NH",
-    "NZ",
-    "OK",
-    "OS",
-    "OZ",
-    "P4",
-    "PC",
-    "PK",
-    "PR",
-    "QF",
-    "QR",
-    "RJ",
-    "RO",
-    "SA",
-    "SK",
-    "SN",
-    "SQ",
-    "SU",
-    "SV",
-    "SW",
-    "TC",
-    "TG",
-    "TK",
-    "TO",
-    "TP",
-    "TU",
-    "U2",
-    "UA",
-    "UL",
-    "V7",
-    "VN",
-    "VY",
-    "W3",
-    "W6",
-    "WB",
-    "WN",
-    "WS",
-    "WY",
-    "XY"
+  "airlines": [
+    {
+      "code": "3U",
+      "numeric": "876",
+      "name": "SICHUAN AIRLINES"
+    },
+    {
+      "code": "6E",
+      "numeric": "312",
+      "name": "INDIGO"
+    },
+    {
+      "code": "6R",
+      "numeric": "",
+      "name": "TASSILI AIRLINES"
+    },
+    {
+      "code": "A3",
+      "numeric": "390",
+      "name": "AEGEAN AIRLINES"
+    },
+    {
+      "code": "AA",
+      "numeric": "001",
+      "name": "AMERICAN AIRLINES"
+    },
+    {
+      "code": "AC",
+      "numeric": "014",
+      "name": "AIR CANADA"
+    },
+    {
+      "code": "AD",
+      "numeric": "577",
+      "name": "AZUL"
+    },
+    {
+      "code": "AF",
+      "numeric": "057",
+      "name": "AIR FRANCE"
+    },
+    {
+      "code": "AH",
+      "numeric": "124",
+      "name": "AIR ALGERIE"
+    },
+    {
+      "code": "AI",
+      "numeric": "098",
+      "name": "AIR INDIA"
+    },
+    {
+      "code": "AK",
+      "numeric": "",
+      "name": "AIRASIA"
+    },
+    {
+      "code": "AM",
+      "numeric": "139",
+      "name": "AEROMEXICO"
+    },
+    {
+      "code": "AR",
+      "numeric": "044",
+      "name": "AEROLINEAS ARGENTINAS"
+    },
+    {
+      "code": "AS",
+      "numeric": "027",
+      "name": "ALASKA AIRLINES"
+    },
+    {
+      "code": "AT",
+      "numeric": "147",
+      "name": "ROYAL AIR MAROC"
+    },
+    {
+      "code": "AV",
+      "numeric": "134",
+      "name": "AVIANCA"
+    },
+    {
+      "code": "AW",
+      "numeric": "",
+      "name": "AFRICA WORLD AIRLINES"
+    },
+    {
+      "code": "AY",
+      "numeric": "105",
+      "name": "FINNAIR"
+    },
+    {
+      "code": "AZ",
+      "numeric": "055",
+      "name": "ITA AIRWAYS"
+    },
+    {
+      "code": "B6",
+      "numeric": "279",
+      "name": "JETBLUE"
+    },
+    {
+      "code": "BA",
+      "numeric": "125",
+      "name": "BRITISH AIRWAYS"
+    },
+    {
+      "code": "BG",
+      "numeric": "997",
+      "name": "BIMAN BANGLADESH"
+    },
+    {
+      "code": "BR",
+      "numeric": "695",
+      "name": "EVA AIR"
+    },
+    {
+      "code": "CA",
+      "numeric": "999",
+      "name": "AIR CHINA"
+    },
+    {
+      "code": "CI",
+      "numeric": "297",
+      "name": "CHINA AIRLINES"
+    },
+    {
+      "code": "CM",
+      "numeric": "230",
+      "name": "COPA AIRLINES"
+    },
+    {
+      "code": "CU",
+      "numeric": "136",
+      "name": "CUBANA"
+    },
+    {
+      "code": "CX",
+      "numeric": "160",
+      "name": "CATHAY PACIFIC"
+    },
+    {
+      "code": "CZ",
+      "numeric": "784",
+      "name": "CHINA SOUTHERN"
+    },
+    {
+      "code": "DL",
+      "numeric": "006",
+      "name": "DELTA AIR LINES"
+    },
+    {
+      "code": "DT",
+      "numeric": "118",
+      "name": "TAAG ANGOLA"
+    },
+    {
+      "code": "DY",
+      "numeric": "",
+      "name": "NORWEGIAN"
+    },
+    {
+      "code": "EI",
+      "numeric": "053",
+      "name": "AER LINGUS"
+    },
+    {
+      "code": "EK",
+      "numeric": "176",
+      "name": "EMIRATES"
+    },
+    {
+      "code": "ET",
+      "numeric": "071",
+      "name": "ETHIOPIAN AIRLINES"
+    },
+    {
+      "code": "EW",
+      "numeric": "",
+      "name": "EUROWINGS"
+    },
+    {
+      "code": "EY",
+      "numeric": "607",
+      "name": "ETIHAD AIRWAYS"
+    },
+    {
+      "code": "FR",
+      "numeric": "",
+      "name": "RYANAIR"
+    },
+    {
+      "code": "FZ",
+      "numeric": "",
+      "name": "FLYDUBAI"
+    },
+    {
+      "code": "G3",
+      "numeric": "127",
+      "name": "GOL"
+    },
+    {
+      "code": "G9",
+      "numeric": "",
+      "name": "AIR ARABIA"
+    },
+    {
+      "code": "GA",
+      "numeric": "126",
+      "name": "GARUDA INDONESIA"
+    },
+    {
+      "code": "GF",
+      "numeric": "072",
+      "name": "GULF AIR"
+    },
+    {
+      "code": "HC",
+      "numeric": "",
+      "name": "AIR SENEGAL"
+    },
+    {
+      "code": "HF",
+      "numeric": "",
+      "name": "AIR COTE D'IVOIRE"
+    },
+    {
+      "code": "HY",
+      "numeric": "250",
+      "name": "UZBEKISTAN AIRWAYS"
+    },
+    {
+      "code": "IB",
+      "numeric": "075",
+      "name": "IBERIA"
+    },
+    {
+      "code": "IR",
+      "numeric": "096",
+      "name": "IRAN AIR"
+    },
+    {
+      "code": "JL",
+      "numeric": "131",
+      "name": "JAPAN AIRLINES"
+    },
+    {
+      "code": "JU",
+      "numeric": "115",
+      "name": "AIR SERBIA"
+    },
+    {
+      "code": "KE",
+      "numeric": "180",
+      "name": "KOREAN AIR"
+    },
+    {
+      "code": "KL",
+      "numeric": "074",
+      "name": "KLM"
+    },
+    {
+      "code": "KM",
+      "numeric": "643",
+      "name": "AIR MALTA"
+    },
+    {
+      "code": "KQ",
+      "numeric": "706",
+      "name": "KENYA AIRWAYS"
+    },
+    {
+      "code": "KU",
+      "numeric": "229",
+      "name": "KUWAIT AIRWAYS"
+    },
+    {
+      "code": "LA",
+      "numeric": "045",
+      "name": "LATAM AIRLINES"
+    },
+    {
+      "code": "LH",
+      "numeric": "220",
+      "name": "LUFTHANSA"
+    },
+    {
+      "code": "LO",
+      "numeric": "080",
+      "name": "LOT POLISH AIRLINES"
+    },
+    {
+      "code": "LX",
+      "numeric": "724",
+      "name": "SWISS"
+    },
+    {
+      "code": "LY",
+      "numeric": "114",
+      "name": "EL AL"
+    },
+    {
+      "code": "MD",
+      "numeric": "258",
+      "name": "MADAGASCAR AIRLINES"
+    },
+    {
+      "code": "ME",
+      "numeric": "076",
+      "name": "MIDDLE EAST AIRLINES"
+    },
+    {
+      "code": "MH",
+      "numeric": "232",
+      "name": "MALAYSIA AIRLINES"
+    },
+    {
+      "code": "MK",
+      "numeric": "239",
+      "name": "AIR MAURITIUS"
+    },
+    {
+      "code": "MS",
+      "numeric": "077",
+      "name": "EGYPTAIR"
+    },
+    {
+      "code": "MU",
+      "numeric": "781",
+      "name": "CHINA EASTERN"
+    },
+    {
+      "code": "NH",
+      "numeric": "205",
+      "name": "ALL NIPPON AIRWAYS"
+    },
+    {
+      "code": "NZ",
+      "numeric": "086",
+      "name": "AIR NEW ZEALAND"
+    },
+    {
+      "code": "OK",
+      "numeric": "064",
+      "name": "CZECH AIRLINES"
+    },
+    {
+      "code": "OS",
+      "numeric": "257",
+      "name": "AUSTRIAN AIRLINES"
+    },
+    {
+      "code": "OZ",
+      "numeric": "988",
+      "name": "ASIANA AIRLINES"
+    },
+    {
+      "code": "P4",
+      "numeric": "",
+      "name": "AIR PEACE"
+    },
+    {
+      "code": "PC",
+      "numeric": "250",
+      "name": "PEGASUS AIRLINES"
+    },
+    {
+      "code": "PK",
+      "numeric": "214",
+      "name": "PAKISTAN INTL AIRLINES"
+    },
+    {
+      "code": "PR",
+      "numeric": "079",
+      "name": "PHILIPPINE AIRLINES"
+    },
+    {
+      "code": "QF",
+      "numeric": "081",
+      "name": "QANTAS"
+    },
+    {
+      "code": "QR",
+      "numeric": "157",
+      "name": "QATAR AIRWAYS"
+    },
+    {
+      "code": "RJ",
+      "numeric": "512",
+      "name": "ROYAL JORDANIAN"
+    },
+    {
+      "code": "RO",
+      "numeric": "281",
+      "name": "TAROM"
+    },
+    {
+      "code": "SA",
+      "numeric": "083",
+      "name": "SOUTH AFRICAN AIRWAYS"
+    },
+    {
+      "code": "SK",
+      "numeric": "117",
+      "name": "SAS"
+    },
+    {
+      "code": "SN",
+      "numeric": "082",
+      "name": "BRUSSELS AIRLINES"
+    },
+    {
+      "code": "SQ",
+      "numeric": "618",
+      "name": "SINGAPORE AIRLINES"
+    },
+    {
+      "code": "SU",
+      "numeric": "555",
+      "name": "AEROFLOT"
+    },
+    {
+      "code": "SV",
+      "numeric": "065",
+      "name": "SAUDIA"
+    },
+    {
+      "code": "SW",
+      "numeric": "",
+      "name": "AIR NAMIBIA"
+    },
+    {
+      "code": "TC",
+      "numeric": "197",
+      "name": "AIR TANZANIA"
+    },
+    {
+      "code": "TG",
+      "numeric": "217",
+      "name": "THAI AIRWAYS"
+    },
+    {
+      "code": "TK",
+      "numeric": "235",
+      "name": "TURKISH AIRLINES"
+    },
+    {
+      "code": "TO",
+      "numeric": "",
+      "name": "TRANSAVIA FRANCE"
+    },
+    {
+      "code": "TP",
+      "numeric": "047",
+      "name": "TAP AIR PORTUGAL"
+    },
+    {
+      "code": "TU",
+      "numeric": "199",
+      "name": "TUNISAIR"
+    },
+    {
+      "code": "U2",
+      "numeric": "888",
+      "name": "EASYJET"
+    },
+    {
+      "code": "UA",
+      "numeric": "016",
+      "name": "UNITED AIRLINES"
+    },
+    {
+      "code": "UL",
+      "numeric": "603",
+      "name": "SRILANKAN AIRLINES"
+    },
+    {
+      "code": "V7",
+      "numeric": "",
+      "name": "VOLOTEA"
+    },
+    {
+      "code": "VN",
+      "numeric": "738",
+      "name": "VIETNAM AIRLINES"
+    },
+    {
+      "code": "VY",
+      "numeric": "795",
+      "name": "VUELING"
+    },
+    {
+      "code": "W3",
+      "numeric": "",
+      "name": "ARIK AIR"
+    },
+    {
+      "code": "W6",
+      "numeric": "",
+      "name": "WIZZ AIR"
+    },
+    {
+      "code": "WB",
+      "numeric": "459",
+      "name": "RWANDAIR"
+    },
+    {
+      "code": "WN",
+      "numeric": "526",
+      "name": "SOUTHWEST AIRLINES"
+    },
+    {
+      "code": "WS",
+      "numeric": "838",
+      "name": "WESTJET"
+    },
+    {
+      "code": "WY",
+      "numeric": "910",
+      "name": "OMAN AIR"
+    },
+    {
+      "code": "XY",
+      "numeric": "",
+      "name": "FLYNAS"
+    }
   ]
 }
