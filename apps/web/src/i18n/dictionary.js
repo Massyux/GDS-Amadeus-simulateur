@@ -32,6 +32,10 @@ export const dictionary = {
       label: "Feedback",
       title: "Envoyer un retour",
     },
+    landscapeHint: {
+      message: "Tourne ton téléphone pour un écran plus large.",
+      dismiss: "Fermer ce message",
+    },
     quickStart: {
       trigger: "?",
       triggerLabel: "Guide de démarrage rapide",
@@ -414,6 +418,10 @@ export const dictionary = {
     feedback: {
       label: "Feedback",
       title: "Send feedback",
+    },
+    landscapeHint: {
+      message: "Rotate your phone for a wider screen.",
+      dismiss: "Close this message",
     },
     quickStart: {
       trigger: "?",

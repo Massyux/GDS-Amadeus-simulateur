@@ -149,9 +149,17 @@ contraste du dégradé `.pf-grad` en thème clair reste insuffisant pour du text
 indépendamment du logo — à traiter séparément si Massy le juge prioritaire (voir `TASKS.md`).
 
 **Règles impératives**
-- **Le terminal reste sombre dans les deux thèmes.** C'est un terminal — il ne devient
-  jamais blanc. Il apparaît en thème clair comme un bloc sombre posé sur le verre, ce qui
-  le met encore plus en valeur.
+- ~~**Le terminal reste sombre dans les deux thèmes.**~~ **RÈGLE ERRONÉE, RETIRÉE le
+  18/10/2026 par l'architecte, qui l'avait écrite.** Elle contredisait une décision
+  antérieure et vérifiée : le terminal d'entraînement reproduit l'Amadeus Selling Platform
+  réel, dont le fond est **bleu-gris clair** (`#dde5f4`, `apps/web/src/index.css`). Massy,
+  qui utilise le vrai logiciel, a comparé les deux écran par écran le 05/07/2026 et n'a
+  relevé **aucun écart** — voir `docs/FIDELITE-VISUELLE.md` et la Mission 04.
+  **Le fond clair du terminal n'est donc pas un défaut : c'est le but.** Ne pas le
+  « corriger ». La fidélité au vrai logiciel prime sur l'harmonie avec le thème du site,
+  ici et partout ailleurs : c'est ce que l'élève retrouvera en agence.
+  *(Cette règle avait été écrite pendant la phase de conception graphique sans relire
+  `FIDELITE-VISUELLE.md`. Elle a produit un faux diagnostic de régression le 16/10/2026.)*
 - **Rayons plus généreux en thème clair** : 20 px pour les cartes, 14 px pour les boutons —
   c'est ce qui donne l'effet « goutte ».
 - **Reflet supérieur obligatoire** (`--glass-inner`) sur toute surface de verre : sans lui,

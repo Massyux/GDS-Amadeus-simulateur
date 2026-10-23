@@ -17,6 +17,7 @@ import {
 import PNRRenderer from "./PNRRenderer.jsx";
 import FeedbackButton from "./FeedbackButton.jsx";
 import QuickStartGuide from "./QuickStartGuide.jsx";
+import LandscapeHint from "./LandscapeHint.jsx";
 import { useLang } from "./i18n/useLang.js";
 import { dictionary } from "./i18n/dictionary.js";
 
@@ -437,6 +438,7 @@ const Terminal = forwardRef(function Terminal({ initialState } = {}, ref) {
     <div className="terminal">
       <FeedbackButton t={t} screen="terminal" />
       <QuickStartGuide t={t} />
+      <LandscapeHint t={t} />
       <div className="screen" ref={scrollRef} onScroll={handleScroll}>
         {entries.map((entry, i) => {
           if (entry.type === "pnr") {

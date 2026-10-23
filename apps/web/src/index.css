@@ -28,12 +28,48 @@ body {
 .terminal {
   padding: 12px 18px;
   height: 100vh;
+  /* `dvh` suit la hauteur VISIBLE réelle (clavier virtuel ouvert compris) --
+     `vh` ne bouge pas quand le clavier s'ouvre sur mobile, ce qui peut
+     laisser le champ de saisie caché dessous. Deuxième déclaration : les
+     navigateurs qui ne connaissent pas `dvh` ignorent la ligne entière et
+     gardent la précédente -- pas besoin de @supports (PROMPT-MOBILE.md,
+     22/10/2026). */
+  height: 100dvh;
 }
 
 .screen {
-  white-space: pre-wrap;
+  /* Alignement des colonnes = l'information elle-même sur un écran Amadeus
+     (PROMPT-MOBILE.md, 22/10/2026) -- jamais de retour à la ligne, même ici
+     à la racine. Chaque ligne affichée (.line/.pnr-header/.pnr-line) pose
+     déjà `white-space: pre` individuellement ; ce `pre` au niveau du
+     conteneur ferme la même porte pour tout futur contenu qui oublierait de
+     le faire, plutôt que de compter sur le fait que personne n'oubliera.
+     Remplace l'ancien `pre-wrap`, qui repliait un contenu trop large au
+     lieu de le laisser déborder horizontalement. */
+  white-space: pre;
   height: 100%;
   overflow-y: auto;
+  /* Défilement horizontal explicite -- sur un écran étroit, une ligne de
+     80 colonnes (environ 768px à 16px de police) ne tient pas dans 390px ;
+     elle se parcourt du doigt plutôt que d'être coupée ou repliée. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Indice visuel de défilement horizontal (ombre sur le bord droit tant
+     qu'il reste du contenu à droite) -- technique CSS pure en deux calques
+     (pas de JS, pas de bibliothèque) : un calque "ombre" fixe par rapport
+     au conteneur visible (`scroll`), masqué par un calque "cache" qui se
+     déplace AVEC le contenu (`local`) et qui ne coïncide avec le bord
+     visible qu'une fois défilé jusqu'au bout -- l'ombre s'efface alors
+     exactement là, jamais avant. Couleur de fond du terminal (#dde5f4)
+     inchangée : voir docs/DESIGN-SYSTEM.md §2 bis. */
+  background-color: #dde5f4;
+  background-image:
+    linear-gradient(to left, #dde5f4 0%, rgba(221, 229, 244, 0) 100%),
+    linear-gradient(to left, rgba(10, 23, 51, 0.32), rgba(10, 23, 51, 0));
+  background-repeat: no-repeat, no-repeat;
+  background-position: 100% 0, 100% 0;
+  background-size: 24px 100%, 18px 100%;
+  background-attachment: local, scroll;
 }
 
 .scroll-spacer {
@@ -52,6 +88,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* voir le commentaire sur .terminal -- même raison */
 }
 
 .demo-page .terminal {
@@ -614,6 +651,7 @@ body {
 
 .exercise-mode {
   min-height: 100vh;
+  min-height: 100dvh; /* voir le commentaire sur .terminal -- même raison */
   display: flex;
   flex-direction: column;
 }
@@ -960,6 +998,14 @@ body {
   border-radius: 4px;
 }
 
+/* Conteneur à défilement horizontal (PROMPT-MOBILE.md, 22/10/2026) : le
+   tableau des licences mesure environ 1287px sans ses colonnes réduites --
+   Massy en a besoin toutes. Le tableau défile seul, pas la page entière. */
+.admin-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .admin-licenses-table {
   width: 100%;
   border-collapse: collapse;
@@ -1163,4 +1209,94 @@ body {
   background: #1593A8;
   color: #FFFFFF;
   cursor: pointer;
+}
+
+/* Suggestion de passage en mode paysage (PROMPT-MOBILE.md, 22/10/2026) --
+   LandscapeHint.jsx, montée dans Terminal.jsx donc présente aux quatre
+   portes du terminal. Masquée par défaut : seulement utile sous 480px ET
+   en portrait -- inutile de suggérer un mode déjà actif. Jamais une
+   modale : une bannière qu'on referme une fois pour toutes. */
+.landscape-hint {
+  display: none;
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .landscape-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 14px;
+    background: #eef2fa;
+    border-bottom: 1px solid #2f2a7a;
+    color: #2f2a7a;
+    font-family: inherit;
+    font-size: 0.8em;
+  }
+
+  .landscape-hint button {
+    font-family: inherit;
+    font-size: 1.1em;
+    line-height: 1;
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: #2f2a7a;
+    cursor: pointer;
+  }
+}
+
+/* Petits écrans -- terminal et administration (PROMPT-MOBILE.md,
+   22/10/2026). 480px couvre les téléphones mesurés (390/360px) sans
+   toucher aux tablettes/ordinateurs : au-delà, 80 colonnes tiennent
+   suffisamment bien pour ne rien changer. */
+@media (max-width: 480px) {
+  /* Terminal : police réduite -- 80 colonnes passent d'environ 768px
+     (16px) à près de 600px (13px), donc beaucoup moins de défilement
+     horizontal nécessaire. Portée à .terminal, pas à :root : tout ce qui
+     vit sous lui (prompt, lignes, PNR) suit en cascade via les unités `em`
+     déjà en place, sans toucher à rien d'autre sur la page (onboarding,
+     admin). Pas plus bas -- limite de lisibilité réelle. */
+  .terminal {
+    font-size: 13px;
+  }
+
+  /* Boutons de commandes d'exemple et champ de saisie restent utilisables
+     au doigt (hauteur de cible). Le texte de la puce elle-même vit hors de
+     .terminal (dans .demo-hints), donc indépendant de la police réduite
+     ci-dessus -- seul le padding change ici. */
+  .demo-hint-chip {
+    padding: 8px 14px;
+  }
+
+  .prompt {
+    padding: 6px 0;
+  }
+
+  /* Trois boutons (Vérifier/Indice/Abandonner) ne tiennent pas forcément
+     sur une seule ligne à 360px -- ils se replient plutôt que de déborder
+     ou de se faire couper (le panneau de consigne au-dessus ne doit pas
+     écraser le terminal, demande explicite du prompt). */
+  .exercise-toolbar {
+    flex-wrap: wrap;
+  }
+
+  /* Administration : même rythme horizontal que le reste de la page
+     (logo, onglets, contenu) -- réduire un seul des trois aurait désaligné
+     les bords verticaux. Les barres d'actions (ex: "Retour aux
+     formations"/"Supprimer la formation"/"Déconnexion" dans l'éditeur de
+     formation, ~390px de texte à elles seules) se replient plutôt que de
+     déborder. */
+  .admin-dashboard {
+    padding: 16px;
+  }
+
+  .admin-header-logo,
+  .admin-tabs {
+    padding: 16px 16px 0;
+  }
+
+  .admin-header-actions {
+    flex-wrap: wrap;
+  }
 }

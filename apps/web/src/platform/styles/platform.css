@@ -108,6 +108,18 @@
   line-height: 1.6;
   min-height: 100vh;
   position: relative;
+  /* Trouvé par le garde-fou de non-régression ajouté avec PROMPT-MOBILE.md
+     (22/10/2026), pas par une relecture visuelle : à 390px, .pf-termglow
+     (le halo derrière le mock-terminal du héros, inset:-28px) déborde de
+     12px à droite du document -- scrollWidth (402) > clientWidth (390).
+     Ce débordement est strictement décoratif (le halo continue de "baver"
+     visuellement exactement comme avant, inchangé) ; seul le défilement
+     horizontal fantôme qu'il provoquait disparaît. Posé ici, à la racine
+     commune à toutes les pages publiques, plutôt que sur .pf-termwrap
+     directement : un filet de sécurité pour toute la FAMILLE de halos/
+     dégradés décoratifs à bavure négative (CONSTITUTION §3), pas un
+     correctif isolé au seul halo trouvé aujourd'hui. */
+  overflow-x: hidden;
   transition: background-color var(--theme-transition), color var(--theme-transition);
 }
 

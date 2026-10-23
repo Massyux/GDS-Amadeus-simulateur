@@ -46,26 +46,28 @@ export default function AuditLogView({ token, onLogout }) {
       ) : entries.length === 0 ? (
         <p>Aucune action enregistrée pour le moment.</p>
       ) : (
-        <table className="admin-licenses-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Action</th>
-              <th>Cible</th>
-              <th>Détail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>{entry.createdAt}</td>
-                <td>{entry.action}</td>
-                <td>{entry.target || "—"}</td>
-                <td>{entry.details ? JSON.stringify(entry.details) : "—"}</td>
+        <div className="admin-table-scroll">
+          <table className="admin-licenses-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>Cible</th>
+                <th>Détail</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.createdAt}</td>
+                  <td>{entry.action}</td>
+                  <td>{entry.target || "—"}</td>
+                  <td>{entry.details ? JSON.stringify(entry.details) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

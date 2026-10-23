@@ -141,32 +141,34 @@ export default function CoursesAdmin({ token, onLogout }) {
       ) : courses.length === 0 ? (
         <p>Aucune formation pour le moment.</p>
       ) : (
-        <table className="admin-licenses-table">
-          <thead>
-            <tr>
-              <th>Titre</th>
-              <th>Statut</th>
-              <th>Modules</th>
-              <th>Leçons</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {courses.map((course) => (
-              <tr key={course.id}>
-                <td>{course.title}</td>
-                <td>{course.status === "published" ? "publiée" : "brouillon"}</td>
-                <td>{course.moduleCount}</td>
-                <td>{course.lessonCount}</td>
-                <td className="admin-actions-cell">
-                  <button type="button" onClick={() => setSelectedId(course.id)}>
-                    Modifier
-                  </button>
-                </td>
+        <div className="admin-table-scroll">
+          <table className="admin-licenses-table">
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Statut</th>
+                <th>Modules</th>
+                <th>Leçons</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {courses.map((course) => (
+                <tr key={course.id}>
+                  <td>{course.title}</td>
+                  <td>{course.status === "published" ? "publiée" : "brouillon"}</td>
+                  <td>{course.moduleCount}</td>
+                  <td>{course.lessonCount}</td>
+                  <td className="admin-actions-cell">
+                    <button type="button" onClick={() => setSelectedId(course.id)}>
+                      Modifier
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

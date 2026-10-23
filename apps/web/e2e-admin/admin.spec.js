@@ -61,4 +61,32 @@ test.describe("Admin (Mission 14 -- espace admin + licences)", () => {
     await expect(page.getByRole("heading", { name: "Licences" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Administration" })).toHaveCount(0);
   });
+
+  // PROMPT-MOBILE.md (22/10/2026) : le tableau des licences mesurait
+  // ~1287px sans aucune règle mobile -- il défile désormais dans son
+  // propre conteneur (.admin-table-scroll), jamais la page entière, et
+  // sans perdre de colonne.
+  test("at 390px, the licenses table scrolls within its own container, never the page", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/admin");
+    await page.getByLabel("Phrase secrète").fill(TEST_ADMIN_SECRET);
+    await page.getByRole("button", { name: "Se connecter" }).click();
+    await expect(page.getByRole("heading", { name: "Licences" })).toBeVisible();
+
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+
+    const table = page.locator(".admin-table-scroll table");
+    await expect(table.locator("th", { hasText: "Dernière activité" })).toBeVisible();
+    const overflow = await page.locator(".admin-table-scroll").evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+    }));
+    expect(overflow.scrollWidth).toBeGreaterThan(overflow.clientWidth);
+  });
 });
