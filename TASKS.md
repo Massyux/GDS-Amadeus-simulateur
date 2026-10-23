@@ -6,6 +6,31 @@
 
 ## En cours
 
+**🟢 `PROMPT-MOBILE.md` CLOS le 22/10/2026** (constat et mesures de l'architecte, confirmés par
+Massy sur son téléphone) : ni le terminal ni l'administration n'avaient la moindre règle CSS
+mobile (une ligne de 80 colonnes occupait ~768px à 16px de police, contre 390 sur téléphone).
+Terminal (`apps/web/src/index.css`, feuille partagée par les quatre portes — démo publique,
+`/simulateur`, leçon simulateur, leçon exercice) : `overflow-x: auto` explicite sur `.screen` +
+ombre CSS pure de défilement (jamais de `wrap`, l'alignement des colonnes reste exact — non
+négociable), police réduite à 13px sous 480px, `100dvh` pour que le clavier virtuel ne cache
+plus le champ de saisie, `LandscapeHint.jsx` (nouveau, suggestion de mode paysage une seule fois,
+jamais une modale, montée dans `Terminal.jsx` donc aux quatre portes d'un coup). Administration :
+tableaux (licences/journal/formations) dans un conteneur `.admin-table-scroll` dédié, jamais la
+page entière ; padding/barres d'actions adaptés sous 480px.
+**Bug réel trouvé PAR le garde-fou de non-régression demandé** (pas par relecture) : l'accueil
+public débordait de 12px à 390px (`.pf-termglow`, le halo décoratif du héros, jamais clippé) —
+contredisait le constat initial du prompt. Corrigé à la racine commune `.platform-root`
+(`overflow-x: hidden`), rendu visuel inchangé. Détail complet, diagnostic et vérification réelle
+en production (390px **et** 360px, par émulation d'appareil, pas par redimensionnement de
+fenêtre) dans `JOURNAL.md`.
+Non-régression : 268/268 `packages/core`, 9/9 `packages/data`, 47/47 `packages/exercises`,
+117/117 web, 90/90 `functions/__tests__`, 67/67 e2e (nouveau garde-fou
+`responsive-overflow.spec.js` inclus), 8/8 e2e-admin, lint/build/typecheck clean.
+**Non re-vérifié en production** : l'administration authentifiée (tableau de licences, éditeur
+de formation) — Massy a préféré garder sa phrase secrète pour lui, comme la session précédente.
+Couverte par `e2e-admin` contre une vraie Function + D1 locale à la place ; à vérifier sur son
+téléphone à l'occasion s'il le juge utile.
+
 **🟢 `PROMPT-FICHE-FORMATION.md` CLOS le 17/10/2026** (prompt de Massy, trois chantiers).
 Chantier 1 : lien « Administration » discret en pied de page + raccourci de barre de nav (visible
 seulement si une session admin existe déjà) + retour clair vers le site depuis `/admin` +

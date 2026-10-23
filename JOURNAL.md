@@ -21,6 +21,102 @@
 
 ## Fait (par session, datée)
 
+### 22/10/2026 — Le terminal et l'administration deviennent adaptatifs
+
+`missions/PROMPT-MOBILE.md` : constat et mesures de l'architecte, confirmés par Massy sur son
+téléphone. Aucune des deux zones n'avait la moindre règle CSS mobile — la feuille servie sur
+`/demo` ne contenait qu'une requête média, `print`. Mesuré : une ligne de 80 colonnes occupe
+~768px à 16px de police (la police par défaut du terminal) ; un téléphone en fait 390.
+Priorité haute explicite : `/demo` est le premier écran d'un visiteur qui clique « Essayer le
+terminal », et l'essentiel du public algérien arrive par téléphone via les réseaux sociaux.
+
+**Décision d'architecture imposée, appliquée telle quelle** : jamais de retour à la ligne sur
+une sortie de terminal (l'alignement des colonnes EST l'information sur un écran Amadeus —
+replier détruit le contenu et apprend à lire un écran qui n'existe pas), jamais de réduction à
+l'échelle (`transform: scale`, revient au même problème en plus flou). Retenu : défilement
+horizontal + police réduite sur petit écran.
+
+**Le terminal, aux quatre portes à la fois** (`apps/web/src/index.css`, feuille unique partagée
+par la démo publique, le mode libre `/simulateur`, la leçon `simulateur` et la leçon `exercice`
+— une seule passe suffit, toutes les quatre montent le même `Terminal.jsx` habillé par les mêmes
+classes) :
+- `.screen` : `white-space: pre` remplace `pre-wrap` (chaque ligne le posait déjà
+  individuellement, mais le conteneur lui-même l'affirme maintenant, pour toute future leçon qui
+  l'oublierait) + `overflow-x: auto` explicite (ne plus compter sur la conversion implicite du
+  navigateur) + indice visuel de défilement : ombre sur le bord droit tant qu'il reste du
+  contenu, en CSS pur à deux calques (`background-attachment: local` qui se déplace avec le
+  contenu masque un calque `scroll` fixe par rapport au viewport — l'ombre s'efface exactement
+  au bout du défilement, jamais avant). Vérifié réellement par capture d'écran avant/après
+  défilement, pas seulement en lisant le CSS.
+- `.terminal` : police réduite à 13px sous 480px (80 colonnes passent d'environ 768px à ~600px,
+  donc beaucoup moins de défilement nécessaire) — portée à `.terminal` seul, pas à `:root`, pour
+  que tout ce qui vit dessous (prompt, lignes, PNR) suive en cascade via les unités `em` déjà en
+  place, sans toucher à l'onboarding ni à l'admin.
+- `.terminal`/`.demo-page`/`.exercise-mode` : `height: 100dvh` en seconde déclaration après
+  `100vh` (ignorée par les navigateurs qui ne connaissent pas `dvh`, sans `@supports`) — le
+  clavier virtuel ouvert ne cache plus le champ de saisie, puisque `dvh` suit la hauteur visible
+  réelle alors que `vh` ne bouge pas sur mobile.
+- `LandscapeHint.jsx` (nouveau) : suggestion de passage en mode paysage, montée directement dans
+  `Terminal.jsx` — couvre les quatre portes d'un seul coup, même geste déjà établi pour
+  `FeedbackButton`/`QuickStartGuide`. Jamais une modale : une bannière visible seulement sous
+  480px en portrait (CSS), fermée définitivement via `localStorage` (pas `sessionStorage` : une
+  fois pour de vrai, pas une fois par visite). 4 tests unitaires dédiés.
+- Puces de commandes d'exemple et champ de saisie : hauteur de cible agrandie sous 480px
+  (padding de `.demo-hint-chip`) ; `.exercise-toolbar` se replie (`flex-wrap`) plutôt que de
+  déborder avec ses trois boutons sur un écran étroit.
+
+**L'administration, après le terminal comme demandé** : les trois tableaux (licences, journal,
+formations) vivent désormais dans un conteneur à défilement horizontal dédié
+(`.admin-table-scroll`, un `<div>` ajouté dans les trois fichiers JSX concernés) — jamais la
+page entière, et sans perdre une seule colonne (le tableau des licences mesurait ~1287px).
+En-têtes figés jugés non « simples » ici et donc pas faits : la vraie zone de défilement vertical
+reste la page entière, pas ce conteneur (qui n'a pas de hauteur bornée) — un `position: sticky`
+dessus n'aurait rien eu à quoi s'accrocher. Padding horizontal réduit sous 480px (logo, onglets,
+contenu — les trois ensemble, pour ne pas désaligner les bords verticaux) ; `.admin-header-actions`
+se replie (la barre de l'éditeur de formation — « Retour aux formations »/« Supprimer la
+formation »/« Déconnexion » — mesure à elle seule ~390px de texte, déborderait sans ça à 360px).
+
+**Bug réel trouvé PAR le garde-fou demandé, pas par relecture visuelle** : le constat initial du
+prompt affirmait l'accueil public « correct, mesures à l'appui ». Le nouveau test
+`document.documentElement.scrollWidth <= clientWidth` à 390px l'a contredit : 402 au lieu de 390.
+Diagnostiqué par parcours récursif du DOM (pas une supposition) jusqu'à `.pf-termglow` — le halo
+décoratif derrière le mock-terminal du héros (`inset: -28px`, jamais clippé par un ancêtre).
+Corrigé à la racine commune de toutes les pages publiques, `.platform-root` (`overflow-x:
+hidden`) plutôt que sur `.pf-termwrap` directement : un filet de sécurité pour toute la famille
+de halos/dégradés décoratifs à bavure négative (`.pf-halo-1/2/3` compris), pas un correctif
+isolé — règle d'or des familles de bugs (CONSTITUTION §3). Rendu visuel strictement inchangé
+(vérifié : le halo continue de « baver » exactement pareil) ; seul le défilement fantôme
+disparaît. Vérifié aussi sur le catalogue, le compte et la fiche de formation connectés : aucun
+autre débordement cliché par erreur par ce filet.
+
+**Garde-fou permanent ajouté** (`apps/web/e2e/responsive-overflow.spec.js`, demandé
+explicitement) : aucun débordement horizontal à 390px sur l'accueil, `/demo`, `/app`, `/admin`,
+`/conditions`, `/remboursement`, `/simulateur` (avec un vrai `AN15DECALGPAR` lancé et vérification
+que c'est bien `.screen`, jamais la page, qui défile), le catalogue/compte/fiche de formation
+connectés. Même garde-fou côté admin (`e2e-admin/admin.spec.js`) : le tableau des licences défile
+dans son propre conteneur à 390px, jamais la page.
+
+**Vérifié réellement en production, par émulation d'appareil (pas par redimensionnement de
+fenêtre — l'architecte avait prévenu que Chrome refuse de redimensionner une fenêtre maximisée,
+ce qui avait failli lui faire manquer le défaut)**, à 390px **et** 360px : aucun débordement
+horizontal nulle part (accueil, `/demo`, `/admin`) ; police du terminal à 13px ; un vrai
+`AN15DECALGPAR` reste aligné en colonnes et se parcourt horizontalement par capture d'écran
+avant/après défilement (le `/ALG PAR` de fin de ligne, invisible avant, apparaît après) ; la
+bannière de suggestion de mode paysage s'affiche. Administration authentifiée non re-vérifiée en
+production cette fois (Massy a préféré garder sa phrase secrète pour lui, comme la session
+précédente) — couverte par `e2e-admin` contre une vraie Function + D1 locale à la place.
+
+**Fait par ailleurs, hors scope de cette session mais découvert en chemin** : `docs/
+DESIGN-SYSTEM.md` portait encore la règle « le terminal reste sombre dans les deux thèmes »,
+retirée (travail non commité d'une session antérieure, intégré ici) — elle contredisait une
+décision déjà vérifiée avec Massy (`docs/FIDELITE-VISUELLE.md`) : le fond clair `#dde5f4` EST la
+fidélité au vrai Amadeus Selling Platform, pas un défaut à corriger.
+
+**Non-régression complète** : lint/build/typecheck clean ; 268/268 `packages/core`, 9/9
+`packages/data`, 47/47 `packages/exercises`, 117/117 web (4 nouveaux pour `LandscapeHint`),
+90/90 `functions/__tests__`, 67/67 e2e (8 nouveaux dans `responsive-overflow.spec.js`), 8/8
+e2e-admin (1 nouveau).
+
 ### 17/10/2026 — Fiche de formation publique, vitrine d'accueil réelle, accès admin sans URL
 
 `missions/PROMPT-FICHE-FORMATION.md` : demande de Massy après la correction du terminal clair
