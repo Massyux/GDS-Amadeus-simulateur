@@ -75,7 +75,7 @@ export async function onRequestPost({ request, env }) {
 
     let cookie = null;
     if (!existing) {
-      const passwordHash = await hashPassword(password);
+      const passwordHash = await hashPassword(env, password);
       const inserted = await env.DB.prepare(
         `INSERT INTO users (email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?) RETURNING id`
       )

@@ -81,7 +81,7 @@ export default function StyleguidePage() {
           <Field
             label="Mot de passe"
             type="password"
-            error="Le mot de passe doit faire au moins 8 caractères."
+            error="Le mot de passe doit faire au moins 12 caractères."
           />
           <Field label="Champ désactivé" value="Valeur fixe" disabled readOnly />
         </div>

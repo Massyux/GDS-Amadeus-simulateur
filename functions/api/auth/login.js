@@ -39,7 +39,7 @@ export async function onRequestPost({ request, env }) {
       .bind(email)
       .first();
 
-    const valid = user ? await verifyPassword(password, user.password_hash) : false;
+    const valid = user ? await verifyPassword(env, password, user.password_hash) : false;
     if (!valid) {
       return jsonResponse({ ok: false, error: INVALID_CREDENTIALS }, start);
     }

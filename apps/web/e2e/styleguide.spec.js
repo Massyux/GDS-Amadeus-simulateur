@@ -16,7 +16,7 @@ test.describe("Styleguide (Mission 23, Étape 0)", () => {
     await expect(page.getByRole("button", { name: "Primaire", exact: true })).toBeVisible();
     await expect(page.getByLabel("Adresse e-mail")).toBeVisible();
     await expect(page.getByRole("alert")).toHaveText(
-      "Le mot de passe doit faire au moins 8 caractères."
+      "Le mot de passe doit faire au moins 12 caractères."
     );
     await expect(page.getByRole("progressbar").first()).toBeVisible();
   });

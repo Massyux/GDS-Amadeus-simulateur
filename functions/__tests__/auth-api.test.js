@@ -67,20 +67,23 @@ describe(
         assert.ok(me.body.csrfToken);
       });
 
-      it("rejects a password shorter than 8 characters with an actionable message", async () => {
+      it("rejects a password shorter than 12 characters with an actionable message", async () => {
         const { body, setCookie } = await post("/api/auth/register", {
           email: uniqueEmail(),
           password: "short1",
         });
         assert.equal(body.ok, false);
-        assert.match(body.error, /8 caractères/);
+        assert.match(body.error, /12 caractères/);
         assert.equal(setCookie, null);
       });
 
       it("rejects a common password", async () => {
+        // >= 12 caractères (sinon le refus porte sur la longueur avant même
+        // d'atteindre le contrôle de liste -- voir validators.js) mais
+        // présent dans commonPasswords.js.
         const { body } = await post("/api/auth/register", {
           email: uniqueEmail(),
-          password: "password123",
+          password: "administrateur",
         });
         assert.equal(body.ok, false);
         assert.match(body.error, /trop courant/);

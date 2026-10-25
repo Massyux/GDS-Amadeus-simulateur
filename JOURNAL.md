@@ -21,6 +21,100 @@
 
 ## Fait (par session, datée)
 
+### 25/10/2026 — Poivre sur les mots de passe, envoi d'e-mail réel (Brevo)
+
+`missions/PROMPT-MOTS-DE-PASSE-ET-MAIL.md` : demande de Massy, deux chantiers liés.
+
+**Chantier 1 — le poivre, avec une surprise au démarrage.** Le prompt supposait un seul compte
+en base ("aucune migration") -- vérifié avant de commencer (demande explicite), et il y en
+avait **11**, pas 1, dont 3 avec une vraie inscription à la formation. Huit datent du 11/10/2026
+(ma propre vérification de production de ce jour-là, documentée dans `TASKS.md` d'alors), les
+trois autres des 16, 22 et 23/10 -- pas identifiées avec certitude (tests de Massy ou visiteurs
+réels), sans conséquence sur la décision prise. Le prompt anticipait exactement ce cas ("si
+plusieurs, arrête-toi, la stratégie changerait") : question posée à Massy avant de toucher au
+format de hachage, qui a choisi la transition en douceur (pas de re-hachage automatique à la
+connexion).
+
+`functions/_lib/passwordHash.js` fait désormais passer le mot de passe par un HMAC-SHA256 avec
+un secret d'environnement (`PASSWORD_PEPPER`, lu via `requireSecret` -- jamais de repli
+silencieux, même garde que `SESSION_SECRET`/`ADMIN_SECRET_HASH`) **avant** PBKDF2. Compense le
+plafond de 100 000 itérations (six fois sous la recommandation OWASP, limite dure des Workers
+Cloudflare, voir l'entrée du 11/10/2026) : une base volée seule ne suffit plus à casser les mots
+de passe hors ligne. Format à **deux générations** dans le même champ `algo` : `pbkdf2` (hérité,
+sans poivre -- les 11 comptes existants, inchangés, continuent de se connecter exactement comme
+avant) et `pbkdf2-pepper` (toute écriture à partir d'aujourd'hui -- inscription, réinitialisation)
+. Un compte hérité migre tout seul au nouveau format la prochaine fois qu'il change de mot de
+passe ; aucune action requise de personne, aucun compte bloqué. `verifyPassword` exige
+`PASSWORD_PEPPER` même pour vérifier un haché hérité qui n'en a techniquement pas besoin --
+sinon un secret absent passerait inaperçu tant qu'un seul compte hérité resterait à vérifier,
+même motif que le repli silencieux corrigé le 10/10/2026.
+Minimum de longueur monté de 8 à 12 caractères (`functions/_lib/validators.js`) : avec un
+hachage bridé, la longueur du mot de passe est le principal levier qui reste pour compenser.
+Liste des mots de passe courants inchangée.
+`hashPassword`/`verifyPassword` prennent désormais `env` en premier paramètre (même convention
+que le reste de `functions/_lib/`) -- les trois appelants (`register.js`, `login.js`,
+`reset-password.js`) mis à jour en conséquence, aucun changement de comportement.
+`.dev.vars` reçoit `PASSWORD_PEPPER` (valeur de test fixe, jamais une vraie valeur).
+**Vérifié réellement** : un vrai cycle inscription → déconnexion → connexion sur un compte neuf
+(`apps/web/e2e/platform.spec.js`, suite complète verte), plus 8 tests dédiés
+(`functions/__tests__/passwordHash.test.js`) couvrant le round-trip peppered, la compatibilité
+ascendante avec un haché hérité construit à la main, et l'échec bruyant (jamais silencieux) d'un
+`PASSWORD_PEPPER` absent -- pour `hashPassword` et pour `verifyPassword`, y compris sur un haché
+hérité.
+
+**Chantier 2 — l'envoi d'e-mail réel, via Brevo.** Décision de l'architecte (25/10/2026) :
+Brevo plutôt que Resend -- 300 e-mails/jour gratuits sans plafond mensuel (Resend : 100/jour),
+et le même compte servira le marketing automatique que Massy voudra plus tard.
+`functions/_lib/mailer.js` était le seul point d'accroche prévu (`sendMail` en no-op depuis
+Mission 23 Étape 1) -- aucun appelant n'a changé de contrat, seulement sa signature
+(`sendMail(env, {...})`, même convention que le chantier 1). Implémentation : un seul appel
+HTTP vers l'API transactionnelle de Brevo (`POST https://api.brevo.com/v3/smtp/email`), clé lue
+via `requireSecret(env, "BREVO_API_KEY")`, expéditeur `contact@orionisacademy.com` (déjà routé).
+**Tension résolue consciemment** entre deux exigences du prompt qui se heurtaient : "lue par
+`requireSecret()`" (qui lève) et "un échec d'envoi... ne doit jamais casser la réponse neutre"
+anti-énumération de `forgot-password.js` (qui ne doit jamais changer). `sendMail` ne rejette
+donc JAMAIS sa promesse -- une clé absente/invalide, une panne réseau ou une réponse d'erreur de
+Brevo sont toutes journalisées via `console.error` puis la fonction revient normalement. C'est
+la seule exception consciente à "`requireSecret` doit faire planter l'appelant" dans toute la
+base de code, et elle est justifiée par le même contrat anti-énumération qui existait déjà
+avant cette session (le `catch` de `forgot-password.js` lui-même journalise et renvoie
+`{ok:true}` depuis Mission 23 Étape 1) -- pas une négligence nouvelle.
+Lien de réinitialisation construit avec le domaine canonique fixe (`https://orionisacademy.com/
+app/reinitialiser?token=...`), jamais dérivé de l'en-tête `Host` de la requête (un `Host`
+falsifié pointerait, pour l'attaquant qui le falsifie, vers un domaine de son choix -- motif
+connu, "reset-link poisoning"). Message rédigé en français courant, sans jargon : qui écrit,
+pourquoi, le lien, sa durée de validité (30 minutes, inchangée), quoi faire si on n'a rien
+demandé, signature "Orionis Academy — Formation aux métiers du voyage". Anglais prévu : la
+langue de l'écran d'où part la demande (`AuthScreen.jsx`, qui la connaissait déjà via `lang`,
+jusqu'ici un prop mort) est transmise à `/api/auth/forgot-password` (`body.lang`, nouveau champ
+optionnel, "fr" par défaut) -- la seule source possible, la préférence de langue n'étant stockée
+nulle part côté compte. `MAIL_DEV_ECHO` inchangé ; vérifié réellement en production (pas
+supposé) que les routes qu'il protège (`/api/dev/*`) répondent 404, confirmant qu'il n'est pas
+actif là-bas.
+**Testé** : 6 tests unitaires dédiés (`functions/__tests__/mailer.test.js`, `fetch` simulé --
+forme de l'appel Brevo, jamais de rejet quel que soit le type d'échec) ; l'intégration complète
+(`auth-api.test.js`, "a full reset changes the password...") reste verte avec le vrai
+`sendMail` câblé, `devResetToken` toujours exposé en test malgré l'absence volontaire de
+`BREVO_API_KEY` dans `.dev.vars`.
+**Ce qui manque pour clore réellement ce chantier, entièrement du ressort de Massy** : créer le
+compte Brevo, vérifier le domaine `orionisacademy.com` par enregistrements DNS, poser
+`BREVO_API_KEY` sur Cloudflare Pages (Production **et** Preview). La preuve réelle sera un
+courriel reçu dans sa boîte -- à faire avec lui, pas avant.
+
+**Aléa d'environnement rencontré en route, sans rapport avec le code de cette session** : des
+processus `wrangler`/`workerd`/`playwright` restés vivants depuis une session antérieure
+(certains depuis le 17/10/2026) ont fait tourner la suite `functions/__tests__` au ralenti au
+point de ressembler à un blocage (20+ minutes sans sortie, contre ~3 minutes normalement) --
+diagnostiqué par l'usage CPU figé des processus concernés, pas par supposition. Nettoyés ; la
+suite est repassée à sa durée normale derrière. Aucun changement de code n'explique ce
+ralentissement.
+
+Non-régression complète : lint/build/typecheck clean ; 268/268 `packages/core`, 9/9
+`packages/data`, 47/47 `packages/exercises`, 117/117 web, 101/101 `functions/__tests__` (14
+nouveaux/modifiés : 6 mailer, 5 nouveaux côté poivre, 2 renommés + 1 avec un mot de passe conforme
+au nouveau minimum côté longueur), 67/67 e2e (dont le cycle complet d'inscription/déconnexion/
+reconnexion), 8/8 e2e-admin.
+
 ### 22/10/2026 — Le terminal et l'administration deviennent adaptatifs
 
 `missions/PROMPT-MOBILE.md` : constat et mesures de l'architecte, confirmés par Massy sur son

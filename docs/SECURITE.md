@@ -21,10 +21,22 @@ où tout le monde se connaît.
   sans casser l'existant -- mais jamais au-delà de ce plafond tant que Cloudflare ne le change
   pas, et jamais sans vérifier sur un vrai déploiement Workers (`wrangler pages dev` en local ne
   reproduit pas cette limite -- c'est précisément ce qui l'a caché 5 jours).
+- **Poivre** (ajouté le 25/10/2026, `functions/_lib/passwordHash.js`) : le mot de passe passe
+  par un HMAC-SHA256 avec un secret d'environnement (`PASSWORD_PEPPER`, lu via `requireSecret` --
+  jamais de repli silencieux) **avant** PBKDF2. Compense le plafond d'itérations ci-dessus (six
+  fois sous la recommandation OWASP pour cet algorithme, sans pouvoir monter) : une base volée
+  seule ne suffit plus à casser les mots de passe hors ligne, il faut aussi ce secret, qui ne vit
+  jamais dans la base. `algo` distingue deux générations de haché -- `pbkdf2` (hérité, sans
+  poivre, les comptes créés avant cette date) et `pbkdf2-pepper` (toute écriture à partir de
+  cette date) -- pour que les comptes déjà réels au moment de ce changement (11 en production,
+  vérifiés avant de commencer) ne soient jamais déconnectés : un compte hérité migre tout seul
+  au nouveau format la prochaine fois qu'il change de mot de passe.
 - **Jamais** de hachage côté navigateur, jamais de mot de passe en clair dans un journal,
   une URL ou un message d'erreur.
-- Minimum 8 caractères, refus des mots de passe les plus courants (petite liste locale).
-  Pas d'exigences absurdes (majuscule + chiffre + symbole) : la longueur prime.
+- Minimum 12 caractères (monté de 8 le 25/10/2026 -- avec un hachage bridé à 100 000 itérations,
+  la longueur du mot de passe est le principal levier qui reste pour compenser), refus des mots
+  de passe les plus courants (petite liste locale). Pas d'exigences absurdes (majuscule +
+  chiffre + symbole) : la longueur prime.
 - **Anti-énumération** : l'inscription, la connexion et le mot de passe oublié renvoient la
   **même réponse** que le compte existe ou non. Un attaquant ne doit pas pouvoir découvrir
   qui est inscrit.

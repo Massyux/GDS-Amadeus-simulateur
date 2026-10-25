@@ -64,8 +64,13 @@ rédigées et auditées par l'architecte (Claude Cowork).
   Catch-all = *Drop, désactivé* → tout e-mail envoyé à une autre adresse du domaine
   (`info@`, `support@`…) **n'arrive nulle part** tant qu'une règle n'est pas créée.
   ⚠️ Email Routing **reçoit uniquement**. Pour *envoyer* (clé de licence automatique,
-  mission 22) il faut un service tiers — Resend ou Brevo — avec `orionisacademy.com`
-  vérifié par enregistrements SPF/DKIM. Non fait à ce jour.
+  mission 22 ; mot de passe oublié, fait le 25/10/2026 ci-dessous) il faut un service
+  tiers avec `orionisacademy.com` vérifié par enregistrements SPF/DKIM — **Brevo**, choisi
+  le 25/10/2026 (300 e-mails/jour gratuits, sans plafond mensuel, et réutilisable pour le
+  marketing automatique que Massy voudra plus tard — un seul compte au lieu de deux ; Resend
+  écarté pour son plafond de 100/jour). `functions/_lib/mailer.js` est câblé côté code ;
+  reste à la charge de Massy : créer le compte Brevo, vérifier le domaine, poser
+  `BREVO_API_KEY` sur Cloudflare Pages (Production **et** Preview). Non fait à ce jour.
   Scorie à nettoyer : `contact@orionisvoyage.com` figure en *destination address* au statut
   *Pending* ; c'est une erreur de manipulation (une adresse professionnelle se crée en
   *routing rule*, pas en destination) et elle ne se vérifiera jamais. À supprimer.
@@ -74,7 +79,8 @@ rédigées et auditées par l'architecte (Claude Cowork).
   simulateur devient un cours parmi d'autres, Massy doit pouvoir ajouter des formations sans
   développeur) → **22** paiement Chargily + création/envoi automatique de la clé par e-mail
   (zéro étape manuelle ; **blocage levé le 09/10/2026** — le domaine `orionisacademy.com`
-  est acheté ; reste à vérifier le domaine chez Resend ou Brevo pour pouvoir *envoyer*) → **21** fidélité des réponses écran (AN, RT, FXP/TQT, TTP — les
+  est acheté ; fournisseur choisi le 25/10/2026, Brevo, voir plus haut — reste à vérifier le
+  domaine et poser `BREVO_API_KEY` pour pouvoir *envoyer*) → **21** fidélité des réponses écran (AN, RT, FXP/TQT, TTP — les
   affichages ne sont pas identiques au vrai Amadeus). Plateforme = sur mesure sur la stack
   actuelle (Cloudflare + D1), décision Massy.
 - **Chaîne d'implémentation (06/07/2026)** : décision Massy — implémenter TOUTES les commandes

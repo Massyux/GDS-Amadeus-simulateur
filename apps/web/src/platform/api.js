@@ -24,7 +24,8 @@ export const authApi = {
     request("/api/auth/register", { method: "POST", body: { email, password, firstName, lastName } }),
   login: (email, password) => request("/api/auth/login", { method: "POST", body: { email, password } }),
   logout: (csrfToken) => request("/api/auth/logout", { method: "POST", csrfToken }),
-  forgotPassword: (email) => request("/api/auth/forgot-password", { method: "POST", body: { email } }),
+  forgotPassword: (email, lang) =>
+    request("/api/auth/forgot-password", { method: "POST", body: { email, lang } }),
   resetPassword: (token, newPassword) =>
     request("/api/auth/reset-password", { method: "POST", body: { token, newPassword } }),
 };

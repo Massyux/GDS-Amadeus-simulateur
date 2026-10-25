@@ -232,7 +232,7 @@ caractères maximum** (`max-width: 68ch`) — au-delà, la lecture décroche.
 
 **Champs de saisie** — hauteur 40 px, fond `--bg-inset`, bordure `--border`, focus =
 bordure `--accent` + anneau de 2 px. Message d'erreur **sous** le champ, en `--danger`,
-qui dit **quoi faire** (« le mot de passe doit faire au moins 8 caractères », pas
+qui dit **quoi faire** (« le mot de passe doit faire au moins 12 caractères », pas
 « invalide »).
 
 **Cartes** — fond `--bg-surface`, bordure `--border`, `--radius-lg`, padding 24 px.

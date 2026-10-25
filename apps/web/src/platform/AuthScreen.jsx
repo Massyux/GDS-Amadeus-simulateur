@@ -13,7 +13,7 @@ import { ThemeToggle } from "./ThemeToggle.jsx";
  * anti-énumération du backend affichées telles quelles -- jamais de logique
  * côté client qui tenterait de deviner "compte existant ou pas".
  */
-export default function AuthScreen({ t, onAuthenticated, initialMode = "login" }) {
+export default function AuthScreen({ t, lang, onAuthenticated, initialMode = "login" }) {
   const [theme, toggleTheme] = useTheme();
   const [mode, setMode] = useState(initialMode); // "login" | "register" | "forgot"
   const [email, setEmail] = useState("");
@@ -71,7 +71,11 @@ export default function AuthScreen({ t, onAuthenticated, initialMode = "login" }
   async function handleForgot(event) {
     event.preventDefault();
     setSubmitting(true);
-    await authApi.forgotPassword(email);
+    // La préférence de langue ne vit que dans ce navigateur (useLang.js) --
+    // c'est le seul signal que le serveur peut recevoir pour choisir la
+    // langue du message envoyé (functions/api/auth/forgot-password.js,
+    // PROMPT-MOTS-DE-PASSE-ET-MAIL.md 25/10/2026).
+    await authApi.forgotPassword(email, lang);
     setSubmitting(false);
     setForgotSent(true);
   }

@@ -45,7 +45,7 @@ export async function onRequestPost({ request, env }) {
       return jsonResponse({ ok: false, error: INVALID_OR_EXPIRED }, start);
     }
 
-    const passwordHash = await hashPassword(newPassword);
+    const passwordHash = await hashPassword(env, newPassword);
     await env.DB.prepare(`UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`)
       .bind(passwordHash, reset.user_id)
       .run();

@@ -6,6 +6,31 @@
 
 ## En cours
 
+**🟡 `PROMPT-MOTS-DE-PASSE-ET-MAIL.md` -- chantier 1 CLOS le 25/10/2026, chantier 2 écrit en
+entier mais EN ATTENTE de Massy.** Chantier 1 (poivre sur les mots de passe) : surprise au
+démarrage -- 11 comptes réels en base, pas 1 comme supposé par le prompt (3 avec une vraie
+inscription). Massy a choisi, sur question explicite, la transition en douceur plutôt qu'un
+re-hachage forcé : `functions/_lib/passwordHash.js` distingue `pbkdf2` (hérité, sans poivre,
+inchangé pour les 11 comptes existants) et `pbkdf2-pepper` (toute écriture dès maintenant) --
+un compte hérité migre tout seul à son prochain changement de mot de passe. Poivre = HMAC-SHA256
+avec `PASSWORD_PEPPER` (nouveau secret, lu via `requireSecret`) avant PBKDF2, pour compenser le
+plafond de 100 000 itérations (toujours six fois sous OWASP, toujours la limite dure des Workers
+Cloudflare). Minimum de longueur monté de 8 à 12 caractères. Vérifié réellement : suites vertes
+(268/9/47/117/101/67/8) et un vrai cycle inscription → déconnexion → connexion sur un compte
+neuf. Détail complet dans `JOURNAL.md`.
+Chantier 2 (envoi d'e-mail réel) : écrit en entier -- `functions/_lib/mailer.js` appelle
+réellement l'API transactionnelle de Brevo (décision architecte 25/10/2026, 300/jour gratuits
+sans plafond mensuel, réutilisable pour le marketing futur de Massy), message de réinitialisation
+rédigé en français/anglais, lien construit sur le domaine canonique fixe. Un échec d'envoi ne
+rejette jamais (anti-énumération préservée) mais journalise toujours (`console.error`) --
+tension du prompt entre "`requireSecret` qui lève" et "réponse neutre qui ne doit jamais casser"
+résolue consciemment, détaillée dans `JOURNAL.md`. **Non testable au-delà de `MAIL_DEV_ECHO`
+tant que la clé n'existe pas** -- reste entièrement à la charge de Massy, dans cet ordre : créer
+le compte Brevo, vérifier le domaine `orionisacademy.com` par DNS, poser `BREVO_API_KEY` **et**
+`PASSWORD_PEPPER` sur Cloudflare Pages (Production **et** Preview). **Reprise exacte une fois
+fait** : vérifier avec Massy qu'un vrai courriel de réinitialisation arrive dans sa boîte, puis
+clore ce chantier.
+
 **🟢 `PROMPT-MOBILE.md` CLOS le 22/10/2026** (constat et mesures de l'architecte, confirmés par
 Massy sur son téléphone) : ni le terminal ni l'administration n'avaient la moindre règle CSS
 mobile (une ligne de 80 colonnes occupait ~768px à 16px de police, contre 390 sur téléphone).
